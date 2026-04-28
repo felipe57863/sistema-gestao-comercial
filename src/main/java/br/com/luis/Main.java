@@ -1,26 +1,25 @@
 package br.com.luis;
 
-import br.com.luis.util.ConnectionFactory;
-import br.com.luis.util.DatabaseInitializer;
+import br.com.luis.util.DatabaseBuilder;
 
-import java.sql.Connection;
-
+/**
+ * Ponto de entrada do Sistema de Gestão Comercial (ERP).
+ */
 public class Main {
 
     public static void main(String[] args) {
+        System.out.println("[INFO] Iniciando Sistema de Gestão Comercial (ERP)...");
 
-        // Cria/verifica tabelas
-        DatabaseInitializer.criarTabelas();
+        try {
+            // Inicializa estrutura do banco
+            DatabaseBuilder.buildTables();
 
-        // Teste de conexão
-        try (Connection conn = ConnectionFactory.getConnection()) {
-
-            if (conn != null) {
-                System.out.println("Conexão com SQLite realizada com sucesso!");
-            }
+            System.out.println("[INFO] Sistema inicializado com sucesso.");
 
         } catch (Exception e) {
-            System.err.println("Erro ao testar conexão: " + e.getMessage());
+            System.err.println("[ERRO FATAL] Falha ao iniciar o sistema.");
+            e.printStackTrace();
+            System.exit(1);
         }
     }
 }
