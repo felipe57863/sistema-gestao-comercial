@@ -61,7 +61,7 @@ public class Usuario {
     /**
      * A senha armazenada deve ser SEMPRE o hash gerado pelo BCrypt.
      */
-    String getSenha() { // package-private (não expõe fora do pacote)
+    public String getSenha() { // package-private (não expõe fora do pacote)
         return senha;
     }
 
