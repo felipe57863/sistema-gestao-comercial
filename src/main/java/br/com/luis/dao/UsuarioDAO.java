@@ -45,4 +45,42 @@ public class UsuarioDAO {
             throw new RuntimeException("Erro ao cadastrar usuário no banco.", e);
         }
     }
+    public Usuario buscarPorLogin(String login) {
+
+        if (login == null || login.isBlank()) {
+            throw new IllegalArgumentException("Login é obrigatório para busca.");
+        }
+
+        String sql = """
+        SELECT id_usuario, nome, login, senha, perfil, status
+        FROM Usuario
+        WHERE login = ?
+    """;
+
+        String loginFormatado = login.trim().toLowerCase();
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, loginFormatado);
+
+            try (var rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Usuario(
+                            rs.getInt("id_usuario"),
+                            rs.getString("nome"),
+                            rs.getString("login"),
+                            rs.getString("senha"),
+                            rs.getString("perfil"),
+                            rs.getString("status")
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar usuário pelo login.", e);
+        }
+
+        return null;
+    }
 }
