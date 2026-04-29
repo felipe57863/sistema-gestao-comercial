@@ -84,11 +84,9 @@ public class Main extends Application {
         primaryStage.setTitle("ERP Comercial - Login");
         primaryStage.setScene(scene);
 
-        // Impede redimensionamento para preservar layout
-        primaryStage.setResizable(false);
-
-        // Centraliza a janela na tela
-        primaryStage.centerOnScreen();
+        // Removemos o setResizable(false) e o centerOnScreen(),
+        // e trocamos pelo comando de maximizar a tela inteira.
+        primaryStage.setMaximized(true);
 
         // 5. Exibe a interface para o usuário
         primaryStage.show();
