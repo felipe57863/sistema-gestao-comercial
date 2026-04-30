@@ -7,6 +7,8 @@ import br.com.luis.service.PrazoPagamentoService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -31,20 +33,24 @@ public class ClienteController {
 
     @FXML private RadioButton rbFisica;
     @FXML private RadioButton rbJuridica;
-    private ToggleGroup tgTipoCliente;
+    private ToggleGroup tgTipoCliente; // Instanciado via código
 
     @FXML private RadioButton rbAtivo;
     @FXML private RadioButton rbBloqueado;
-    private ToggleGroup tgStatusCliente;
+    private ToggleGroup tgStatusCliente; // Instanciado via código
 
     @FXML private ComboBox<PrazoPagamento> cbPrazoPagamento;
 
     // --- TABELA ---
+    @FXML private TextField txtBusca;
     @FXML private TableView<Cliente> tabelaClientes;
     @FXML private TableColumn<Cliente, String> colNome;
     @FXML private TableColumn<Cliente, String> colTipo;
     @FXML private TableColumn<Cliente, BigDecimal> colLimite;
     @FXML private TableColumn<Cliente, String> colStatus;
+
+    // Lista mestre que guarda os dados originais do banco
+    private ObservableList<Cliente> listaClientesMaster = FXCollections.observableArrayList();
 
     // --- SERVICES ---
     private ClienteService clienteService;
@@ -56,7 +62,7 @@ public class ClienteController {
         this.clienteService = new ClienteService();
         this.prazoService = new PrazoPagamentoService();
 
-        // Configuração dos RadioButtons via código (evita bug do Scene Builder)
+        // 1. Configura os Grupos de RadioButtons via código (Foge do bug do Scene Builder)
         tgTipoCliente = new ToggleGroup();
         rbFisica.setToggleGroup(tgTipoCliente);
         rbJuridica.setToggleGroup(tgTipoCliente);
@@ -65,32 +71,29 @@ public class ClienteController {
         rbAtivo.setToggleGroup(tgStatusCliente);
         rbBloqueado.setToggleGroup(tgStatusCliente);
 
-        // Simulação de sessão (no futuro virá do SessaoUsuario)
+        // 2. Preenche o Label de Usuário com a data e hora atual (Simulação de Sessão)
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         lblUsuario.setText("Usuário: Administrador | " + dtf.format(LocalDateTime.now()));
 
-        // Carrega dados do banco
+        // 3. Carrega o ComboBox
         carregarPrazosPagamento();
 
-        // Foco inicial
+        // 4. Foco inicial
         txtNome.requestFocus();
 
-        // ==============================
-        // CONFIGURAÇÃO DA TABLEVIEW
-        // ==============================
+        // --- 5. CONFIGURAÇÃO DA TABELA ---
 
-        // Nome direto do model
+        // Mapeia a coluna "Nome" diretamente para o getNome() da classe Cliente
         colNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
 
-        // Limite direto do model
+        // Mapeia a coluna "Limite" diretamente para o getLimiteCredito()
         colLimite.setCellValueFactory(new PropertyValueFactory<>("limiteCredito"));
 
-        // Tipo com descrição amigável (Enum → String)
+        // Tratamento Sênior para Enums: Extraindo o texto amigável em vez de usar o nome técnico
         colTipo.setCellValueFactory(cellData ->
                 new SimpleStringProperty(cellData.getValue().getTipo().getDescricao())
         );
 
-        // Status amigável
         colStatus.setCellValueFactory(cellData ->
                 new SimpleStringProperty(
                         cellData.getValue().getStatus() == Cliente.StatusCliente.ATIVO
@@ -99,7 +102,7 @@ public class ClienteController {
                 )
         );
 
-        // Formatação monetária (R$)
+        // � Formatação monetária (R$)
         colLimite.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
@@ -113,7 +116,47 @@ public class ClienteController {
             }
         });
 
-        // Carrega clientes ao abrir a tela
+        // CONFIGURAÇÃO DO FILTRO DE BUSCA REATIVO
+
+        // 1. Envolve a lista mestre num FilteredList
+        FilteredList<Cliente> filteredData = new FilteredList<>(listaClientesMaster, p -> true);
+
+        // 2. Adiciona o ouvinte no campo de busca para alterar o filtro instantaneamente
+        txtBusca.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredData.setPredicate(cliente -> {
+
+                // Se o campo de busca estiver vazio, mostra todos os clientes
+                if (newValue == null || newValue.isBlank()) {
+                    return true;
+                }
+
+                // Transforma o texto digitado em minúsculas para ignorar Case
+                String lowerCaseFilter = newValue.toLowerCase();
+
+                // Busca por Nome
+                if (cliente.getNome().toLowerCase().contains(lowerCaseFilter)) {
+                    return true;
+                }
+                // Busca por Documento (CPF/CNPJ)
+                else if (cliente.getDocumento() != null &&
+                        cliente.getDocumento().toLowerCase().contains(lowerCaseFilter)) {
+                    return true;
+                }
+
+                return false; // Não combinou com nada, oculta da tabela
+            });
+        });
+
+        // 3. Envolve o FilteredList num SortedList (preserva ordenação por coluna)
+        SortedList<Cliente> sortedData = new SortedList<>(filteredData);
+
+        // 4. Liga ordenação com a tabela
+        sortedData.comparatorProperty().bind(tabelaClientes.comparatorProperty());
+
+        // 5. Injeta na tabela
+        tabelaClientes.setItems(sortedData);
+
+        // 6. Carrega dados iniciais
         atualizarTabela();
     }
 
@@ -128,8 +171,7 @@ public class ClienteController {
             cbPrazoPagamento.setItems(prazos);
 
         } catch (RuntimeException e) {
-            mostrarAlerta(Alert.AlertType.ERROR,
-                    "Erro",
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro",
                     "Não foi possível carregar os prazos.\n" + e.getMessage());
         }
     }
@@ -148,50 +190,36 @@ public class ClienteController {
             String limiteTexto = txtLimiteCredito.getText().replace(",", ".");
             BigDecimal limite = new BigDecimal(limiteTexto);
 
-            // Determina tipo
             Cliente.TipoCliente tipo =
                     rbFisica.isSelected() ? Cliente.TipoCliente.PF : Cliente.TipoCliente.PJ;
 
-            // Determina status
             Cliente.StatusCliente status =
                     rbAtivo.isSelected() ? Cliente.StatusCliente.ATIVO : Cliente.StatusCliente.BLOQUEADO;
 
-            // Prazo obrigatório
             PrazoPagamento prazo = cbPrazoPagamento.getValue();
-            if (prazo == null) {
-                throw new IllegalArgumentException("Selecione um prazo de pagamento.");
-            }
+            if (prazo == null) throw new IllegalArgumentException("Selecione um prazo de pagamento.");
 
-            // Criação da entidade
             Cliente cliente = new Cliente(null, nome, documento, tipo, limite, status, prazo);
 
-            // Persistência
             clienteService.cadastrar(cliente);
 
             System.out.println("[LOG] Cliente cadastrado via UI: " + cliente.getNome());
 
-            // Atualiza tabela automaticamente
+            // � Atualiza tabela automaticamente (UI reativa)
             atualizarTabela();
 
-            mostrarAlerta(Alert.AlertType.INFORMATION,
-                    "Sucesso",
-                    "Cliente cadastrado com sucesso!");
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Cliente cadastrado com sucesso!");
 
             limpar();
 
         } catch (NumberFormatException e) {
 
-            mostrarAlerta(Alert.AlertType.WARNING,
-                    "Aviso",
-                    "Limite de crédito inválido.");
-
+            mostrarAlerta(Alert.AlertType.WARNING, "Aviso", "Limite de crédito inválido.");
             txtLimiteCredito.requestFocus();
 
         } catch (RuntimeException e) {
 
-            mostrarAlerta(Alert.AlertType.ERROR,
-                    "Erro",
-                    e.getMessage());
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro", e.getMessage());
         }
     }
 
@@ -215,7 +243,7 @@ public class ClienteController {
     }
 
     /**
-     * Ação de cancelar (preparado para navegação futura).
+     * Ação de cancelar.
      */
     @FXML
     public void cancelar() {
@@ -224,18 +252,14 @@ public class ClienteController {
     }
 
     /**
-     * Atualiza a tabela com dados do banco.
+     * Atualiza a lista mestre com os dados do banco.
+     * O FilteredList atualiza automaticamente a tabela.
      */
     private void atualizarTabela() {
         try {
-            ObservableList<Cliente> clientes =
-                    FXCollections.observableArrayList(clienteService.listarTodos());
-
-            tabelaClientes.setItems(clientes);
-
+            listaClientesMaster.setAll(clienteService.listarTodos());
         } catch (RuntimeException e) {
-            mostrarAlerta(Alert.AlertType.ERROR,
-                    "Erro",
+            mostrarAlerta(Alert.AlertType.ERROR, "Erro",
                     "Não foi possível carregar clientes.\n" + e.getMessage());
         }
     }
