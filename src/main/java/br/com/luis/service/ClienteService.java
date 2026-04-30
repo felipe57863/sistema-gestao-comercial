@@ -22,10 +22,7 @@ public class ClienteService {
      */
     public void cadastrar(Cliente cliente) {
 
-        // Fail-fast: validação básica
-        if (cliente == null) {
-            throw new IllegalArgumentException("Cliente é obrigatório.");
-        }
+        validarCliente(cliente);
 
         // Regra de negócio: todo cliente inicia como ATIVO
         cliente.setStatus(Cliente.StatusCliente.ATIVO);
@@ -35,14 +32,8 @@ public class ClienteService {
             throw new IllegalArgumentException("Limite de crédito é obrigatório.");
         }
 
-        // NOTA:
-        // - Validações estruturais estão no Model (Rich Domain Model)
-        // - Duplicidade de documento é garantida pelo banco (UNIQUE) e tratada no DAO
+        System.out.println("[LOG] Cliente enviado para persistência (Cadastro): " + cliente.getNome());
 
-        // Log de auditoria
-        System.out.println("[LOG] Cliente enviado para persistência: " + cliente.getNome());
-
-        // Persistência
         dao.cadastrar(cliente);
     }
 
@@ -51,5 +42,43 @@ public class ClienteService {
      */
     public List<Cliente> listarTodos() {
         return dao.listarTodos();
+    }
+
+    /**
+     * Valida e atualiza os dados de um cliente existente.
+     */
+    public void atualizar(Cliente cliente) {
+
+        validarCliente(cliente);
+
+        if (cliente.getIdCliente() == null) {
+            throw new IllegalArgumentException("Não é possível atualizar um cliente sem ID.");
+        }
+
+        System.out.println("[LOG] Cliente enviado para persistência (Atualização): " + cliente.getNome());
+
+        dao.atualizar(cliente);
+    }
+
+    /**
+     * Fail-fast: validação básica e reutilizável.
+     */
+    private void validarCliente(Cliente cliente) {
+
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente é obrigatório.");
+        }
+
+        if (cliente.getNome() == null || cliente.getNome().isBlank()) {
+            throw new IllegalArgumentException("Nome é obrigatório.");
+        }
+
+        if (cliente.getDocumento() == null || cliente.getDocumento().isBlank()) {
+            throw new IllegalArgumentException("Documento é obrigatório.");
+        }
+
+        if (cliente.getPrazoPagamento() == null) {
+            throw new IllegalArgumentException("Prazo de pagamento é obrigatório.");
+        }
     }
 }
