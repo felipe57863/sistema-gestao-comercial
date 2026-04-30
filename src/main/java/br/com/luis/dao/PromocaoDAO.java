@@ -16,38 +16,31 @@ import java.sql.SQLException;
 public class PromocaoDAO {
 
     /**
-     * Insere uma nova promoção no banco e recupera o ID gerado.
+     * Insere uma nova promoção no banco.
+     * Recebe a Connection para participar de uma transação (controle feito no Service).
      */
-    public void cadastrar(Promocao promocao) {
+    public void cadastrar(Connection conn, Promocao promocao) {
 
         String sql = """
             INSERT INTO Promocao (tipo_desconto, valor_desconto, ativa, produto_id)
             VALUES (?, ?, ?, ?)
         """;
 
-        try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 
-            // Validação defensiva da FK
+            // � Validação defensiva
             if (promocao.getProduto() == null || promocao.getProduto().getIdProduto() == null) {
-                throw new IllegalArgumentException("Produto inválido para promoção.");
+                throw new IllegalArgumentException("Produto inválido para cadastro da promoção.");
             }
 
-            // Enum → TEXT
             stmt.setString(1, promocao.getTipoDesconto().name());
-
-            // BigDecimal → REAL
             stmt.setBigDecimal(2, promocao.getValorDesconto());
-
-            // boolean → INTEGER
             stmt.setInt(3, promocao.isAtiva() ? 1 : 0);
-
-            // FK
             stmt.setInt(4, promocao.getProduto().getIdProduto());
 
             stmt.executeUpdate();
 
-            // Recupera ID gerado
+            // Sincroniza ID gerado
             try (var rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     promocao.setIdPromocao(rs.getInt(1));
@@ -55,14 +48,19 @@ public class PromocaoDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao cadastrar promoção.", e);
+            throw new RuntimeException("Erro ao cadastrar promoção no banco de dados.", e);
         }
     }
 
     /**
      * RN22: Inativa todas as promoções ativas de um produto.
+     * Participa da mesma transação do cadastro.
      */
-    public void inativarPromocoesAnteriores(Integer idProduto) {
+    public void inativarPromocoesAnteriores(Connection conn, Integer idProduto) {
+
+        if (idProduto == null) {
+            throw new IllegalArgumentException("ID do produto não pode ser nulo.");
+        }
 
         String sql = """
             UPDATE Promocao 
@@ -70,8 +68,7 @@ public class PromocaoDAO {
             WHERE produto_id = ? AND ativa = 1
         """;
 
-        try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, idProduto);
             stmt.executeUpdate();
@@ -83,9 +80,13 @@ public class PromocaoDAO {
 
     /**
      * RN02: Busca a promoção ativa de um produto.
-     * Retorna apenas UMA (LIMIT 1 como proteção).
+     * Como é apenas uma consulta (leitura), o próprio DAO pode abrir e fechar a conexão.
      */
     public Promocao buscarPromocaoAtivaPorProduto(Produto produto) {
+
+        if (produto == null || produto.getIdProduto() == null) {
+            throw new IllegalArgumentException("Produto inválido para busca de promoção.");
+        }
 
         String sql = """
             SELECT id_promocao, tipo_desconto, valor_desconto, ativa 
@@ -117,7 +118,7 @@ public class PromocaoDAO {
                     // INTEGER → boolean
                     promocao.setAtiva(rs.getInt("ativa") == 1);
 
-                    // Reutiliza objeto produto já existente
+                    // Reutiliza o produto da memória
                     promocao.setProduto(produto);
 
                     return promocao;
@@ -125,7 +126,7 @@ public class PromocaoDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar promoção ativa.", e);
+            throw new RuntimeException("Erro ao buscar promoção ativa do produto.", e);
         }
 
         return null;
