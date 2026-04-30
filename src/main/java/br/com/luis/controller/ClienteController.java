@@ -14,8 +14,10 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * Controller da Tela de Cadastro de Clientes.
@@ -48,6 +50,9 @@ public class ClienteController {
     @FXML private TableColumn<Cliente, String> colTipo;
     @FXML private TableColumn<Cliente, BigDecimal> colLimite;
     @FXML private TableColumn<Cliente, String> colStatus;
+
+    // --- RODAPÉ ---
+    @FXML private Label lblTotalClientes;
 
     // Lista mestre que guarda os dados originais do banco
     private ObservableList<Cliente> listaClientesMaster = FXCollections.observableArrayList();
@@ -84,7 +89,7 @@ public class ClienteController {
         // 4. Foco inicial
         txtNome.requestFocus();
 
-        // --- 5. CONFIGURAÇÃO DA TABELA ---
+        // 5. CONFIGURAÇÃO DA TABELA
 
         // Mapeia a coluna "Nome" diretamente para o getNome() da classe Cliente
         colNome.setCellValueFactory(new PropertyValueFactory<>("nome"));
@@ -105,7 +110,8 @@ public class ClienteController {
                 )
         );
 
-        // Formatação monetária (R$)
+        // Formatação monetária (R$ padrão brasileiro)
+        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
         colLimite.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
@@ -114,7 +120,7 @@ public class ClienteController {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText("R$ " + item.toString().replace(".", ","));
+                    setText(nf.format(item));
                 }
             }
         });
@@ -128,41 +134,35 @@ public class ClienteController {
         txtBusca.textProperty().addListener((observable, oldValue, newValue) -> {
             filteredData.setPredicate(cliente -> {
 
-                // Se o campo de busca estiver vazio, mostra todos os clientes
+                // Se o campo estiver vazio, mostra tudo
                 if (newValue == null || newValue.isBlank()) {
                     return true;
                 }
 
-                // Transforma o texto digitado em minúsculas para ignorar Case
-                String lowerCaseFilter = newValue.toLowerCase();
+                String filtro = newValue.toLowerCase();
 
-                // Busca por Nome
-                if (cliente.getNome().toLowerCase().contains(lowerCaseFilter)) {
-                    return true;
-                }
-                // Busca por Documento (CPF/CNPJ)
-                else if (cliente.getDocumento() != null &&
-                        cliente.getDocumento().toLowerCase().contains(lowerCaseFilter)) {
-                    return true;
-                }
-
-                return false; // Não combinou com nada, oculta da tabela
+                // Busca por nome OU documento
+                return (cliente.getNome() != null && cliente.getNome().toLowerCase().contains(filtro))
+                        || (cliente.getDocumento() != null && cliente.getDocumento().toLowerCase().contains(filtro));
             });
         });
 
-        // 3. Envolve o FilteredList num SortedList (preserva ordenação por coluna)
+        // 3. Envolve o FilteredList num SortedList (mantém ordenação por clique nas colunas)
         SortedList<Cliente> sortedData = new SortedList<>(filteredData);
 
-        // 4. Liga ordenação com a tabela
+        // 4. Liga a ordenação com a tabela
         sortedData.comparatorProperty().bind(tabelaClientes.comparatorProperty());
 
         // 5. Injeta na tabela
         tabelaClientes.setItems(sortedData);
 
-        // 6. Carrega dados iniciais
+        // 6. Atualiza contador sempre que a lista mudar
+        tabelaClientes.getItems().addListener((javafx.collections.ListChangeListener<Cliente>) c -> atualizarContador());
+
+        // 7. Carrega dados iniciais
         atualizarTabela();
 
-        // 7. Listener para detectar cliques na tabela e preencher o formulário
+        // 8. Listener para detectar clique na tabela e preencher formulário
         tabelaClientes.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     if (newValue != null) {
@@ -170,6 +170,14 @@ public class ClienteController {
                     }
                 }
         );
+    }
+
+    /**
+     * Atualiza o contador do rodapé.
+     */
+    private void atualizarContador() {
+        int total = tabelaClientes.getItems().size();
+        lblTotalClientes.setText("Total: " + total + " cliente" + (total == 1 ? "" : "s"));
     }
 
     /**
@@ -209,22 +217,24 @@ public class ClienteController {
                     rbAtivo.isSelected() ? Cliente.StatusCliente.ATIVO : Cliente.StatusCliente.BLOQUEADO;
 
             PrazoPagamento prazo = cbPrazoPagamento.getValue();
-            if (prazo == null) throw new IllegalArgumentException("Selecione um prazo de pagamento.");
+            if (prazo == null) {
+                cbPrazoPagamento.requestFocus();
+                throw new IllegalArgumentException("Selecione um prazo de pagamento.");
+            }
 
             // DECISÃO: CADASTRO OU EDIÇÃO
             if (clienteSelecionado == null) {
 
-                // ➜ NOVO CLIENTE
+                // NOVO CLIENTE
                 Cliente cliente = new Cliente(null, nome, documento, tipo, limite, status, prazo);
                 clienteService.cadastrar(cliente);
                 System.out.println("[LOG] Cliente cadastrado via UI: " + cliente.getNome());
 
             } else {
 
-                // ➜ EDIÇÃO (Isolamento de Memória)
-                // Cria uma nova instância com os dados da tela, mas preservando o ID do selecionado
+                // EDIÇÃO (Isolamento de Memória)
                 Cliente clienteAtualizado = new Cliente(
-                        clienteSelecionado.getIdCliente(), // Mantém o ID original
+                        clienteSelecionado.getIdCliente(),
                         nome,
                         documento,
                         tipo,
@@ -237,7 +247,7 @@ public class ClienteController {
                 System.out.println("[LOG] Cliente atualizado: " + clienteAtualizado.getNome());
             }
 
-            // Atualiza tabela automaticamente (vai buscar os dados frescos e reais do banco)
+            // Atualiza tabela automaticamente
             atualizarTabela();
 
             mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Operação realizada com sucesso!");
@@ -273,7 +283,7 @@ public class ClienteController {
 
         txtNome.requestFocus();
 
-        // Limpa a seleção da memória e da tabela
+        // Limpa seleção (volta para modo cadastro)
         this.clienteSelecionado = null;
         tabelaClientes.getSelectionModel().clearSelection();
     }
@@ -288,11 +298,11 @@ public class ClienteController {
     }
 
     /**
-     * Atualiza a lista mestre com os dados do banco.
-     * O FilteredList atualiza automaticamente a tabela.
+     * Atualiza dados da tabela.
      */
     private void atualizarTabela() {
         try {
+            // O setAll dispara o ListChangeListener, que atualiza o contador automaticamente
             listaClientesMaster.setAll(clienteService.listarTodos());
         } catch (RuntimeException e) {
             mostrarAlerta(Alert.AlertType.ERROR, "Erro",
@@ -312,7 +322,7 @@ public class ClienteController {
     }
 
     /**
-     * Preenche o formulário com os dados do cliente selecionado na tabela.
+     * Preenche o formulário com os dados do cliente selecionado.
      */
     private void preencherFormulario(Cliente cliente) {
         this.clienteSelecionado = cliente;
@@ -320,24 +330,11 @@ public class ClienteController {
         txtNome.setText(cliente.getNome());
         txtDocumento.setText(cliente.getDocumento());
 
-        // Converte o BigDecimal de volta para texto com vírgula
         txtLimiteCredito.setText(cliente.getLimiteCredito().toString().replace(".", ","));
 
-        // Seleciona o RadioButton correto de Tipo
-        if (cliente.getTipo() == Cliente.TipoCliente.PF) {
-            rbFisica.setSelected(true);
-        } else {
-            rbJuridica.setSelected(true);
-        }
+        rbFisica.setSelected(cliente.getTipo() == Cliente.TipoCliente.PF);
+        rbAtivo.setSelected(cliente.getStatus() == Cliente.StatusCliente.ATIVO);
 
-        // Seleciona o RadioButton correto de Status
-        if (cliente.getStatus() == Cliente.StatusCliente.ATIVO) {
-            rbAtivo.setSelected(true);
-        } else {
-            rbBloqueado.setSelected(true);
-        }
-
-        // Seleciona o prazo no ComboBox
         cbPrazoPagamento.setValue(cliente.getPrazoPagamento());
     }
 }
