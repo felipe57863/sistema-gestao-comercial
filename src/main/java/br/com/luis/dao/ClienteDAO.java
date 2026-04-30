@@ -29,7 +29,7 @@ public class ClienteDAO {
             stmt.setString(1, cliente.getNome());
             stmt.setString(2, cliente.getDocumento());
 
-            // ⚠️ SQLite não possui ENUM → armazenamos como texto
+            // SQLite não possui ENUM → armazenamos como texto
             stmt.setString(3, cliente.getTipo().name());
 
             // JDBC converte BigDecimal corretamente

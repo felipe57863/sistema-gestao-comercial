@@ -28,7 +28,7 @@ public class PrazoPagamentoDAO {
             stmt.setString(1, prazo.getDescricao());
             stmt.setInt(2, prazo.getQuantidadeDias());
 
-            // ⚠️ SQLite não possui tipo boolean → usamos 1 (true) ou 0 (false)
+            // SQLite não possui tipo boolean → usamos 1 (true) ou 0 (false)
             stmt.setInt(3, prazo.isAtivo() ? 1 : 0);
 
             stmt.executeUpdate();

@@ -57,7 +57,7 @@ public class ProdutoService {
      */
     public void atualizar(Produto produto) {
 
-        // � FAIL-FAST: defesa contra objeto ou ID nulo
+        // FAIL-FAST: defesa contra objeto ou ID nulo
         if (produto == null || produto.getIdProduto() == null) {
             throw new IllegalArgumentException("Produto ou ID inválido para edição.");
         }
@@ -93,5 +93,28 @@ public class ProdutoService {
 
         // Reaproveita o método de atualização
         produtoDAO.atualizar(produtoInativado);
+    }
+
+    /**
+     * Busca produtos por nome/descrição.
+     */
+    public List<Produto> buscarPorDescricao(String termo) {
+        return produtoDAO.buscarPorDescricao(termo);
+    }
+
+    /**
+     * Retorna apenas produtos ativos.
+     * � Melhor prática: filtrado direto no banco (performance)
+     */
+    public List<Produto> listarAtivos() {
+        return produtoDAO.listarAtivos();
+    }
+
+    /**
+     * Retorna produtos com estoque baixo.
+     * Já vem filtrado no banco com status ATIVO.
+     */
+    public List<Produto> listarAbaixoDoMinimo() {
+        return produtoDAO.listarAbaixoDoMinimo();
     }
 }

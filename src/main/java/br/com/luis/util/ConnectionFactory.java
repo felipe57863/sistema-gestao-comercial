@@ -11,7 +11,7 @@ import java.sql.Statement;
  */
 public class ConnectionFactory {
 
-    private static final String URL = "jdbc:sqlite:erp_tcc.db";
+    private static final String URL = "jdbc:sqlite:database.db";
 
     /**
      * Retorna uma conexão ativa com o banco SQLite.

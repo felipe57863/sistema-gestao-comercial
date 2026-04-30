@@ -46,7 +46,7 @@ public class AuthService {
         if (adminExistente == null) {
             System.out.println("[INFO] Administrador não encontrado. Criando usuário padrão...");
 
-            // ⚠️ Regra de segurança:
+            // Regra de segurança:
             // A senha padrão deve ser usada apenas na primeira execução.
             // Recomenda-se exigir troca de senha posteriormente.
             String senhaSegura = gerarHash("admin123");

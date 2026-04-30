@@ -24,6 +24,6 @@ public class Launcher {
      * Apenas delega a execução para a classe Main (JavaFX Application).
      */
     public static void main(String[] args) {
-        Main.main(args);
+        App.main(args);
     }
 }
