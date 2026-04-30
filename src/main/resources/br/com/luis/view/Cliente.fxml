@@ -111,7 +111,7 @@
                 <font><Font name="System Bold" size="14.0" /></font>
             </Label>
             <HBox spacing="10">
-                <TextField promptText="Buscar cliente..." HBox.hgrow="ALWAYS" />
+                <TextField fx:id="txtBusca" promptText="Buscar cliente (Nome ou CPF)..." HBox.hgrow="ALWAYS"/>
                 <Button text="Filtrar" />
             </HBox>
             <TableView fx:id="tabelaClientes" VBox.vgrow="ALWAYS">
@@ -130,7 +130,7 @@
                     <Button text="3" />
                     <Button text="&gt;" />
                 </HBox>
-                <Label text="Total: 0 clientes" textFill="#555555" />
+                <Label fx:id="lblTotalClientes" text="Total: 0 clientes" textFill="#555555" />
             </VBox>
         </VBox>
     </HBox>

@@ -56,6 +56,9 @@ public class ClienteController {
     private ClienteService clienteService;
     private PrazoPagamentoService prazoService;
 
+    // Variável para controlar se estamos a criar (null) ou editar (com dados)
+    private Cliente clienteSelecionado;
+
     @FXML
     public void initialize() {
 
@@ -102,7 +105,7 @@ public class ClienteController {
                 )
         );
 
-        // � Formatação monetária (R$)
+        // Formatação monetária (R$)
         colLimite.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
@@ -158,6 +161,15 @@ public class ClienteController {
 
         // 6. Carrega dados iniciais
         atualizarTabela();
+
+        // 7. Listener para detectar cliques na tabela e preencher o formulário
+        tabelaClientes.getSelectionModel().selectedItemProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    if (newValue != null) {
+                        preencherFormulario(newValue);
+                    }
+                }
+        );
     }
 
     /**
@@ -199,16 +211,36 @@ public class ClienteController {
             PrazoPagamento prazo = cbPrazoPagamento.getValue();
             if (prazo == null) throw new IllegalArgumentException("Selecione um prazo de pagamento.");
 
-            Cliente cliente = new Cliente(null, nome, documento, tipo, limite, status, prazo);
+            // DECISÃO: CADASTRO OU EDIÇÃO
+            if (clienteSelecionado == null) {
 
-            clienteService.cadastrar(cliente);
+                // ➜ NOVO CLIENTE
+                Cliente cliente = new Cliente(null, nome, documento, tipo, limite, status, prazo);
+                clienteService.cadastrar(cliente);
+                System.out.println("[LOG] Cliente cadastrado via UI: " + cliente.getNome());
 
-            System.out.println("[LOG] Cliente cadastrado via UI: " + cliente.getNome());
+            } else {
 
-            // � Atualiza tabela automaticamente (UI reativa)
+                // ➜ EDIÇÃO (Isolamento de Memória)
+                // Cria uma nova instância com os dados da tela, mas preservando o ID do selecionado
+                Cliente clienteAtualizado = new Cliente(
+                        clienteSelecionado.getIdCliente(), // Mantém o ID original
+                        nome,
+                        documento,
+                        tipo,
+                        limite,
+                        status,
+                        prazo
+                );
+
+                clienteService.atualizar(clienteAtualizado);
+                System.out.println("[LOG] Cliente atualizado: " + clienteAtualizado.getNome());
+            }
+
+            // Atualiza tabela automaticamente (vai buscar os dados frescos e reais do banco)
             atualizarTabela();
 
-            mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Cliente cadastrado com sucesso!");
+            mostrarAlerta(Alert.AlertType.INFORMATION, "Sucesso", "Operação realizada com sucesso!");
 
             limpar();
 
@@ -240,6 +272,10 @@ public class ClienteController {
         rbAtivo.setSelected(true);
 
         txtNome.requestFocus();
+
+        // Limpa a seleção da memória e da tabela
+        this.clienteSelecionado = null;
+        tabelaClientes.getSelectionModel().clearSelection();
     }
 
     /**
@@ -273,5 +309,35 @@ public class ClienteController {
         alerta.setHeaderText(null);
         alerta.setContentText(mensagem);
         alerta.showAndWait();
+    }
+
+    /**
+     * Preenche o formulário com os dados do cliente selecionado na tabela.
+     */
+    private void preencherFormulario(Cliente cliente) {
+        this.clienteSelecionado = cliente;
+
+        txtNome.setText(cliente.getNome());
+        txtDocumento.setText(cliente.getDocumento());
+
+        // Converte o BigDecimal de volta para texto com vírgula
+        txtLimiteCredito.setText(cliente.getLimiteCredito().toString().replace(".", ","));
+
+        // Seleciona o RadioButton correto de Tipo
+        if (cliente.getTipo() == Cliente.TipoCliente.PF) {
+            rbFisica.setSelected(true);
+        } else {
+            rbJuridica.setSelected(true);
+        }
+
+        // Seleciona o RadioButton correto de Status
+        if (cliente.getStatus() == Cliente.StatusCliente.ATIVO) {
+            rbAtivo.setSelected(true);
+        } else {
+            rbBloqueado.setSelected(true);
+        }
+
+        // Seleciona o prazo no ComboBox
+        cbPrazoPagamento.setValue(cliente.getPrazoPagamento());
     }
 }
