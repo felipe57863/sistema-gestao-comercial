@@ -92,4 +92,56 @@ public class ProdutoDAO {
 
         return produtos;
     }
+    /**
+     * Atualiza os dados de um produto existente.
+     * Pode ser utilizado tanto para edição quanto para exclusão lógica (status = INATIVO).
+     */
+    public void atualizar(Produto produto) {
+
+        // FAIL-FAST: validação obrigatória de objeto e ID
+        if (produto == null || produto.getIdProduto() == null) {
+            throw new IllegalArgumentException("Produto ou ID inválido para atualização.");
+        }
+
+        // Defesa adicional: status não pode ser nulo
+        if (produto.getStatus() == null) {
+            throw new IllegalArgumentException("Status do produto é obrigatório.");
+        }
+
+        String sql = """
+        UPDATE Produto 
+        SET descricao = ?, preco = ?, quantidade_estoque = ?, estoque_minimo = ?, status = ?
+        WHERE id_produto = ?
+    """;
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            // Preenchimento dos parâmetros com base no objeto
+            stmt.setString(1, produto.getDescricao());
+            stmt.setBigDecimal(2, produto.getPreco());
+            stmt.setInt(3, produto.getQuantidadeEstoque());
+            stmt.setInt(4, produto.getEstoqueMinimo());
+
+            // Conversão Enum → String (SQLite armazena como TEXT)
+            stmt.setString(5, produto.getStatus().name());
+
+            // WHERE id_produto = ?
+            stmt.setInt(6, produto.getIdProduto());
+
+            int linhasAfetadas = stmt.executeUpdate();
+
+            // Verificação de integridade: se nenhuma linha foi alterada, o ID pode não existir
+            if (linhasAfetadas == 0) {
+                throw new RuntimeException(
+                        "Nenhum produto foi atualizado. O ID " + produto.getIdProduto() + " pode não existir."
+                );
+            }
+
+            System.out.println("[LOG] Produto atualizado: " + produto.getDescricao());
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao atualizar o produto no banco de dados.", e);
+        }
+    }
 }
