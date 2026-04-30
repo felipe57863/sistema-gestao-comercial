@@ -116,4 +116,33 @@ public class ClienteDAO {
 
         return clientes;
     }
+
+    public void atualizar(Cliente cliente) {
+        String sql = """
+        UPDATE Cliente
+        SET nome = ?, documento = ?, tipo_cliente = ?, limite_credito = ?, status = ?, prazo_pagamento_id = ?
+        WHERE id_cliente = ?
+    """;
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, cliente.getNome());
+            stmt.setString(2, cliente.getDocumento());
+            stmt.setString(3, cliente.getTipo().name());
+            stmt.setBigDecimal(4, cliente.getLimiteCredito());
+            stmt.setString(5, cliente.getStatus().name());
+            stmt.setInt(6, cliente.getPrazoPagamento().getIdPrazo());
+            stmt.setInt(7, cliente.getIdCliente());
+
+            stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            // Tratamento de duplicidade (UNIQUE) na edição
+            if (e.getMessage().contains("UNIQUE")) {
+                throw new RuntimeException("Já existe outro cliente cadastrado com esse documento.");
+            }
+            throw new RuntimeException("Erro ao atualizar cliente.", e);
+        }
+    }
 }
