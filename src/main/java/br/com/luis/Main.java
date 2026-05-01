@@ -10,6 +10,8 @@ import javafx.stage.Stage;
 
 import java.net.URL;
 
+import br.com.luis.service.PrazoPagamentoService;
+
 /**
  * Ponto de entrada do Sistema de Gestão Comercial (ERP).
  *
@@ -43,7 +45,11 @@ public class Main extends Application {
             // 1. Garante que as tabelas do banco existem
             DatabaseBuilder.buildTables();
 
-            // 2. Inicializa dados essenciais (usuário administrador padrão)
+            // 2. Inicializa os prazos padrão do sistema
+            PrazoPagamentoService prazoPagamentoService = new PrazoPagamentoService();
+            prazoPagamentoService.inicializarPrazosPadrao();
+
+            // 3. Inicializa dados essenciais (usuário administrador padrão)
             AuthService authService = new AuthService();
             authService.inicializarAdminBase();
 

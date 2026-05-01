@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS Produto (
     quantidade_estoque INTEGER NOT NULL CHECK (quantidade_estoque >= 0),
     -- Quantidade mínima para alerta de reposição
     estoque_minimo INTEGER NOT NULL CHECK (estoque_minimo >= 0),
-    -- Status do produto (alinhado com Enum do Java)
-    status TEXT NOT NULL DEFAULT 'ATIVO'
+    -- Indica se o produto está ativo no sistema
+    -- SQLite não possui BOOLEAN, então usamos INTEGER: 1 = ativo, 0 = inativo
+    ativo INTEGER NOT NULL DEFAULT 1 CHECK (ativo IN (0, 1))
     );

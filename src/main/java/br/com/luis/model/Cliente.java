@@ -49,7 +49,7 @@ public class Cliente {
      */
     public Cliente(Integer idCliente, String nome, String documento, TipoCliente tipo,
                    BigDecimal limiteCredito, StatusCliente status, PrazoPagamento prazoPagamento) {
-        this.idCliente = idCliente;
+        setIdCliente(idCliente);
         setNome(nome);
         setDocumento(documento);
         setTipo(tipo);
@@ -58,10 +58,20 @@ public class Cliente {
         setPrazoPagamento(prazoPagamento);
     }
 
-    public Integer getIdCliente() { return idCliente; }
-    public void setIdCliente(Integer idCliente) { this.idCliente = idCliente; }
+    public Integer getIdCliente() {
+        return idCliente;
+    }
 
-    public String getNome() { return nome; }
+    public void setIdCliente(Integer idCliente) {
+        if (idCliente != null && idCliente <= 0) {
+            throw new IllegalArgumentException("ID do cliente deve ser positivo.");
+        }
+        this.idCliente = idCliente;
+    }
+
+    public String getNome() {
+        return nome;
+    }
 
     /**
      * Valida nome do cliente.
@@ -73,7 +83,9 @@ public class Cliente {
         this.nome = nome.trim();
     }
 
-    public String getDocumento() { return documento; }
+    public String getDocumento() {
+        return documento;
+    }
 
     /**
      * Remove pontuação e padroniza o documento (CPF/CNPJ).
@@ -84,10 +96,18 @@ public class Cliente {
         }
 
         // Remove tudo que não for número
-        this.documento = documento.replaceAll("[^0-9]", "");
+        String documentoLimpo = documento.replaceAll("[^0-9]", "");
+
+        if (documentoLimpo.isBlank()) {
+            throw new IllegalArgumentException("Documento deve conter apenas números válidos.");
+        }
+
+        this.documento = documentoLimpo;
     }
 
-    public TipoCliente getTipo() { return tipo; }
+    public TipoCliente getTipo() {
+        return tipo;
+    }
 
     public void setTipo(TipoCliente tipo) {
         if (tipo == null) {
@@ -96,7 +116,9 @@ public class Cliente {
         this.tipo = tipo;
     }
 
-    public BigDecimal getLimiteCredito() { return limiteCredito; }
+    public BigDecimal getLimiteCredito() {
+        return limiteCredito;
+    }
 
     /**
      * Regra financeira: valor não pode ser negativo e deve ter 2 casas decimais.
@@ -109,7 +131,9 @@ public class Cliente {
         this.limiteCredito = limiteCredito.setScale(2, RoundingMode.HALF_UP);
     }
 
-    public StatusCliente getStatus() { return status; }
+    public StatusCliente getStatus() {
+        return status;
+    }
 
     public void setStatus(StatusCliente status) {
         if (status == null) {
@@ -118,7 +142,9 @@ public class Cliente {
         this.status = status;
     }
 
-    public PrazoPagamento getPrazoPagamento() { return prazoPagamento; }
+    public PrazoPagamento getPrazoPagamento() {
+        return prazoPagamento;
+    }
 
     /**
      * Regra: cliente deve ter um prazo de pagamento vinculado.
@@ -135,6 +161,10 @@ public class Cliente {
      */
     @Override
     public String toString() {
+        if (nome == null || documento == null) {
+            return "Cliente não definido";
+        }
+
         return nome + " - " + documento;
     }
 }

@@ -5,6 +5,7 @@ import br.com.luis.service.PrazoPagamentoService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 
 /**
@@ -35,9 +36,11 @@ public class PrazoPagamentoController {
     @FXML
     public void salvar(ActionEvent event) {
 
+        Button botaoSalvar = (Button) event.getSource();
+
         try {
             // Evita múltiplos cliques (problema comum em UI)
-            ((javafx.scene.control.Button) event.getSource()).setDisable(true);
+            botaoSalvar.setDisable(true);
 
             String descricao = txtDescricao.getText();
 
@@ -53,7 +56,7 @@ public class PrazoPagamentoController {
             }
 
             // Converte para número
-            int dias = Integer.parseInt(diasTexto);
+            int dias = Integer.parseInt(diasTexto.trim());
 
             // Cria entidade (ativo será garantido no Service)
             PrazoPagamento novoPrazo = new PrazoPagamento(null, descricao.trim(), dias, true);
@@ -92,7 +95,7 @@ public class PrazoPagamentoController {
 
         } finally {
             // Reativa botão
-            ((javafx.scene.control.Button) event.getSource()).setDisable(false);
+            botaoSalvar.setDisable(false);
         }
     }
 

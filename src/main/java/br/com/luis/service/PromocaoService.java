@@ -2,8 +2,10 @@ package br.com.luis.service;
 
 import br.com.luis.dao.PromocaoDAO;
 import br.com.luis.model.Promocao;
+import br.com.luis.model.Produto;
 import br.com.luis.util.ConnectionFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -21,52 +23,206 @@ public class PromocaoService {
     }
 
     /**
-     * RN22: Cadastra uma nova promoção e inativa as antigas ativas do mesmo produto.
-     * Operação Transacional (Tudo ou Nada).
+     * Cadastra uma nova promoção e inativa as promoções antigas ativas do mesmo produto.
+     * Operação transacional: ou tudo é concluído, ou tudo é desfeito.
+     *
+     * @implNote Implementa a RN22 - Nova Promoção
      */
     public void cadastrarPromocaoNova(Promocao promocao) {
 
         // 1. Fail-Fast (Defesa antes de tocar no banco)
-        if (promocao == null || promocao.getProduto() == null || promocao.getProduto().getIdProduto() == null) {
-            throw new IllegalArgumentException("Dados da promoção ou produto inválidos para cadastro.");
-        }
+        validarPromocao(promocao);
 
-        Connection conn = null;
+        // 2. Toda promoção cadastrada por este fluxo deve entrar como ativa
+        promocao.setAtiva(true);
 
-        try {
-            // 2. Abre a conexão e assume o controle manual da transação
-            conn = ConnectionFactory.getConnection();
-            conn.setAutoCommit(false); // Bloqueia o salvamento automático do SQLite
+        try (Connection conn = ConnectionFactory.getConnection()) {
 
-            // 3. Executa as operações em cadeia no DAO passando a MESMA conexão
-            promocaoDAO.inativarPromocoesAnteriores(conn, promocao.getProduto().getIdProduto());
-            promocaoDAO.cadastrar(conn, promocao);
+            try {
+                // 3. Assume o controle manual da transação
+                conn.setAutoCommit(false);
 
-            // 4. Se chegou até aqui sem erros, confirma tudo no banco!
-            conn.commit();
+                // 4. Executa as operações em cadeia no DAO passando a MESMA conexão
+                promocaoDAO.inativarPromocoesAnteriores(conn, promocao.getProduto().getIdProduto());
+                promocaoDAO.cadastrar(conn, promocao);
 
-        } catch (Exception e) {
-            // 5. Deu erro em qualquer etapa? Desfaz TUDO!
-            if (conn != null) {
+                // 5. Se chegou até aqui sem erros, confirma tudo no banco
+                conn.commit();
+
+                System.out.println("[LOG] Promoção cadastrada para o produto ID: "
+                        + promocao.getProduto().getIdProduto());
+
+            } catch (Exception e) {
+
+                // 6. Deu erro em qualquer etapa? Desfaz TUDO
                 try {
                     conn.rollback();
-                } catch (SQLException ex) {
-                    throw new RuntimeException("Erro crítico: Falha ao tentar realizar o rollback da transação.", ex);
+                } catch (SQLException rollbackErro) {
+                    throw new RuntimeException(
+                            "Erro crítico: falha ao tentar realizar o rollback da transação.",
+                            rollbackErro
+                    );
                 }
-            }
-            throw new RuntimeException("Erro ao aplicar a promoção. A operação foi cancelada: " + e.getMessage(), e);
 
-        } finally {
-            // 6. Limpeza obrigatória (Libera o banco para o resto do sistema)
-            if (conn != null) {
+                throw new RuntimeException(
+                        "Erro ao aplicar a promoção. A operação foi cancelada: " + e.getMessage(),
+                        e
+                );
+
+            } finally {
                 try {
-                    conn.setAutoCommit(true); // Devolve para o padrão
-                    conn.close();
+                    conn.setAutoCommit(true);
                 } catch (SQLException e) {
-                    // Apenas loga no console, pois a transação principal já foi resolvida
+                    System.err.println("[ERRO] Não foi possível restaurar o autoCommit da conexão.");
                     e.printStackTrace();
                 }
             }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao abrir conexão para cadastro de promoção.", e);
+        }
+    }
+
+    /**
+     * Inativa a promoção ativa de um produto.
+     * Usado quando o usuário remove a promoção de um produto na tela de cadastro.
+     *
+     * @implNote Validação cadastral da Fase 3:
+     * garante que a remoção de promoção ativa seja feita pela camada Service e com transação.
+     */
+    public void inativarPromocaoAtivaDoProduto(Produto produto) {
+
+        if (produto == null || produto.getIdProduto() == null || produto.getIdProduto() <= 0) {
+            throw new IllegalArgumentException("Produto inválido para inativação da promoção.");
+        }
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+
+            try {
+                conn.setAutoCommit(false);
+
+                promocaoDAO.inativarPromocoesAnteriores(conn, produto.getIdProduto());
+
+                conn.commit();
+
+                System.out.println("[LOG] Promoção ativa inativada para o produto ID: "
+                        + produto.getIdProduto());
+
+            } catch (Exception e) {
+
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackErro) {
+                    throw new RuntimeException(
+                            "Erro crítico: falha ao tentar realizar o rollback da inativação da promoção.",
+                            rollbackErro
+                    );
+                }
+
+                throw new RuntimeException(
+                        "Erro ao inativar promoção ativa do produto. A operação foi cancelada: " + e.getMessage(),
+                        e
+                );
+
+            } finally {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    System.err.println("[ERRO] Não foi possível restaurar o autoCommit da conexão.");
+                    e.printStackTrace();
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao abrir conexão para inativar promoção do produto.", e);
+        }
+    }
+
+    /**
+     * Busca a promoção ativa de um produto.
+     * Método de consulta usado por telas e por futuras regras de venda.
+     */
+    public Promocao buscarPromocaoAtivaPorProduto(Produto produto) {
+
+        if (produto == null || produto.getIdProduto() == null || produto.getIdProduto() <= 0) {
+            throw new IllegalArgumentException("Produto inválido para busca de promoção.");
+        }
+
+        return promocaoDAO.buscarPromocaoAtivaPorProduto(produto);
+    }
+
+    /**
+     * Valida os dados necessários para cadastrar uma promoção.
+     *
+     * @implNote Validação cadastral da Fase 3:
+     * garante tipo, valor e produto válidos antes da aplicação da RN22.
+     */
+    private void validarPromocao(Promocao promocao) {
+
+        if (promocao == null) {
+            throw new IllegalArgumentException("Promoção é obrigatória.");
+        }
+
+        if (promocao.getProduto() == null || promocao.getProduto().getIdProduto() == null) {
+            throw new IllegalArgumentException("Produto inválido para cadastro da promoção.");
+        }
+
+        if (promocao.getProduto().getIdProduto() <= 0) {
+            throw new IllegalArgumentException("ID do produto inválido para cadastro da promoção.");
+        }
+
+        if (promocao.getTipoDesconto() == null) {
+            throw new IllegalArgumentException("Tipo de desconto é obrigatório.");
+        }
+
+        if (promocao.getValorDesconto() == null) {
+            throw new IllegalArgumentException("Valor do desconto é obrigatório.");
+        }
+
+        if (promocao.getValorDesconto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor do desconto deve ser maior que zero.");
+        }
+
+        if (promocao.getTipoDesconto() == Promocao.TipoDesconto.PERCENTUAL) {
+            validarDescontoPercentual(promocao.getValorDesconto());
+        }
+
+        if (promocao.getTipoDesconto() == Promocao.TipoDesconto.VALOR_FIXO) {
+            validarDescontoValorFixo(promocao);
+        }
+    }
+
+    /**
+     * Valida se o desconto percentual está dentro do limite permitido.
+     *
+     * @implNote Validação cadastral da Fase 3:
+     * desconto percentual não pode ser maior que 100%.
+     */
+    private void validarDescontoPercentual(BigDecimal valorDesconto) {
+
+        BigDecimal cemPorCento = new BigDecimal("100.00");
+
+        if (valorDesconto.compareTo(cemPorCento) > 0) {
+            throw new IllegalArgumentException("Desconto percentual não pode ser maior que 100%.");
+        }
+    }
+
+    /**
+     * Valida se o desconto fixo não ultrapassa o preço do produto.
+     *
+     * @implNote Validação cadastral da Fase 3:
+     * desconto em valor fixo não pode ser maior que o preço do produto.
+     */
+    private void validarDescontoValorFixo(Promocao promocao) {
+
+        Produto produto = promocao.getProduto();
+
+        if (produto.getPreco() == null) {
+            throw new IllegalArgumentException("Preço do produto é obrigatório para validar desconto fixo.");
+        }
+
+        if (promocao.getValorDesconto().compareTo(produto.getPreco()) > 0) {
+            throw new IllegalArgumentException("Desconto não pode ser maior que o preço do produto.");
         }
     }
 }

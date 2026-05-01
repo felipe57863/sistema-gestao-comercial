@@ -18,24 +18,17 @@ public class ProdutoService {
     }
 
     /**
-     * Valida regras de negócio e cadastra um novo produto.
+     * Valida regras cadastrais e cadastra um novo produto.
+     *
+     * @implNote Validação cadastral da Fase 3:
+     * garante dados mínimos válidos e define todo novo produto como ativo.
      */
     public void cadastrar(Produto produto) {
 
-        // � FAIL-FAST: defesa contra objeto nulo vindo da UI
-        if (produto == null) {
-            throw new IllegalArgumentException("O produto não pode ser nulo.");
-        }
+        validarProduto(produto);
 
-        // Regra de negócio: todo produto deve iniciar como ATIVO
-        if (produto.getStatus() == null) {
-            produto.setStatus(Produto.StatusProduto.ATIVO);
-        }
-
-        // Regra defensiva adicional (mesmo já validado no Model)
-        if (produto.getPreco() == null) {
-            throw new IllegalArgumentException("O preço do produto é obrigatório.");
-        }
+        // Regra de negócio: todo produto deve iniciar como ativo
+        produto.setAtivo(true);
 
         System.out.println("[LOG] Produto enviado para persistência: " + produto.getDescricao());
 
@@ -54,11 +47,16 @@ public class ProdutoService {
     /**
      * Valida e envia o produto modificado para atualização no banco.
      * Utilizado pelo botão "Editar" da interface.
+     *
+     * @implNote Validação cadastral da Fase 3:
+     * exige produto com ID válido antes de permitir atualização.
      */
     public void atualizar(Produto produto) {
 
-        // FAIL-FAST: defesa contra objeto ou ID nulo
-        if (produto == null || produto.getIdProduto() == null) {
+        validarProduto(produto);
+
+        // FAIL-FAST: defesa contra ID nulo ou inválido
+        if (produto.getIdProduto() == null || produto.getIdProduto() <= 0) {
             throw new IllegalArgumentException("Produto ou ID inválido para edição.");
         }
 
@@ -69,13 +67,15 @@ public class ProdutoService {
     }
 
     /**
-     * Realiza a exclusão lógica do produto (altera o status para INATIVO).
-     * Utilizado pelo botão "Excluir" da interface.
+     * Realiza a exclusão lógica do produto, alterando o campo ativo para false.
+     *
+     * @implNote Regra crítica do Bloco 2:
+     * produto com histórico não deve ser excluído fisicamente, apenas inativado.
      */
     public void inativar(Produto produto) {
 
         // FAIL-FAST
-        if (produto == null || produto.getIdProduto() == null) {
+        if (produto == null || produto.getIdProduto() == null || produto.getIdProduto() <= 0) {
             throw new IllegalArgumentException("Produto inválido para inativação.");
         }
 
@@ -88,7 +88,7 @@ public class ProdutoService {
                 produto.getPreco(),
                 produto.getQuantidadeEstoque(),
                 produto.getEstoqueMinimo(),
-                Produto.StatusProduto.INATIVO
+                false
         );
 
         // Reaproveita o método de atualização
@@ -104,7 +104,7 @@ public class ProdutoService {
 
     /**
      * Retorna apenas produtos ativos.
-     * � Melhor prática: filtrado direto no banco (performance)
+     * Melhor prática: filtrado direto no banco (performance).
      */
     public List<Produto> listarAtivos() {
         return produtoDAO.listarAtivos();
@@ -112,9 +112,50 @@ public class ProdutoService {
 
     /**
      * Retorna produtos com estoque baixo.
-     * Já vem filtrado no banco com status ATIVO.
+     * Já vem filtrado no banco com ativo = 1.
      */
     public List<Produto> listarAbaixoDoMinimo() {
         return produtoDAO.listarAbaixoDoMinimo();
+    }
+
+    /**
+     * Fail-fast: validação básica e reutilizável para cadastro e atualização.
+     *
+     * @implNote Validação cadastral da Fase 3:
+     * garante que os dados mínimos do produto estejam preenchidos antes da persistência.
+     */
+    private void validarProduto(Produto produto) {
+
+        if (produto == null) {
+            throw new IllegalArgumentException("O produto não pode ser nulo.");
+        }
+
+        if (produto.getDescricao() == null || produto.getDescricao().isBlank()) {
+            throw new IllegalArgumentException("A descrição do produto é obrigatória.");
+        }
+
+        if (produto.getPreco() == null) {
+            throw new IllegalArgumentException("O preço do produto é obrigatório.");
+        }
+
+        if (produto.getPreco().signum() < 0) {
+            throw new IllegalArgumentException("O preço do produto não pode ser negativo.");
+        }
+
+        if (produto.getQuantidadeEstoque() == null) {
+            throw new IllegalArgumentException("A quantidade em estoque é obrigatória.");
+        }
+
+        if (produto.getQuantidadeEstoque() < 0) {
+            throw new IllegalArgumentException("Quantidade em estoque não pode ser negativa.");
+        }
+
+        if (produto.getEstoqueMinimo() == null) {
+            throw new IllegalArgumentException("O estoque mínimo é obrigatório.");
+        }
+
+        if (produto.getEstoqueMinimo() < 0) {
+            throw new IllegalArgumentException("Estoque mínimo não pode ser negativo.");
+        }
     }
 }

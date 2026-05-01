@@ -1,6 +1,7 @@
 package br.com.luis.model;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Entidade que representa um Produto no sistema.
@@ -13,7 +14,7 @@ public class Produto {
     private BigDecimal preco;
     private Integer quantidadeEstoque;
     private Integer estoqueMinimo;
-    private StatusProduto status;
+    private boolean ativo; // No banco: 1 (true) / 0 (false)
 
     /**
      * Construtor vazio (necessário para frameworks e reflexão)
@@ -25,23 +26,15 @@ public class Produto {
      * Construtor completo com validação via setters (padrão seguro)
      */
     public Produto(Integer idProduto, String descricao, BigDecimal preco,
-                   Integer quantidadeEstoque, Integer estoqueMinimo, StatusProduto status) {
-
-        this.idProduto = idProduto;
+                   Integer quantidadeEstoque, Integer estoqueMinimo, boolean ativo) {
 
         // Usa setters para reaproveitar validações
+        setIdProduto(idProduto);
         setDescricao(descricao);
         setPreco(preco);
         setQuantidadeEstoque(quantidadeEstoque);
         setEstoqueMinimo(estoqueMinimo);
-        setStatus(status);
-    }
-
-    /**
-     * ENUM para garantir integridade do status
-     */
-    public enum StatusProduto {
-        ATIVO, INATIVO
+        setAtivo(ativo);
     }
 
     // --- GETTERS E SETTERS COM VALIDAÇÃO (FAIL-FAST) ---
@@ -51,6 +44,9 @@ public class Produto {
     }
 
     public void setIdProduto(Integer idProduto) {
+        if (idProduto != null && idProduto <= 0) {
+            throw new IllegalArgumentException("ID do produto deve ser positivo.");
+        }
         this.idProduto = idProduto;
     }
 
@@ -70,10 +66,10 @@ public class Produto {
     }
 
     public void setPreco(BigDecimal preco) {
-        if (preco == null || preco.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("O preço deve ser maior que zero.");
+        if (preco == null || preco.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("O preço não pode ser negativo.");
         }
-        this.preco = preco;
+        this.preco = preco.setScale(2, RoundingMode.HALF_UP);
     }
 
     public Integer getQuantidadeEstoque() {
@@ -98,15 +94,12 @@ public class Produto {
         this.estoqueMinimo = estoqueMinimo;
     }
 
-    public StatusProduto getStatus() {
-        return status;
+    public boolean isAtivo() {
+        return ativo;
     }
 
-    public void setStatus(StatusProduto status) {
-        if (status == null) {
-            throw new IllegalArgumentException("O status do produto é obrigatório.");
-        }
-        this.status = status;
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
     }
 
     /**
@@ -133,6 +126,10 @@ public class Produto {
      */
     @Override
     public String toString() {
+        if (descricao == null || preco == null) {
+            return "Produto não definido";
+        }
+
         return descricao + " - R$ " + preco;
     }
 }

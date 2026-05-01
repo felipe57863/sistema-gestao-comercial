@@ -8,6 +8,7 @@ import br.com.luis.util.ConnectionFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * DAO da entidade Promocao.
@@ -17,18 +18,22 @@ public class PromocaoDAO {
 
     /**
      * Insere uma nova promoção no banco.
-     * Recebe a Connection para participar de uma transação (controle feito no Service).
+     * Recebe a Connection para participar de uma transação controlada pelo Service.
      */
     public void cadastrar(Connection conn, Promocao promocao) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
 
         String sql = """
             INSERT INTO Promocao (tipo_desconto, valor_desconto, ativa, produto_id)
             VALUES (?, ?, ?, ?)
         """;
 
-        try (PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // � Validação defensiva
+            // Validação defensiva
             if (promocao.getProduto() == null || promocao.getProduto().getIdProduto() == null) {
                 throw new IllegalArgumentException("Produto inválido para cadastro da promoção.");
             }
@@ -53,18 +58,22 @@ public class PromocaoDAO {
     }
 
     /**
-     * RN22: Inativa todas as promoções ativas de um produto.
+     * Inativa todas as promoções ativas de um produto.
      * Participa da mesma transação do cadastro.
      */
     public void inativarPromocoesAnteriores(Connection conn, Integer idProduto) {
 
-        if (idProduto == null) {
-            throw new IllegalArgumentException("ID do produto não pode ser nulo.");
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idProduto == null || idProduto <= 0) {
+            throw new IllegalArgumentException("ID do produto inválido.");
         }
 
         String sql = """
-            UPDATE Promocao 
-            SET ativa = 0 
+            UPDATE Promocao
+            SET ativa = 0
             WHERE produto_id = ? AND ativa = 1
         """;
 
@@ -79,8 +88,8 @@ public class PromocaoDAO {
     }
 
     /**
-     * RN02: Busca a promoção ativa de um produto.
-     * Como é apenas uma consulta (leitura), o próprio DAO pode abrir e fechar a conexão.
+     * Busca a promoção ativa de um produto.
+     * Como é apenas uma consulta, o próprio DAO pode abrir e fechar a conexão.
      */
     public Promocao buscarPromocaoAtivaPorProduto(Produto produto) {
 
@@ -89,8 +98,8 @@ public class PromocaoDAO {
         }
 
         String sql = """
-            SELECT id_promocao, tipo_desconto, valor_desconto, ativa 
-            FROM Promocao 
+            SELECT id_promocao, tipo_desconto, valor_desconto, ativa
+            FROM Promocao
             WHERE produto_id = ? AND ativa = 1
             LIMIT 1
         """;

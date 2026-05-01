@@ -1,13 +1,13 @@
 package br.com.luis.dao;
 
 import br.com.luis.model.Produto;
-import br.com.luis.model.Produto.StatusProduto;
 import br.com.luis.util.ConnectionFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,12 +24,12 @@ public class ProdutoDAO {
     public void cadastrar(Produto produto) {
 
         String sql = """
-            INSERT INTO Produto (descricao, preco, quantidade_estoque, estoque_minimo, status)
+            INSERT INTO Produto (descricao, preco, quantidade_estoque, estoque_minimo, ativo)
             VALUES (?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             // Preenchimento dos parâmetros
             stmt.setString(1, produto.getDescricao());
@@ -37,8 +37,8 @@ public class ProdutoDAO {
             stmt.setInt(3, produto.getQuantidadeEstoque());
             stmt.setInt(4, produto.getEstoqueMinimo());
 
-            // Enum → String (SQLite TEXT)
-            stmt.setString(5, produto.getStatus().name());
+            // SQLite não possui BOOLEAN → usamos 1 (true) ou 0 (false)
+            stmt.setInt(5, produto.isAtivo() ? 1 : 0);
 
             stmt.executeUpdate();
 
@@ -60,7 +60,7 @@ public class ProdutoDAO {
     public List<Produto> listarTodos() {
 
         String sql = """
-            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, status
+            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, ativo
             FROM Produto
             ORDER BY descricao COLLATE NOCASE
         """;
@@ -83,15 +83,15 @@ public class ProdutoDAO {
     }
 
     /**
-     * Retorna apenas os produtos com status ATIVO.
+     * Retorna apenas os produtos ativos.
      * Otimizado diretamente no banco de dados.
      */
     public List<Produto> listarAtivos() {
 
         String sql = """
-            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, status
+            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, ativo
             FROM Produto
-            WHERE status = 'ATIVO'
+            WHERE ativo = 1
             ORDER BY descricao COLLATE NOCASE
         """;
 
@@ -114,7 +114,7 @@ public class ProdutoDAO {
 
     /**
      * Atualiza os dados de um produto existente.
-     * Pode ser utilizado tanto para edição quanto para exclusão lógica (status = INATIVO).
+     * Pode ser utilizado tanto para edição quanto para exclusão lógica (ativo = false).
      */
     public void atualizar(Produto produto) {
 
@@ -123,14 +123,13 @@ public class ProdutoDAO {
             throw new IllegalArgumentException("Produto ou ID inválido para atualização.");
         }
 
-        // Defesa adicional: status não pode ser nulo
-        if (produto.getStatus() == null) {
-            throw new IllegalArgumentException("Status do produto é obrigatório.");
-        }
-
         String sql = """
-            UPDATE Produto 
-            SET descricao = ?, preco = ?, quantidade_estoque = ?, estoque_minimo = ?, status = ?
+            UPDATE Produto
+            SET descricao = ?,
+                preco = ?,
+                quantidade_estoque = ?,
+                estoque_minimo = ?,
+                ativo = ?
             WHERE id_produto = ?
         """;
 
@@ -143,8 +142,8 @@ public class ProdutoDAO {
             stmt.setInt(3, produto.getQuantidadeEstoque());
             stmt.setInt(4, produto.getEstoqueMinimo());
 
-            // Conversão Enum → String (SQLite armazena como TEXT)
-            stmt.setString(5, produto.getStatus().name());
+            // SQLite não possui BOOLEAN → usamos 1 (true) ou 0 (false)
+            stmt.setInt(5, produto.isAtivo() ? 1 : 0);
 
             // WHERE id_produto = ?
             stmt.setInt(6, produto.getIdProduto());
@@ -170,13 +169,13 @@ public class ProdutoDAO {
      */
     public List<Produto> buscarPorDescricao(String termo) {
 
-        // � Comportamento padrão: se vazio, retorna tudo
+        // Comportamento padrão: se vazio, retorna tudo
         if (termo == null || termo.trim().isEmpty()) {
             return listarTodos();
         }
 
         String sql = """
-            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, status
+            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, ativo
             FROM Produto
             WHERE LOWER(descricao) LIKE ?
             ORDER BY descricao COLLATE NOCASE
@@ -208,10 +207,10 @@ public class ProdutoDAO {
     public List<Produto> listarAbaixoDoMinimo() {
 
         String sql = """
-            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, status
+            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, ativo
             FROM Produto
-            WHERE quantidade_estoque <= estoque_minimo 
-              AND status = 'ATIVO'
+            WHERE quantidade_estoque <= estoque_minimo
+              AND ativo = 1
             ORDER BY quantidade_estoque ASC
         """;
 
@@ -243,7 +242,10 @@ public class ProdutoDAO {
         produto.setPreco(rs.getBigDecimal("preco"));
         produto.setQuantidadeEstoque(rs.getInt("quantidade_estoque"));
         produto.setEstoqueMinimo(rs.getInt("estoque_minimo"));
-        produto.setStatus(StatusProduto.valueOf(rs.getString("status")));
+
+        // SQLite INTEGER → Java boolean
+        produto.setAtivo(rs.getInt("ativo") == 1);
+
         return produto;
     }
 }

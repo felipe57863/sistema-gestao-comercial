@@ -37,6 +37,9 @@ public class AuthService {
      * Regra:
      * - Se não existir usuário "admin", ele será criado automaticamente.
      * - Se já existir, nenhuma ação é realizada.
+     *
+     * @implNote Seed inicial da Fase 2:
+     * garante que o sistema tenha um usuário ADMIN criado com senha criptografada via BCrypt.
      */
     public void inicializarAdminBase() {
 
@@ -84,6 +87,9 @@ public class AuthService {
      * @param senhaLimpa Senha digitada (texto puro)
      * @return Usuario autenticado
      * @throws RuntimeException se login/senha inválidos ou usuário inativo
+     *
+     * @implNote Regra de segurança da Fase 2:
+     * autentica o usuário usando BCrypt e bloqueia acesso de usuários inativos.
      */
     public Usuario autenticar(String login, String senhaLimpa) {
 
@@ -92,8 +98,10 @@ public class AuthService {
             throw new IllegalArgumentException("Login e senha são obrigatórios.");
         }
 
+        String loginNormalizado = login.trim();
+
         // Busca usuário no banco
-        Usuario usuario = usuarioDAO.buscarPorLogin(login);
+        Usuario usuario = usuarioDAO.buscarPorLogin(loginNormalizado);
 
         // Evita informar se foi login ou senha que falhou (segurança)
         if (usuario == null) {
@@ -101,14 +109,21 @@ public class AuthService {
         }
 
         // Valida senha utilizando BCrypt
-        boolean senhaValida = BCrypt.checkpw(senhaLimpa, usuario.getSenha());
+        boolean senhaValida;
+
+        try {
+            senhaValida = BCrypt.checkpw(senhaLimpa, usuario.getSenha());
+        } catch (IllegalArgumentException e) {
+            System.err.println("[ERRO] Hash de senha inválido para o usuário: " + usuario.getLogin());
+            throw new RuntimeException("Usuário ou senha inválidos.");
+        }
 
         if (!senhaValida) {
             throw new RuntimeException("Usuário ou senha inválidos.");
         }
 
         // Verifica se o usuário está ativo
-        if (!usuario.getStatus().equalsIgnoreCase("ATIVO")) {
+        if (!"ATIVO".equalsIgnoreCase(usuario.getStatus())) {
             throw new RuntimeException("Usuário inativo. Contate o administrador.");
         }
 

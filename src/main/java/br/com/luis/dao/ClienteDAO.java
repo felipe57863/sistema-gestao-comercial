@@ -7,6 +7,7 @@ import br.com.luis.util.ConnectionFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,10 +22,14 @@ public class ClienteDAO {
      */
     public void cadastrar(Cliente cliente) {
 
-        String sql = "INSERT INTO Cliente (nome, documento, tipo_cliente, limite_credito, status, prazo_pagamento_id) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = """
+            INSERT INTO Cliente
+            (nome, documento, tipo_cliente, limite_credito, status, prazo_pagamento_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """;
 
         try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, cliente.getNome());
             stmt.setString(2, cliente.getDocumento());
@@ -58,8 +63,10 @@ public class ClienteDAO {
 
         } catch (SQLException e) {
 
+            String mensagemErro = e.getMessage();
+
             // Tratamento de duplicidade (UNIQUE)
-            if (e.getMessage().contains("UNIQUE")) {
+            if (mensagemErro != null && mensagemErro.contains("UNIQUE")) {
                 throw new RuntimeException("Já existe um cliente com esse documento.");
             }
 
@@ -117,12 +124,21 @@ public class ClienteDAO {
         return clientes;
     }
 
+    /**
+     * Atualiza os dados de um cliente existente.
+     */
     public void atualizar(Cliente cliente) {
+
         String sql = """
-        UPDATE Cliente
-        SET nome = ?, documento = ?, tipo_cliente = ?, limite_credito = ?, status = ?, prazo_pagamento_id = ?
-        WHERE id_cliente = ?
-    """;
+            UPDATE Cliente
+            SET nome = ?,
+                documento = ?,
+                tipo_cliente = ?,
+                limite_credito = ?,
+                status = ?,
+                prazo_pagamento_id = ?
+            WHERE id_cliente = ?
+        """;
 
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -132,16 +148,33 @@ public class ClienteDAO {
             stmt.setString(3, cliente.getTipo().name());
             stmt.setBigDecimal(4, cliente.getLimiteCredito());
             stmt.setString(5, cliente.getStatus().name());
+
+            // Validação defensiva da FK
+            if (cliente.getPrazoPagamento() == null || cliente.getPrazoPagamento().getIdPrazo() == null) {
+                throw new IllegalArgumentException("Prazo de pagamento inválido.");
+            }
+
             stmt.setInt(6, cliente.getPrazoPagamento().getIdPrazo());
             stmt.setInt(7, cliente.getIdCliente());
 
-            stmt.executeUpdate();
+            int linhasAfetadas = stmt.executeUpdate();
+
+            if (linhasAfetadas == 0) {
+                throw new RuntimeException("Nenhum cliente encontrado para atualização.");
+            }
+
+            // Log
+            System.out.println("[LOG] Cliente atualizado: " + cliente.getNome());
 
         } catch (SQLException e) {
+
+            String mensagemErro = e.getMessage();
+
             // Tratamento de duplicidade (UNIQUE) na edição
-            if (e.getMessage().contains("UNIQUE")) {
+            if (mensagemErro != null && mensagemErro.contains("UNIQUE")) {
                 throw new RuntimeException("Já existe outro cliente cadastrado com esse documento.");
             }
+
             throw new RuntimeException("Erro ao atualizar cliente.", e);
         }
     }

@@ -17,7 +17,7 @@ public class PrazoPagamento {
 
     // Construtor completo com validação
     public PrazoPagamento(Integer idPrazo, String descricao, Integer quantidadeDias, boolean ativo) {
-        this.idPrazo = idPrazo;
+        setIdPrazo(idPrazo);
         setDescricao(descricao);
         setQuantidadeDias(quantidadeDias);
         setAtivo(ativo);
@@ -28,6 +28,9 @@ public class PrazoPagamento {
     }
 
     public void setIdPrazo(Integer idPrazo) {
+        if (idPrazo != null && idPrazo <= 0) {
+            throw new IllegalArgumentException("ID do prazo deve ser positivo.");
+        }
         this.idPrazo = idPrazo;
     }
 
@@ -66,9 +69,14 @@ public class PrazoPagamento {
      */
     @Override
     public String toString() {
+        if (descricao == null || quantidadeDias == null) {
+            return "Prazo de pagamento não definido";
+        }
+
         if (quantidadeDias == 0) {
             return descricao + " (À vista)";
         }
+
         return descricao + " (" + quantidadeDias + " dias)";
     }
 }
