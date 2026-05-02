@@ -108,6 +108,7 @@
             </VBox>
 
             <HBox spacing="10">
+                <Button fx:id="btnNovo" onAction="#novo" prefWidth="100" text="Novo" />
                 <Button fx:id="btnSalvar" onAction="#salvar" prefWidth="100" text="Salvar" />
                 <Button onAction="#cancelar" prefWidth="100" text="Cancelar" />
                 <Button onAction="#limpar" prefWidth="100" text="Limpar" />

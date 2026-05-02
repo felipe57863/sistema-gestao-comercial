@@ -47,8 +47,8 @@ public class ClienteController {
     @FXML private ComboBox<PrazoPagamento> cbPrazoPagamento;
 
     // --- BOTÕES ---
+    @FXML private Button btnNovo;
     @FXML private Button btnSalvar;
-
     // --- TABELA ---
     @FXML private TextField txtBusca;
     @FXML private TableView<Cliente> tabelaClientes;
@@ -412,7 +412,8 @@ public class ClienteController {
                     "Sucesso",
                     "Operação realizada com sucesso!");
 
-            limpar();
+            limparCamposFormulario();
+            voltarModoCadastro();
 
         } catch (NumberFormatException e) {
 
@@ -490,10 +491,45 @@ public class ClienteController {
     }
 
     /**
-     * Limpa o formulário.
+     * Limpa apenas os campos do formulário.
+     * Não remove seleção da tabela e não sai do modo edição.
      */
     @FXML
     public void limpar() {
+        limparCamposFormulario();
+
+        if (clienteSelecionado != null) {
+            btnSalvar.setText("Atualizar");
+        }
+    }
+
+    /**
+     * Prepara a tela para cadastrar um novo cliente.
+     */
+    @FXML
+    public void novo() {
+        limparCamposFormulario();
+        voltarModoCadastro();
+
+        System.out.println("[LOG] Novo cadastro de cliente iniciado.");
+    }
+
+    /**
+     * Cancela a operação atual e volta ao modo cadastro.
+     */
+    @FXML
+    public void cancelar() {
+        limparCamposFormulario();
+        voltarModoCadastro();
+
+        System.out.println("[LOG] Cadastro cancelado pelo usuário.");
+    }
+
+    /**
+     * Limpa somente os campos visuais do formulário.
+     * Não altera clienteSelecionado e não mexe na seleção da tabela.
+     */
+    private void limparCamposFormulario() {
 
         txtNome.clear();
         txtDocumento.clear();
@@ -502,26 +538,27 @@ public class ClienteController {
         cbPrazoPagamento.getSelectionModel().clearSelection();
 
         rbFisica.setSelected(true);
+        rbJuridica.setSelected(false);
+
         rbAtivo.setSelected(true);
+        rbBloqueado.setSelected(false);
+
         atualizarPromptDocumento();
-
-        // Limpa seleção e volta para modo cadastro
-        this.clienteSelecionado = null;
-        tabelaClientes.getSelectionModel().clearSelection();
-
-        // UX: volta o botão para modo cadastro
-        btnSalvar.setText("Salvar");
 
         txtNome.requestFocus();
     }
 
     /**
-     * Ação de cancelar.
+     * Volta a tela para modo cadastro.
+     * Remove seleção, limpa clienteSelecionado e restaura o botão Salvar.
      */
-    @FXML
-    public void cancelar() {
-        limpar();
-        System.out.println("[LOG] Cadastro cancelado pelo usuário.");
+    private void voltarModoCadastro() {
+
+        this.clienteSelecionado = null;
+
+        tabelaClientes.getSelectionModel().clearSelection();
+
+        btnSalvar.setText("Salvar");
     }
 
     /**
