@@ -47,21 +47,20 @@ public class ProdutoController implements Initializable {
     @FXML private RadioButton rbPercentual;
     @FXML private RadioButton rbFixo;
     @FXML private TextField txtValorDesconto;
-    @FXML private ComboBox<String> cbStatusPromocao;
+    @FXML private Label lblStatusPromocao;
     @FXML private Label lblPrefixoDesconto;
     @FXML private Label lblSufixoDesconto;
 
     private ToggleGroup tgTipoDesconto;
 
-    // Botões Formulário
+    // Botões
     @FXML private Button btnSalvar;
     @FXML private Button btnCancelar;
     @FXML private Button btnLimpar;
-
-    // MAPEAMENTO DO FXML (Direita: Lista)
-
     @FXML private Button btnNovo;
     @FXML private Button btnExcluir;
+
+    // MAPEAMENTO DO FXML (Direita: Lista)
 
     @FXML private TextField txtBusca;
     @FXML private Button btnFiltrar;
@@ -112,11 +111,10 @@ public class ProdutoController implements Initializable {
         rbFixo.setToggleGroup(tgTipoDesconto);
         rbPercentual.setSelected(true);
 
-        // A RN22 sempre cadastra nova promoção como ativa
-        cbStatusPromocao.setItems(FXCollections.observableArrayList("Ativa"));
-        cbStatusPromocao.setValue("Ativa");
-        cbStatusPromocao.setDisable(true);
+        // Status informativo da promoção
+        lblStatusPromocao.setText("Sem promoção");
 
+        // Permite filtrar pressionando Enter no campo de busca
         txtBusca.setOnAction(event -> acaoFiltrar());
 
         atualizarUnidadeDesconto();
@@ -129,10 +127,13 @@ public class ProdutoController implements Initializable {
         chkPromocao.selectedProperty().addListener((obs, antigo, novo) -> {
             travarCamposPromocao(!novo);
 
-            if (!novo) {
+            if (novo) {
+                lblStatusPromocao.setText("Ativa");
+            } else {
                 txtValorDesconto.clear();
                 rbPercentual.setSelected(true);
                 atualizarUnidadeDesconto();
+                lblStatusPromocao.setText("Sem promoção");
             }
         });
 
@@ -155,9 +156,6 @@ public class ProdutoController implements Initializable {
         txtValorDesconto.setDisable(travar);
         lblPrefixoDesconto.setDisable(travar);
         lblSufixoDesconto.setDisable(travar);
-
-        // A promoção nova sempre entra ativa pelo PromocaoService
-        cbStatusPromocao.setDisable(true);
     }
 
     private void atualizarUnidadeDesconto() {
@@ -561,7 +559,7 @@ public class ProdutoController implements Initializable {
                     formatarValorDescontoParaCampo(promocaoAtivaProdutoSelecionado)
             );
 
-            cbStatusPromocao.setValue("Ativa");
+            lblStatusPromocao.setText("Ativa");
 
         } catch (RuntimeException e) {
             System.err.println("[ERRO] Falha ao carregar promoção ativa do produto.");
@@ -606,7 +604,7 @@ public class ProdutoController implements Initializable {
         chkPromocao.setSelected(false);
         rbPercentual.setSelected(true);
         txtValorDesconto.clear();
-        cbStatusPromocao.setValue("Ativa");
+        lblStatusPromocao.setText("Sem promoção");
         atualizarUnidadeDesconto();
         travarCamposPromocao(true);
     }

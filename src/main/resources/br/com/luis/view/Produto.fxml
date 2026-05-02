@@ -174,12 +174,12 @@
                                             </children>
                                         </HBox>
 
-                                        <Label text="Status da Promoção:*" GridPane.rowIndex="2" />
-                                        <ComboBox fx:id="cbStatusPromocao"
-                                                  prefWidth="150.0"
-                                                  promptText="Ativa"
-                                                  GridPane.columnIndex="1"
-                                                  GridPane.rowIndex="2" />
+                                        <Label text="Status da Promoção:" GridPane.rowIndex="2" />
+                                        <Label fx:id="lblStatusPromocao"
+                                               text="Sem promoção"
+                                               textFill="#555555"
+                                               GridPane.columnIndex="1"
+                                               GridPane.rowIndex="2" />
                                     </children>
                                 </GridPane>
                             </children>
