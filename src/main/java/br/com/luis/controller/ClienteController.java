@@ -46,6 +46,9 @@ public class ClienteController {
 
     @FXML private ComboBox<PrazoPagamento> cbPrazoPagamento;
 
+    // --- BOTÕES ---
+    @FXML private Button btnSalvar;
+
     // --- TABELA ---
     @FXML private TextField txtBusca;
     @FXML private TableView<Cliente> tabelaClientes;
@@ -82,6 +85,7 @@ public class ClienteController {
         carregarPrazosPagamento();
         atualizarTabela();
 
+        btnSalvar.setText("Salvar");
         txtNome.requestFocus();
     }
 
@@ -277,6 +281,7 @@ public class ClienteController {
                 (observable, oldValue, newValue) -> {
                     if (newValue != null) {
                         preencherFormulario(newValue);
+                        btnSalvar.setText("Atualizar");
                     }
                 }
         );
@@ -500,10 +505,14 @@ public class ClienteController {
         rbAtivo.setSelected(true);
         atualizarPromptDocumento();
 
-        txtNome.requestFocus();
-
+        // Limpa seleção e volta para modo cadastro
         this.clienteSelecionado = null;
         tabelaClientes.getSelectionModel().clearSelection();
+
+        // UX: volta o botão para modo cadastro
+        btnSalvar.setText("Salvar");
+
+        txtNome.requestFocus();
     }
 
     /**
