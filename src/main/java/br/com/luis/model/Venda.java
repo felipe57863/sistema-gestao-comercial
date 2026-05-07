@@ -2,6 +2,8 @@ package br.com.luis.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Entidade que representa uma venda no sistema.
@@ -23,6 +25,13 @@ public class Venda {
     private Integer clienteId;
 
     /**
+     * Lista de itens vinculados à venda.
+     *
+     * Cada item representa um produto adicionado ao carrinho/venda.
+     */
+    private List<ItemVenda> itens;
+
+    /**
      * Construtor padrão.
      *
      * Importante para facilitar criação manual, uso em DAOs
@@ -33,6 +42,7 @@ public class Venda {
         this.valorTotal = BigDecimal.ZERO;
         this.valorDescontoGlobal = BigDecimal.ZERO;
         this.status = "ABERTA";
+        this.itens = new ArrayList<>();
     }
 
     /**
@@ -44,6 +54,63 @@ public class Venda {
     public Venda(Integer usuarioId) {
         this();
         this.usuarioId = usuarioId;
+    }
+
+    /**
+     * Adiciona um item à venda e recalcula o valor total.
+     *
+     * Nesta fase, este método apenas manipula a lista em memória.
+     * Validação de estoque e aplicação de promoção serão feitas
+     * posteriormente na camada Service.
+     *
+     * @param item item que será adicionado à venda.
+     */
+    public void adicionarItem(ItemVenda item) {
+        if (item == null) {
+            return;
+        }
+
+        this.itens.add(item);
+        recalcularTotal();
+    }
+
+    /**
+     * Remove um item da venda e recalcula o valor total.
+     *
+     * Nesta fase, este método apenas manipula a lista em memória.
+     *
+     * @param item item que será removido da venda.
+     */
+    public void removerItem(ItemVenda item) {
+        if (item == null) {
+            return;
+        }
+
+        this.itens.remove(item);
+        recalcularTotal();
+    }
+
+    /**
+     * Recalcula o valor total da venda com base nos subtotais dos itens.
+     *
+     * Neste momento, o cálculo considera apenas os subtotais já existentes
+     * em cada ItemVenda.
+     *
+     * A regra de desconto global será implementada somente no Passo 4.3.
+     *
+     * @return valor total recalculado da venda.
+     */
+    public BigDecimal recalcularTotal() {
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (ItemVenda item : this.itens) {
+            if (item.getSubtotal() != null) {
+                total = total.add(item.getSubtotal());
+            }
+        }
+
+        this.valorTotal = total;
+        return this.valorTotal;
     }
 
     public Integer getIdVenda() {
@@ -83,7 +150,7 @@ public class Venda {
     }
 
     public void setValorTotal(BigDecimal valorTotal) {
-        this.valorTotal = valorTotal;
+        this.valorTotal = valorTotal != null ? valorTotal : BigDecimal.ZERO;
     }
 
     public BigDecimal getValorDescontoGlobal() {
@@ -91,7 +158,7 @@ public class Venda {
     }
 
     public void setValorDescontoGlobal(BigDecimal valorDescontoGlobal) {
-        this.valorDescontoGlobal = valorDescontoGlobal;
+        this.valorDescontoGlobal = valorDescontoGlobal != null ? valorDescontoGlobal : BigDecimal.ZERO;
     }
 
     public String getStatus() {
@@ -118,6 +185,15 @@ public class Venda {
         this.clienteId = clienteId;
     }
 
+    public List<ItemVenda> getItens() {
+        return itens;
+    }
+
+    public void setItens(List<ItemVenda> itens) {
+        this.itens = itens != null ? itens : new ArrayList<>();
+        recalcularTotal();
+    }
+
     @Override
     public String toString() {
         return "Venda{" +
@@ -130,6 +206,7 @@ public class Venda {
                 ", status='" + status + '\'' +
                 ", usuarioId=" + usuarioId +
                 ", clienteId=" + clienteId +
+                ", itens=" + itens +
                 '}';
     }
 }
