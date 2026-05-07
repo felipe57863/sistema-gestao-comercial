@@ -24,7 +24,8 @@ public class DatabaseBuilder {
             "database/script_prazo_pagamento.sql",
             "database/script_cliente.sql",
             "database/script_produto.sql",
-            "database/script_promocao.sql"
+            "database/script_promocao.sql",
+            "database/script_venda.sql"
     );
 
     /**
