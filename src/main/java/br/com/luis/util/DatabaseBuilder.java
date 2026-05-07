@@ -25,7 +25,8 @@ public class DatabaseBuilder {
             "database/script_cliente.sql",
             "database/script_produto.sql",
             "database/script_promocao.sql",
-            "database/script_venda.sql"
+            "database/script_venda.sql",
+            "database/script_item_venda.sql"
     );
 
     /**
