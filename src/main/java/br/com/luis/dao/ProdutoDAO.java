@@ -232,6 +232,38 @@ public class ProdutoDAO {
     }
 
     /**
+     * Busca um produto pelo ID.
+     *
+     * Retorna null caso nenhum produto seja encontrado.
+     * A validação de existência deve ser tratada na camada Service.
+     */
+    public Produto buscarPorId(Integer idProduto) {
+
+        String sql = """
+        SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, ativo
+        FROM Produto
+        WHERE id_produto = ?
+    """;
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idProduto);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapearProduto(rs);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar produto por ID.", e);
+        }
+
+        return null;
+    }
+
+    /**
      * Método utilitário para mapear ResultSet → Produto.
      * Evita duplicação de código e centraliza conversões.
      */

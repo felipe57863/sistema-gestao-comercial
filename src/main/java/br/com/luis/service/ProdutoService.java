@@ -119,6 +119,27 @@ public class ProdutoService {
     }
 
     /**
+     * Busca um produto pelo ID informado.
+     *
+     * @implNote Apoio à Fase 4 - Motor de Vendas:
+     * permite localizar um produto específico para uso no carrinho de vendas.
+     */
+    public Produto buscarPorId(Integer idProduto) {
+
+        if (idProduto == null || idProduto <= 0) {
+            throw new IllegalArgumentException("ID do produto inválido.");
+        }
+
+        Produto produto = produtoDAO.buscarPorId(idProduto);
+
+        if (produto == null) {
+            throw new IllegalArgumentException("Produto não encontrado.");
+        }
+
+        return produto;
+    }
+
+    /**
      * Fail-fast: validação básica e reutilizável para cadastro e atualização.
      *
      * @implNote Validação cadastral da Fase 3:
