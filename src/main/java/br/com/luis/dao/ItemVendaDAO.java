@@ -34,10 +34,11 @@ public class ItemVendaDAO {
                     quantidade,
                     preco_unitario,
                     desconto_promocional,
+                    desconto_global,
                     subtotal,
                     produto_id,
                     venda_id
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conn = ConnectionFactory.getConnection();
@@ -46,9 +47,10 @@ public class ItemVendaDAO {
             stmt.setInt(1, itemVenda.getQuantidade());
             stmt.setBigDecimal(2, itemVenda.getPrecoUnitario());
             stmt.setBigDecimal(3, itemVenda.getDescontoPromocional());
-            stmt.setBigDecimal(4, itemVenda.getSubtotal());
-            stmt.setInt(5, itemVenda.getProdutoId());
-            stmt.setInt(6, itemVenda.getVendaId());
+            stmt.setBigDecimal(4, itemVenda.getDescontoGlobal());
+            stmt.setBigDecimal(5, itemVenda.getSubtotal());
+            stmt.setInt(6, itemVenda.getProdutoId());
+            stmt.setInt(7, itemVenda.getVendaId());
 
             stmt.executeUpdate();
 

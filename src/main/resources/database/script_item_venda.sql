@@ -17,11 +17,20 @@ CREATE TABLE IF NOT EXISTS ItemVenda (
 
     -- Desconto promocional aplicado ao item.
     -- Caso não exista promoção, o valor padrão será 0.
+    -- Produtos com desconto promocional não devem receber
+    -- desconto global no Passo 4.3.
     desconto_promocional REAL NOT NULL DEFAULT 0,
+
+    -- Desconto global aplicado ao item.
+    -- Representa a parte do desconto global da venda atribuída
+    -- especificamente a este item.
+    -- Caso não exista desconto global, o valor padrão será 0.
+    -- Este desconto só poderá ser aplicado em itens sem promoção.
+    desconto_global REAL NOT NULL DEFAULT 0,
 
     -- Subtotal do item.
     -- Representa:
-    -- quantidade * preco_unitario - desconto_promocional
+    -- quantidade * preco_unitario - desconto_promocional - desconto_global
     -- O cálculo será feito na entidade/serviço, não no banco.
     subtotal REAL NOT NULL,
 
