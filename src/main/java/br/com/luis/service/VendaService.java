@@ -28,8 +28,10 @@ public class VendaService {
     /**
      * Adiciona um produto ao carrinho da venda.
      *
-     * O método valida se o produto existe, está ativo, possui estoque suficiente
-     * e aplica automaticamente uma promoção ativa, se houver.
+     * Se o produto ainda não existir no carrinho, cria um novo ItemVenda.
+     * Se o produto já existir, soma a nova quantidade à quantidade existente,
+     * valida o estoque com base na quantidade total acumulada e recalcula
+     * subtotal e total.
      *
      * Importante:
      * nesta fase, o estoque NÃO é baixado. Apenas validamos se existe estoque
@@ -52,7 +54,81 @@ public class VendaService {
 
         validarProdutoParaVenda(produto);
         validarQuantidade(quantidade);
+
+        Promocao promocaoAtiva = promocaoService.buscarPromocaoAtivaPorProduto(produto);
+
+        ItemVenda itemExistente = buscarItemPorProduto(venda, produto.getIdProduto());
+
+        if (itemExistente != null) {
+            atualizarItemExistente(itemExistente, produto, promocaoAtiva, quantidade);
+            venda.recalcularTotal();
+            return;
+        }
+
         validarEstoque(produto, quantidade);
+
+        ItemVenda novoItem = criarNovoItem(produto, promocaoAtiva, quantidade);
+
+        venda.adicionarItem(novoItem);
+    }
+
+    /**
+     * Busca no carrinho um item que já represente o produto informado.
+     *
+     * @implNote Apoia a regra do carrinho da Fase 4.2:
+     * produtos repetidos devem ter suas quantidades somadas.
+     */
+    private ItemVenda buscarItemPorProduto(Venda venda, Integer idProduto) {
+
+        for (ItemVenda item : venda.getItens()) {
+            if (item.getProdutoId() != null && item.getProdutoId().equals(idProduto)) {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Atualiza um item já existente no carrinho, somando a nova quantidade,
+     * validando o estoque acumulado e recalculando desconto e subtotal.
+     *
+     * @implNote Implementa a RN01 - Não permitir venda sem estoque.
+     * @implNote Implementa a RN02 - Aplicação automática de promoção.
+     */
+    private void atualizarItemExistente(
+            ItemVenda itemExistente,
+            Produto produto,
+            Promocao promocaoAtiva,
+            Integer quantidadeNova
+    ) {
+
+        Integer quantidadeTotal = itemExistente.getQuantidade() + quantidadeNova;
+
+        validarEstoque(produto, quantidadeTotal);
+
+        itemExistente.setQuantidade(quantidadeTotal);
+
+        BigDecimal descontoPromocional = calcularDescontoPromocional(
+                itemExistente.getPrecoUnitario(),
+                promocaoAtiva,
+                quantidadeTotal
+        );
+
+        itemExistente.setDescontoPromocional(descontoPromocional);
+        itemExistente.calcularSubtotal();
+    }
+
+    /**
+     * Cria um novo item de venda para produto que ainda não existe no carrinho.
+     *
+     * @implNote Implementa a RN02 - Aplicação automática de promoção.
+     */
+    private ItemVenda criarNovoItem(
+            Produto produto,
+            Promocao promocaoAtiva,
+            Integer quantidade
+    ) {
 
         ItemVenda item = new ItemVenda(
                 produto.getIdProduto(),
@@ -60,16 +136,16 @@ public class VendaService {
                 produto.getPreco()
         );
 
-        Promocao promocaoAtiva = promocaoService.buscarPromocaoAtivaPorProduto(produto);
+        BigDecimal descontoPromocional = calcularDescontoPromocional(
+                produto.getPreco(),
+                promocaoAtiva,
+                quantidade
+        );
 
-        if (promocaoAtiva != null) {
-            BigDecimal descontoPromocional = calcularDescontoPromocional(produto, promocaoAtiva, quantidade);
-            item.setDescontoPromocional(descontoPromocional);
-        }
-
+        item.setDescontoPromocional(descontoPromocional);
         item.calcularSubtotal();
 
-        venda.adicionarItem(item);
+        return item;
     }
 
     /**
@@ -139,16 +215,22 @@ public class VendaService {
      * Para desconto de valor fixo, considera o desconto por unidade
      * multiplicado pela quantidade.
      *
+     * Caso não exista promoção ativa, retorna zero.
+     *
      * @implNote Implementa a RN02 - Aplicação automática de promoção.
      */
     private BigDecimal calcularDescontoPromocional(
-            Produto produto,
+            BigDecimal precoUnitario,
             Promocao promocao,
             Integer quantidade
     ) {
 
+        if (promocao == null) {
+            return BigDecimal.ZERO;
+        }
+
         BigDecimal quantidadeBigDecimal = BigDecimal.valueOf(quantidade);
-        BigDecimal valorBruto = produto.getPreco().multiply(quantidadeBigDecimal);
+        BigDecimal valorBruto = precoUnitario.multiply(quantidadeBigDecimal);
 
         BigDecimal desconto;
 
