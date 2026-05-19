@@ -3,10 +3,13 @@ package br.com.luis.service;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
+import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.Venda;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Camada de Serviço responsável pelas regras de negócio da venda.
@@ -16,6 +19,9 @@ import java.math.RoundingMode;
  * serão tratados em etapas futuras.
  */
 public class VendaService {
+
+    private static final int ESCALA_MONETARIA = 2;
+    private static final BigDecimal CEM = new BigDecimal("100");
 
     private final ProdutoService produtoService;
     private final PromocaoService promocaoService;
@@ -70,6 +76,278 @@ public class VendaService {
         ItemVenda novoItem = criarNovoItem(produto, promocaoAtiva, quantidade);
 
         venda.adicionarItem(novoItem);
+    }
+
+    /**
+     * Aplica desconto global sobre os itens elegíveis da venda.
+     *
+     * Itens com desconto promocional não recebem desconto global.
+     * O desconto é distribuído proporcionalmente entre os itens sem promoção.
+     *
+     * Antes de aplicar um novo desconto global, qualquer desconto global anterior
+     * é removido para evitar acúmulo indevido.
+     *
+     * @implNote Implementa a RN03/RN04 - Desconto global aplicado apenas sobre itens sem promoção.
+     *
+     * @param venda venda em memória que receberá o desconto global.
+     * @param tipoDescontoGlobal tipo do desconto: PERCENTUAL ou VALOR_FIXO.
+     * @param valorDesconto valor percentual ou valor fixo do desconto.
+     */
+    public void aplicarDescontoGlobal(
+            Venda venda,
+            TipoDescontoGlobal tipoDescontoGlobal,
+            BigDecimal valorDesconto
+    ) {
+
+        validarDadosBasicosDescontoGlobal(venda, tipoDescontoGlobal, valorDesconto);
+
+        limparDescontoGlobal(venda);
+
+        List<ItemVenda> itensElegiveis = listarItensElegiveisParaDescontoGlobal(venda);
+
+        if (itensElegiveis.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "[RN04] Desconto global não pode ser aplicado em itens promocionais."
+            );
+        }
+
+        BigDecimal baseElegivel = calcularBaseElegivel(itensElegiveis);
+
+        if (baseElegivel.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("[RN04] Base elegível para desconto global é inválida.");
+        }
+
+        BigDecimal valorDescontoGlobal = calcularValorDescontoGlobal(
+                tipoDescontoGlobal,
+                valorDesconto,
+                baseElegivel
+        );
+
+        distribuirDescontoGlobalProporcionalmente(
+                itensElegiveis,
+                baseElegivel,
+                valorDescontoGlobal
+        );
+
+        venda.setValorDescontoGlobal(valorDescontoGlobal);
+        venda.recalcularTotal();
+    }
+
+    /**
+     * Limpa qualquer desconto global já aplicado na venda.
+     *
+     * Essa limpeza evita que o desconto seja acumulado indevidamente quando
+     * o usuário aplica outro desconto global no mesmo carrinho.
+     *
+     * @implNote Implementa o fluxo obrigatório da RN03/RN04 - Recalcular desconto global do zero.
+     */
+    private void limparDescontoGlobal(Venda venda) {
+
+        for (ItemVenda item : venda.getItens()) {
+            item.setDescontoGlobal(BigDecimal.ZERO);
+            item.calcularSubtotal();
+        }
+
+        venda.setValorDescontoGlobal(BigDecimal.ZERO);
+        venda.recalcularTotal();
+    }
+
+    /**
+     * Valida os dados básicos necessários para aplicar desconto global.
+     *
+     * @implNote Implementa validações da RN03/RN04 - Desconto global.
+     */
+    private void validarDadosBasicosDescontoGlobal(
+            Venda venda,
+            TipoDescontoGlobal tipoDescontoGlobal,
+            BigDecimal valorDesconto
+    ) {
+
+        if (venda == null) {
+            throw new IllegalArgumentException("[RN03] Venda inválida para aplicar desconto global.");
+        }
+
+        if (venda.getItens() == null || venda.getItens().isEmpty()) {
+            throw new IllegalArgumentException("[RN03] Venda não possui itens para aplicar desconto global.");
+        }
+
+        if (tipoDescontoGlobal == null) {
+            throw new IllegalArgumentException("[RN03] Tipo de desconto global é obrigatório.");
+        }
+
+        if (valorDesconto == null) {
+            throw new IllegalArgumentException("[RN03] Valor do desconto global é obrigatório.");
+        }
+
+        if (valorDesconto.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("[RN04] Desconto global não pode ser negativo.");
+        }
+
+        if (tipoDescontoGlobal == TipoDescontoGlobal.PERCENTUAL
+                && valorDesconto.compareTo(CEM) > 0) {
+            throw new IllegalArgumentException("[RN04] Desconto percentual não pode ser maior que 100%.");
+        }
+    }
+
+    /**
+     * Retorna apenas os itens que podem receber desconto global.
+     *
+     * Um item é considerado promocional quando possui descontoPromocional maior que zero.
+     *
+     * @implNote Implementa a RN04 - Itens promocionais não recebem desconto global.
+     */
+    private List<ItemVenda> listarItensElegiveisParaDescontoGlobal(Venda venda) {
+
+        List<ItemVenda> itensElegiveis = new ArrayList<>();
+
+        for (ItemVenda item : venda.getItens()) {
+            if (!itemPossuiPromocao(item)) {
+                itensElegiveis.add(item);
+            }
+        }
+
+        return itensElegiveis;
+    }
+
+    /**
+     * Verifica se o item possui desconto promocional.
+     *
+     * @implNote Implementa o critério da RN04 - descontoPromocional > 0 identifica item promocional.
+     */
+    private boolean itemPossuiPromocao(ItemVenda item) {
+
+        return item.getDescontoPromocional() != null
+                && item.getDescontoPromocional().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    /**
+     * Calcula a base elegível para desconto global.
+     *
+     * A base é formada pela soma do valor bruto dos itens sem promoção:
+     * quantidade * preço unitário.
+     *
+     * @implNote Implementa a RN04 - Base elegível considera apenas itens sem promoção.
+     */
+    private BigDecimal calcularBaseElegivel(List<ItemVenda> itensElegiveis) {
+
+        BigDecimal baseElegivel = BigDecimal.ZERO;
+
+        for (ItemVenda item : itensElegiveis) {
+            baseElegivel = baseElegivel.add(calcularValorBrutoItem(item));
+        }
+
+        return baseElegivel.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calcula o valor bruto de um item.
+     *
+     * Fórmula:
+     * valorBruto = quantidade * precoUnitario
+     *
+     * @implNote Apoia a RN04 - Cálculo da base elegível do desconto global.
+     */
+    private BigDecimal calcularValorBrutoItem(ItemVenda item) {
+
+        Integer quantidade = item.getQuantidade() != null ? item.getQuantidade() : 0;
+        BigDecimal precoUnitario = item.getPrecoUnitario() != null
+                ? item.getPrecoUnitario()
+                : BigDecimal.ZERO;
+
+        return precoUnitario
+                .multiply(BigDecimal.valueOf(quantidade))
+                .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calcula o valor monetário total do desconto global.
+     *
+     * Para percentual, calcula sobre a base elegível.
+     * Para valor fixo, valida se o desconto não ultrapassa a base elegível.
+     *
+     * @implNote Implementa a RN03/RN04 - Cálculo do desconto global.
+     */
+    private BigDecimal calcularValorDescontoGlobal(
+            TipoDescontoGlobal tipoDescontoGlobal,
+            BigDecimal valorDesconto,
+            BigDecimal baseElegivel
+    ) {
+
+        return switch (tipoDescontoGlobal) {
+            case PERCENTUAL -> baseElegivel
+                    .multiply(valorDesconto)
+                    .divide(CEM, ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+            case VALOR_FIXO -> calcularDescontoGlobalFixo(valorDesconto, baseElegivel);
+        };
+    }
+
+    /**
+     * Valida e retorna o desconto global de valor fixo.
+     *
+     * @implNote Implementa a RN04 - Desconto global fixo não pode ser maior que a base elegível.
+     */
+    private BigDecimal calcularDescontoGlobalFixo(
+            BigDecimal valorDesconto,
+            BigDecimal baseElegivel
+    ) {
+
+        BigDecimal desconto = valorDesconto.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        if (desconto.compareTo(baseElegivel) > 0) {
+            throw new IllegalArgumentException("[RN04] Desconto global maior que a base elegível.");
+        }
+
+        return desconto;
+    }
+
+    /**
+     * Distribui o desconto global proporcionalmente entre os itens elegíveis.
+     *
+     * A diferença de centavos causada por arredondamento é aplicada no último
+     * item elegível para garantir que a soma dos descontos por item seja
+     * exatamente igual ao desconto global total da venda.
+     *
+     * @implNote Implementa a RN04 - Distribuição proporcional do desconto global.
+     */
+    private void distribuirDescontoGlobalProporcionalmente(
+            List<ItemVenda> itensElegiveis,
+            BigDecimal baseElegivel,
+            BigDecimal valorDescontoGlobal
+    ) {
+
+        BigDecimal totalDistribuido = BigDecimal.ZERO;
+
+        for (int i = 0; i < itensElegiveis.size(); i++) {
+            ItemVenda item = itensElegiveis.get(i);
+
+            BigDecimal descontoDoItem;
+
+            boolean ultimoItemElegivel = i == itensElegiveis.size() - 1;
+
+            if (ultimoItemElegivel) {
+                descontoDoItem = valorDescontoGlobal
+                        .subtract(totalDistribuido)
+                        .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+            } else {
+                BigDecimal valorBrutoItem = calcularValorBrutoItem(item);
+
+                BigDecimal proporcao = valorBrutoItem.divide(
+                        baseElegivel,
+                        10,
+                        RoundingMode.HALF_UP
+                );
+
+                descontoDoItem = valorDescontoGlobal
+                        .multiply(proporcao)
+                        .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+                totalDistribuido = totalDistribuido.add(descontoDoItem);
+            }
+
+            item.setDescontoGlobal(descontoDoItem);
+            item.calcularSubtotal();
+        }
     }
 
     /**
@@ -237,7 +515,7 @@ public class VendaService {
         if (promocao.getTipoDesconto() == Promocao.TipoDesconto.PERCENTUAL) {
             desconto = valorBruto
                     .multiply(promocao.getValorDesconto())
-                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                    .divide(CEM, ESCALA_MONETARIA, RoundingMode.HALF_UP);
         } else if (promocao.getTipoDesconto() == Promocao.TipoDesconto.VALOR_FIXO) {
             desconto = promocao.getValorDesconto().multiply(quantidadeBigDecimal);
         } else {
@@ -248,6 +526,6 @@ public class VendaService {
             return valorBruto;
         }
 
-        return desconto.setScale(2, RoundingMode.HALF_UP);
+        return desconto.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
     }
 }
