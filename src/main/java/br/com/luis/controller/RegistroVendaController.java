@@ -3,6 +3,7 @@ package br.com.luis.controller;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
 import br.com.luis.model.Venda;
+import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.viewmodel.ItemCarrinhoView;
@@ -114,6 +115,7 @@ public class RegistroVendaController {
         configurarCabecalho();
         configurarSpinnerQuantidade();
         configurarTabela();
+        configurarCamposDescontoGlobal();
         atualizarTabelaCarrinho();
         atualizarResumoVenda();
     }
@@ -447,6 +449,130 @@ public class RegistroVendaController {
             exibirErro("Não foi possível limpar a venda.");
             System.err.println("[ERRO] Falha inesperada ao limpar venda.");
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Configura o comportamento visual dos campos de desconto global.
+     *
+     * Quando "Valor R$" estiver selecionado, habilita apenas o campo de valor.
+     * Quando "Percentual %" estiver selecionado, habilita apenas o campo percentual.
+     */
+    private void configurarCamposDescontoGlobal() {
+
+        txtDescontoValor.setDisable(true);
+        txtDescontoPercentual.setDisable(true);
+
+        rbDescontoValor.selectedProperty().addListener((observable, valorAntigo, selecionado) -> {
+            if (selecionado) {
+                txtDescontoValor.setDisable(false);
+                txtDescontoPercentual.setDisable(true);
+            }
+        });
+
+        rbDescontoPercentual.selectedProperty().addListener((observable, valorAntigo, selecionado) -> {
+            if (selecionado) {
+                txtDescontoPercentual.setDisable(false);
+                txtDescontoValor.setDisable(true);
+            }
+        });
+    }
+
+    /**
+     * Evento do botão Aplicar Desconto.
+     *
+     * O Controller apenas identifica o tipo de desconto, lê o valor informado,
+     * chama o VendaService e atualiza a interface.
+     *
+     * Não calcula desconto global, não salva venda, não baixa estoque
+     * e não executa financeiro.
+     */
+    @FXML
+    private void onAplicarDesconto() {
+
+        try {
+            TipoDescontoGlobal tipoDescontoGlobal = obterTipoDescontoGlobalSelecionado();
+            BigDecimal valorDesconto = obterValorDescontoInformado(tipoDescontoGlobal);
+
+            vendaService.aplicarDescontoGlobal(
+                    vendaAtual,
+                    tipoDescontoGlobal,
+                    valorDesconto
+            );
+
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+
+        } catch (IllegalArgumentException e) {
+            exibirErro(e.getMessage());
+
+        } catch (RuntimeException e) {
+            exibirErro("Não foi possível aplicar o desconto.");
+            System.err.println("[ERRO] Falha inesperada ao aplicar desconto global.");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Identifica qual tipo de desconto global foi selecionado na tela.
+     */
+    private TipoDescontoGlobal obterTipoDescontoGlobalSelecionado() {
+
+        if (rbDescontoValor.isSelected()) {
+            return TipoDescontoGlobal.VALOR_FIXO;
+        }
+
+        if (rbDescontoPercentual.isSelected()) {
+            return TipoDescontoGlobal.PERCENTUAL;
+        }
+
+        throw new IllegalArgumentException("Selecione o tipo de desconto.");
+    }
+
+    /**
+     * Obtém o valor de desconto informado de acordo com o tipo selecionado.
+     */
+    private BigDecimal obterValorDescontoInformado(TipoDescontoGlobal tipoDescontoGlobal) {
+
+        String textoValor;
+
+        if (tipoDescontoGlobal == TipoDescontoGlobal.VALOR_FIXO) {
+            textoValor = txtDescontoValor.getText();
+        } else {
+            textoValor = txtDescontoPercentual.getText();
+        }
+
+        return converterTextoParaBigDecimal(textoValor);
+    }
+
+    /**
+     * Converte texto digitado na tela para BigDecimal.
+     *
+     * Aceita vírgula decimal brasileira.
+     * Exemplo:
+     * "10,50" vira "10.50".
+     */
+    private BigDecimal converterTextoParaBigDecimal(String textoValor) {
+
+        if (textoValor == null || textoValor.isBlank()) {
+            throw new IllegalArgumentException("Informe o valor do desconto.");
+        }
+
+        String textoNormalizado = textoValor
+                .trim()
+                .replace(",", ".");
+
+        try {
+            BigDecimal valor = new BigDecimal(textoNormalizado);
+
+            if (valor.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("O desconto não pode ser negativo.");
+            }
+
+            return valor;
+
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Informe um valor de desconto válido.");
         }
     }
 }

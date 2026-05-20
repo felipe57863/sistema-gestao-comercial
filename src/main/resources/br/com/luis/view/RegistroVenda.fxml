@@ -156,7 +156,8 @@
                     <HBox alignment="CENTER">
                         <Button fx:id="btnAplicarDesconto"
                                 text="Aplicar Desconto"
-                                prefWidth="190"/>
+                                prefWidth="190"
+                                onAction="#onAplicarDesconto"/>
                     </HBox>
                 </VBox>
 
