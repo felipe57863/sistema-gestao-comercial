@@ -113,7 +113,8 @@
                     <HBox spacing="12" alignment="CENTER_RIGHT">
                         <Button fx:id="btnRemoverProduto"
                                 text="Remover Produto"
-                                prefWidth="180"/>
+                                prefWidth="180"
+                                onAction="#onRemoverProduto"/>
 
                         <Button fx:id="btnLimparVenda"
                                 text="Limpar Venda"

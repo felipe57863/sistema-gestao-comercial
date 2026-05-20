@@ -380,4 +380,43 @@ public class RegistroVendaController {
         alert.setContentText(mensagem);
         alert.showAndWait();
     }
+
+    /**
+     * Evento do botão Remover Produto.
+     *
+     * Remove do carrinho o item selecionado na TableView.
+     *
+     * O Controller apenas identifica o item selecionado, chama o VendaService
+     * e atualiza a interface.
+     *
+     * Não salva venda, não baixa estoque e não executa financeiro.
+     */
+    @FXML
+    private void onRemoverProduto() {
+
+        try {
+            ItemCarrinhoView itemSelecionado = tblItensVenda
+                    .getSelectionModel()
+                    .getSelectedItem();
+
+            if (itemSelecionado == null) {
+                throw new IllegalArgumentException("Selecione um produto para remover.");
+            }
+
+            ItemVenda itemVenda = itemSelecionado.getItemVenda();
+
+            vendaService.removerItemDoCarrinho(vendaAtual, itemVenda);
+
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+
+        } catch (IllegalArgumentException e) {
+            exibirErro(e.getMessage());
+
+        } catch (RuntimeException e) {
+            exibirErro("Não foi possível remover o produto do carrinho.");
+            System.err.println("[ERRO] Falha inesperada ao remover produto do carrinho.");
+            e.printStackTrace();
+        }
+    }
 }
