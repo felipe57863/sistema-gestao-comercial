@@ -84,7 +84,8 @@
 
                         <Button fx:id="btnAdicionarProduto"
                                 text="Adicionar"
-                                prefWidth="120"/>
+                                prefWidth="120"
+                                onAction="#onAdicionarProduto"/>
                     </HBox>
 
                     <TableView fx:id="tblItensVenda"

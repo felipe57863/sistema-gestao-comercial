@@ -18,6 +18,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.Alert;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -264,5 +265,119 @@ public class RegistroVendaController {
         }
 
         return "Não";
+    }
+
+    /**
+     * Evento do botão Adicionar Produto.
+     *
+     * Nesta primeira versão da tela, o campo txtBuscaProduto é tratado
+     * temporariamente como ID do produto.
+     *
+     * O Controller apenas captura os dados da tela, chama o VendaService
+     * e atualiza a interface.
+     *
+     * Não salva venda, não baixa estoque e não executa financeiro.
+     */
+    @FXML
+    private void onAdicionarProduto() {
+
+        try {
+            Integer idProduto = obterIdProdutoInformado();
+            Integer quantidade = obterQuantidadeInformada();
+
+            vendaService.adicionarItemAoCarrinho(vendaAtual, idProduto, quantidade);
+
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+            limparCamposProduto();
+
+        } catch (IllegalArgumentException e) {
+            exibirErro(e.getMessage());
+
+        } catch (RuntimeException e) {
+            exibirErro("Não foi possível adicionar o produto ao carrinho.");
+            System.err.println("[ERRO] Falha inesperada ao adicionar produto ao carrinho.");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Obtém e valida o ID do produto informado na tela.
+     *
+     * Nesta fase, txtBuscaProduto representa temporariamente o ID do produto.
+     */
+    private Integer obterIdProdutoInformado() {
+
+        String textoProduto = txtBuscaProduto.getText();
+
+        if (textoProduto == null || textoProduto.isBlank()) {
+            throw new IllegalArgumentException("Informe o ID do produto.");
+        }
+
+        try {
+            Integer idProduto = Integer.parseInt(textoProduto.trim());
+
+            if (idProduto <= 0) {
+                throw new IllegalArgumentException("O ID do produto deve ser maior que zero.");
+            }
+
+            return idProduto;
+
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("O ID do produto deve ser um número válido.");
+        }
+    }
+
+    /**
+     * Obtém e valida a quantidade informada no Spinner.
+     *
+     * Como o Spinner é editável, o valor digitado manualmente também é tratado.
+     */
+    private Integer obterQuantidadeInformada() {
+
+        String textoQuantidade = spnQuantidadeProduto.getEditor().getText();
+
+        if (textoQuantidade == null || textoQuantidade.isBlank()) {
+            throw new IllegalArgumentException("Informe uma quantidade válida.");
+        }
+
+        try {
+            Integer quantidade = Integer.parseInt(textoQuantidade.trim());
+
+            if (quantidade <= 0) {
+                throw new IllegalArgumentException("A quantidade deve ser maior que zero.");
+            }
+
+            spnQuantidadeProduto.getValueFactory().setValue(quantidade);
+
+            return quantidade;
+
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("A quantidade deve ser um número válido.");
+        }
+    }
+
+    /**
+     * Limpa os campos da área de produto após adicionar item ao carrinho.
+     */
+    private void limparCamposProduto() {
+        txtBuscaProduto.clear();
+
+        if (spnQuantidadeProduto.getValueFactory() != null) {
+            spnQuantidadeProduto.getValueFactory().setValue(1);
+        }
+
+        txtBuscaProduto.requestFocus();
+    }
+
+    /**
+     * Exibe uma mensagem de erro amigável para o usuário.
+     */
+    private void exibirErro(String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Erro");
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.showAndWait();
     }
 }
