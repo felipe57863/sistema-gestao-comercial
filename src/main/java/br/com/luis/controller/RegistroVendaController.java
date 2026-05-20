@@ -419,4 +419,34 @@ public class RegistroVendaController {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Evento do botão Limpar Venda.
+     *
+     * Limpa todos os itens do carrinho em memória.
+     *
+     * O Controller apenas solicita a limpeza ao VendaService
+     * e atualiza a interface.
+     *
+     * Não salva venda, não baixa estoque e não executa financeiro.
+     */
+    @FXML
+    private void onLimparVenda() {
+
+        try {
+            vendaService.limparCarrinho(vendaAtual);
+
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+            limparCamposProduto();
+
+        } catch (IllegalArgumentException e) {
+            exibirErro(e.getMessage());
+
+        } catch (RuntimeException e) {
+            exibirErro("Não foi possível limpar a venda.");
+            System.err.println("[ERRO] Falha inesperada ao limpar venda.");
+            e.printStackTrace();
+        }
+    }
 }

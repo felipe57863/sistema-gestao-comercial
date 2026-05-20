@@ -118,7 +118,8 @@
 
                         <Button fx:id="btnLimparVenda"
                                 text="Limpar Venda"
-                                prefWidth="160"/>
+                                prefWidth="160"
+                                onAction="#onLimparVenda"/>
                     </HBox>
                 </VBox>
 
