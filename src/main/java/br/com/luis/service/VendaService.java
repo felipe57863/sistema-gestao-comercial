@@ -43,8 +43,12 @@ public class VendaService {
      * nesta fase, o estoque NÃO é baixado. Apenas validamos se existe estoque
      * suficiente para permitir a inclusão no carrinho.
      *
+     * Sempre que o carrinho é alterado, o desconto global anterior é limpo,
+     * pois a base elegível do desconto pode mudar.
+     *
      * @implNote Implementa a RN01 - Não permitir venda sem estoque.
      * @implNote Implementa a RN02 - Aplicação automática de promoção.
+     * @implNote Apoia a RN03/RN04 - Recalcular desconto global quando o carrinho muda.
      *
      * @param venda venda em memória que receberá o item.
      * @param idProduto ID do produto que será adicionado.
@@ -66,12 +70,20 @@ public class VendaService {
         ItemVenda itemExistente = buscarItemPorProduto(venda, produto.getIdProduto());
 
         if (itemExistente != null) {
+            Integer quantidadeTotal = itemExistente.getQuantidade() + quantidade;
+
+            validarEstoque(produto, quantidadeTotal);
+
+            limparDescontoGlobal(venda);
+
             atualizarItemExistente(itemExistente, produto, promocaoAtiva, quantidade);
             venda.recalcularTotal();
             return;
         }
 
         validarEstoque(produto, quantidade);
+
+        limparDescontoGlobal(venda);
 
         ItemVenda novoItem = criarNovoItem(produto, promocaoAtiva, quantidade);
 
@@ -130,6 +142,65 @@ public class VendaService {
         );
 
         venda.setValorDescontoGlobal(valorDescontoGlobal);
+        venda.recalcularTotal();
+    }
+
+    /**
+     * Remove um item do carrinho da venda.
+     *
+     * Após remover o item, qualquer desconto global aplicado anteriormente
+     * é limpo, pois a base elegível do desconto pode ter sido alterada.
+     *
+     * @implNote Apoia a RN03/RN04 - Recalcular desconto global quando o carrinho muda.
+     *
+     * @param venda venda em memória.
+     * @param itemVenda item que será removido do carrinho.
+     */
+    public void removerItemDoCarrinho(Venda venda, ItemVenda itemVenda) {
+
+        if (venda == null) {
+            throw new IllegalArgumentException("Venda inválida para remover item.");
+        }
+
+        if (itemVenda == null) {
+            throw new IllegalArgumentException("Item inválido para remoção.");
+        }
+
+        if (venda.getItens() == null || venda.getItens().isEmpty()) {
+            throw new IllegalArgumentException("Venda não possui itens para remover.");
+        }
+
+        if (!venda.getItens().contains(itemVenda)) {
+            throw new IllegalArgumentException("Item não encontrado no carrinho.");
+        }
+
+        venda.removerItem(itemVenda);
+
+        limparDescontoGlobal(venda);
+        venda.recalcularTotal();
+    }
+
+    /**
+     * Limpa todos os itens do carrinho da venda.
+     *
+     * Também remove qualquer desconto global aplicado e recalcula o total
+     * da venda para o estado inicial.
+     *
+     * @implNote Apoia a RN03/RN04 - Limpeza do carrinho e do desconto global.
+     *
+     * @param venda venda em memória que será limpa.
+     */
+    public void limparCarrinho(Venda venda) {
+
+        if (venda == null) {
+            throw new IllegalArgumentException("Venda inválida para limpar carrinho.");
+        }
+
+        if (venda.getItens() != null) {
+            venda.getItens().clear();
+        }
+
+        venda.setValorDescontoGlobal(BigDecimal.ZERO);
         venda.recalcularTotal();
     }
 
