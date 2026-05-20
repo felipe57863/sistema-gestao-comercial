@@ -53,6 +53,12 @@
                         prefWidth="160.0"
                         text="Produtos" />
 
+                <Button fx:id="btnVendas"
+                        onAction="#abrirVendas"
+                        prefHeight="45.0"
+                        prefWidth="160.0"
+                        text="Registro de Venda" />
+
                 <Button fx:id="btnSair"
                         onAction="#sair"
                         prefHeight="45.0"

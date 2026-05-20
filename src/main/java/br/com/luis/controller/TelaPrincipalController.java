@@ -57,6 +57,19 @@ public class TelaPrincipalController {
     }
 
     /**
+     * Abre a tela de registro de venda.
+     *
+     * Esta navegação é temporária para testes da Fase 4.
+     * A tela de venda representa apenas o carrinho em memória.
+     *
+     * Não finaliza venda, não baixa estoque e não executa financeiro.
+     */
+    @FXML
+    public void abrirVendas() {
+        abrirTela("/br/com/luis/view/RegistroVenda.fxml", "Registro de Venda");
+    }
+
+    /**
      * Encerra a aplicação.
      */
     @FXML
