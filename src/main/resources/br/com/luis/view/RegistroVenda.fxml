@@ -5,7 +5,8 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml"
             fx:controller="br.com.luis.controller.RegistroVendaController"
             prefWidth="1180"
             prefHeight="720"
@@ -70,10 +71,10 @@
                     </padding>
 
                     <HBox spacing="10" alignment="CENTER_LEFT">
-                        <Label text="Buscar produto (nome ou código):"/>
+                        <Label text="Buscar produto (ID):"/>
 
                         <TextField fx:id="txtBuscaProduto"
-                                   promptText="Digite o nome ou código"
+                                   promptText="Digite o ID do produto"
                                    prefWidth="280"/>
 
                         <Label text="Qtd:"/>
@@ -210,7 +211,8 @@
 
                         <Button fx:id="btnSelecionarCliente"
                                 text="Selecionar"
-                                prefWidth="110"/>
+                                prefWidth="110"
+                                onAction="#onSelecionarCliente"/>
                     </HBox>
 
                     <GridPane hgap="10" vgap="12">
