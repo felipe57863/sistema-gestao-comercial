@@ -2,15 +2,15 @@ package br.com.luis.controller;
 
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
-import br.com.luis.model.Venda;
 import br.com.luis.model.TipoDescontoGlobal;
+import br.com.luis.model.Venda;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.viewmodel.ItemCarrinhoView;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.Spinner;
@@ -18,8 +18,8 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.control.Alert;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -28,12 +28,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
- * Controller inicial da tela Registro de Venda.
+ * Controller da tela Registro de Venda.
  *
- * Nesta etapa, a classe prepara a estrutura necessária para a futura ligação
- * com o RegistroVenda.fxml, mas ainda não executa ações de venda.
- *
- * A tela representa apenas o carrinho em memória.
+ * Nesta fase, a tela representa apenas o carrinho em memória.
  *
  * Não implementa:
  * - finalização da venda;
@@ -53,13 +50,11 @@ public class RegistroVendaController {
 
     private Venda vendaAtual;
 
-    @FXML private Label lblTituloTela;
     @FXML private Label lblUsuarioLogado;
     @FXML private Label lblDataHora;
 
     @FXML private TextField txtBuscaProduto;
     @FXML private Spinner<Integer> spnQuantidadeProduto;
-    @FXML private Button btnAdicionarProduto;
 
     @FXML private TableView<ItemCarrinhoView> tblItensVenda;
     @FXML private TableColumn<ItemCarrinhoView, String> colProduto;
@@ -68,11 +63,7 @@ public class RegistroVendaController {
     @FXML private TableColumn<ItemCarrinhoView, Integer> colQuantidade;
     @FXML private TableColumn<ItemCarrinhoView, String> colSubtotal;
 
-    @FXML private Button btnRemoverProduto;
-    @FXML private Button btnLimparVenda;
-
     @FXML private TextField txtBuscaCliente;
-    @FXML private Button btnSelecionarCliente;
     @FXML private Label lblNomeCliente;
     @FXML private Label lblStatusCliente;
     @FXML private Label lblLimiteDisponivel;
@@ -85,13 +76,12 @@ public class RegistroVendaController {
     @FXML private RadioButton rbDescontoPercentual;
     @FXML private TextField txtDescontoValor;
     @FXML private TextField txtDescontoPercentual;
-    @FXML private Button btnAplicarDesconto;
 
     @FXML private RadioButton rbVendaAVista;
     @FXML private RadioButton rbVendaAPrazo;
 
-    @FXML private Button btnFinalizarVenda;
-    @FXML private Button btnCancelarVenda;
+    @FXML private ToggleGroup tgTipoDescontoGlobal;
+    @FXML private ToggleGroup tgTipoVenda;
 
     /**
      * Construtor do Controller.
@@ -106,8 +96,6 @@ public class RegistroVendaController {
 
     /**
      * Inicialização automática do JavaFX após o carregamento do FXML.
-     *
-     * Este método será executado apenas quando o FXML for ligado a este Controller.
      */
     @FXML
     public void initialize() {
@@ -441,6 +429,7 @@ public class RegistroVendaController {
             atualizarTabelaCarrinho();
             atualizarResumoVenda();
             limparCamposProduto();
+            limparCamposDescontoGlobal();
 
         } catch (IllegalArgumentException e) {
             exibirErro(e.getMessage());
@@ -574,5 +563,84 @@ public class RegistroVendaController {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Informe um valor de desconto válido.");
         }
+    }
+
+    /**
+     * Evento do botão Cancelar Venda.
+     *
+     * Nesta fase, a venda ainda não é persistida no banco.
+     * Portanto, cancelar significa descartar a venda em memória atual
+     * e retornar a tela ao estado inicial.
+     *
+     * Não salva venda, não baixa estoque, não gera financeiro
+     * e não executa estorno.
+     */
+    @FXML
+    private void onCancelarVenda() {
+
+        try {
+            inicializarVenda();
+
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+
+            limparCamposProduto();
+            limparCamposDescontoGlobal();
+            limparSelecaoTipoVenda();
+            limparAreaCliente();
+
+        } catch (RuntimeException e) {
+            exibirErro("Não foi possível cancelar a venda.");
+            System.err.println("[ERRO] Falha inesperada ao cancelar venda.");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Limpa os campos da área de desconto global e retorna os campos
+     * ao estado inicial.
+     */
+    private void limparCamposDescontoGlobal() {
+
+        txtDescontoValor.clear();
+        txtDescontoPercentual.clear();
+
+        if (tgTipoDescontoGlobal != null) {
+            tgTipoDescontoGlobal.selectToggle(null);
+        } else {
+            rbDescontoValor.setSelected(false);
+            rbDescontoPercentual.setSelected(false);
+        }
+
+        txtDescontoValor.setDisable(true);
+        txtDescontoPercentual.setDisable(true);
+    }
+
+    /**
+     * Limpa a seleção do tipo de venda.
+     *
+     * Nesta fase, o tipo de venda é apenas visual/preparatório.
+     */
+    private void limparSelecaoTipoVenda() {
+
+        if (tgTipoVenda != null) {
+            tgTipoVenda.selectToggle(null);
+        } else {
+            rbVendaAVista.setSelected(false);
+            rbVendaAPrazo.setSelected(false);
+        }
+    }
+
+    /**
+     * Limpa a área visual de cliente.
+     *
+     * Nesta fase, cliente ainda não possui regra completa de venda a prazo.
+     */
+    private void limparAreaCliente() {
+
+        txtBuscaCliente.clear();
+        lblNomeCliente.setText("-");
+        lblStatusCliente.setText("-");
+        lblLimiteDisponivel.setText("R$ 0,00");
     }
 }

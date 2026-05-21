@@ -312,7 +312,8 @@
                     text="Cancelar"
                     prefWidth="150"
                     prefHeight="44"
-                    style="-fx-font-size: 16px;"/>
+                    style="-fx-font-size: 16px;"
+                    onAction="#onCancelarVenda"/>
         </HBox>
     </bottom>
 
