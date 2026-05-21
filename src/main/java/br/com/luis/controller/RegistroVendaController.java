@@ -655,15 +655,35 @@ public class RegistroVendaController {
      */
     @FXML
     private void onFinalizarVenda() {
-        exibirInformacao("A finalização da venda será implementada na Fase 5.");
+        exibirInformacao(
+                "Finalização de Venda",
+                "A finalização da venda será implementada na Fase 5."
+        );
+    }
+
+    /**
+     * Evento do botão Selecionar Cliente.
+     *
+     * Nesta fase, a seleção real de cliente ainda não será implementada.
+     * A área de cliente permanece apenas visual/preparatória para a Fase 5.
+     *
+     * Não busca cliente no banco, não valida limite, não valida prazo
+     * e não executa regras financeiras.
+     */
+    @FXML
+    private void onSelecionarCliente() {
+        exibirInformacao(
+                "Seleção de Cliente",
+                "A seleção de cliente será implementada na Fase 5."
+        );
     }
 
     /**
      * Exibe uma mensagem informativa amigável para o usuário.
      */
-    private void exibirInformacao(String mensagem) {
+    private void exibirInformacao(String titulo, String mensagem) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Finalização de Venda");
+        alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.setContentText(mensagem);
         alert.showAndWait();
