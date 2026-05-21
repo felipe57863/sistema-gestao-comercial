@@ -306,7 +306,8 @@
                     text="Finalizar Venda"
                     prefWidth="230"
                     prefHeight="44"
-                    style="-fx-font-size: 18px;"/>
+                    style="-fx-font-size: 18px;"
+                    onAction="#onFinalizarVenda"/>
 
             <Button fx:id="btnCancelarVenda"
                     text="Cancelar"

@@ -643,4 +643,29 @@ public class RegistroVendaController {
         lblStatusCliente.setText("-");
         lblLimiteDisponivel.setText("R$ 0,00");
     }
+
+    /**
+     * Evento do botão Finalizar Venda.
+     *
+     * Nesta fase, a venda ainda não deve ser finalizada.
+     * Este botão existe apenas para indicar o fluxo futuro da Fase 5.
+     *
+     * Não salva venda, não baixa estoque, não abre pagamento,
+     * não gera financeiro e não persiste dados no banco.
+     */
+    @FXML
+    private void onFinalizarVenda() {
+        exibirInformacao("A finalização da venda será implementada na Fase 5.");
+    }
+
+    /**
+     * Exibe uma mensagem informativa amigável para o usuário.
+     */
+    private void exibirInformacao(String mensagem) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Finalização de Venda");
+        alert.setHeaderText(null);
+        alert.setContentText(mensagem);
+        alert.showAndWait();
+    }
 }
