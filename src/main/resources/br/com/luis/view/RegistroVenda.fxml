@@ -1,50 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane xmlns="http://javafx.com/javafx/17"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="br.com.luis.controller.RegistroVendaController"
-            prefWidth="1180"
-            prefHeight="720"
-            style="-fx-background-color: #f5f5f5;">
+<BorderPane prefHeight="720" prefWidth="1180" style="-fx-background-color: #f5f5f5;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml" fx:controller="br.com.luis.controller.RegistroVendaController">
 
     <!-- =========================================================
          CABEÇALHO
          ========================================================= -->
     <top>
         <VBox spacing="0">
-            <HBox alignment="CENTER"
-                  prefHeight="48"
-                  style="-fx-border-color: #666666; -fx-border-width: 0 0 1 0; -fx-background-color: #eeeeee;">
+            <HBox alignment="CENTER" prefHeight="48" style="-fx-border-color: #666666; -fx-border-width: 0 0 1 0; -fx-background-color: #eeeeee;">
                 <Label text="Sistema de Gestão Comercial">
                     <font>
-                        <Font size="20"/>
+                        <Font size="20" />
                     </font>
                 </Label>
             </HBox>
 
-            <HBox alignment="CENTER_LEFT"
-                  prefHeight="58"
-                  spacing="20"
-                  style="-fx-border-color: #666666; -fx-border-width: 0 0 1 0; -fx-background-color: white;">
+            <HBox alignment="CENTER_LEFT" prefHeight="58" spacing="20" style="-fx-border-color: #666666; -fx-border-width: 0 0 1 0; -fx-background-color: white;">
                 <padding>
-                    <Insets top="0" right="24" bottom="0" left="24"/>
+                    <Insets bottom="0" left="24" right="24" top="0" />
                 </padding>
 
                 <Label fx:id="lblTituloTela" text="Registro de Venda">
                     <font>
-                        <Font size="20"/>
+                        <Font size="20" />
                     </font>
                 </Label>
 
-                <Region HBox.hgrow="ALWAYS"/>
+                <Region HBox.hgrow="ALWAYS" />
 
-                <Label fx:id="lblUsuarioLogado" text="Usuário: Vendedor |"/>
-                <Label fx:id="lblDataHora" text="12/04/2024 15:45"/>
+                <Label fx:id="lblUsuarioLogado" text="Usuário: Vendedor |" />
+                <Label fx:id="lblDataHora" text="12/04/2024 15:45" />
             </HBox>
         </VBox>
     </top>
@@ -55,7 +58,7 @@
     <center>
         <HBox spacing="20">
             <padding>
-                <Insets top="18" right="18" bottom="18" left="18"/>
+                <Insets bottom="18" left="18" right="18" top="18" />
             </padding>
 
             <!-- =================================================
@@ -64,124 +67,83 @@
             <VBox spacing="16" HBox.hgrow="ALWAYS">
 
                 <!-- Área de busca/adicionar produto -->
-                <VBox spacing="12"
-                      style="-fx-border-color: #777777; -fx-border-width: 1; -fx-background-color: white;">
+                <VBox spacing="12" style="-fx-border-color: #777777; -fx-border-width: 1; -fx-background-color: white;">
                     <padding>
-                        <Insets top="12" right="12" bottom="12" left="12"/>
+                        <Insets bottom="12" left="12" right="12" top="12" />
                     </padding>
 
-                    <HBox spacing="10" alignment="CENTER_LEFT">
-                        <Label text="Buscar produto:"/>
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label text="Buscar produto:" />
 
-                        <TextField fx:id="txtBuscaProduto"
-                                   promptText="Digite ID ou descrição do produto"
-                                   prefWidth="280"/>
-
-                        <Label text="Qtd:"/>
-
-                        <Spinner fx:id="spnQuantidadeProduto"
-                                 editable="true"
-                                 prefWidth="90"/>
-
-                        <Button fx:id="btnAdicionarProduto"
-                                text="Adicionar"
-                                prefWidth="120"
-                                onAction="#onAdicionarProduto"/>
+                        <TextField fx:id="txtBuscaProduto" prefHeight="25.0" prefWidth="480.0" promptText="Digite ID ou descrição do produto" />
+                        
+                        <Button fx:id="btnAdicionarProduto" onAction="#onAdicionarProduto" prefWidth="120" text="Adicionar" />
                     </HBox>
 
-                    <TableView fx:id="tblItensVenda"
-                               prefHeight="260"
-                               VBox.vgrow="ALWAYS">
+                    <TableView fx:id="tblItensVenda" prefHeight="260" VBox.vgrow="ALWAYS">
                         <columns>
-                            <TableColumn fx:id="colProduto"
-                                         text="Produto"
-                                         prefWidth="230"/>
-                            <TableColumn fx:id="colPreco"
-                                         text="Preço"
-                                         prefWidth="120"/>
-                            <TableColumn fx:id="colPromocao"
-                                         text="Promoção"
-                                         prefWidth="150"/>
-                            <TableColumn fx:id="colQuantidade"
-                                         text="Quantidade"
-                                         prefWidth="130"/>
-                            <TableColumn fx:id="colSubtotal"
-                                         text="Subtotal"
-                                         prefWidth="140"/>
+                            <TableColumn fx:id="colProduto" prefWidth="230" text="Produto" />
+                            <TableColumn fx:id="colPreco" prefWidth="120" text="Preço" />
+                            <TableColumn fx:id="colPromocao" prefWidth="150" text="Promoção" />
+                            <TableColumn fx:id="colQuantidade" prefWidth="130" text="Quantidade" />
+                            <TableColumn fx:id="colSubtotal" prefWidth="140" text="Subtotal" />
                         </columns>
                     </TableView>
 
-                    <HBox spacing="12" alignment="CENTER_RIGHT">
-                        <Button fx:id="btnRemoverProduto"
-                                text="Remover Produto"
-                                prefWidth="180"
-                                onAction="#onRemoverProduto"/>
+                    <HBox alignment="CENTER_RIGHT" spacing="12">
+                        <Button fx:id="btnRemoverProduto" onAction="#onRemoverProduto" prefWidth="180" text="Remover Produto" />
 
-                        <Button fx:id="btnLimparVenda"
-                                text="Limpar Venda"
-                                prefWidth="160"
-                                onAction="#onLimparVenda"/>
+                        <Button fx:id="btnLimparVenda" onAction="#onLimparVenda" prefWidth="160" text="Limpar Venda" />
                     </HBox>
                 </VBox>
 
                 <!-- Área de desconto global -->
                 <VBox spacing="12">
-                    <Separator/>
+                    <Separator />
 
                     <Label text="Desconto:">
                         <font>
-                            <Font size="18"/>
+                            <Font size="18" />
                         </font>
                     </Label>
 
-                    <HBox spacing="16" alignment="CENTER_LEFT">
+                    <HBox alignment="CENTER_LEFT" spacing="16">
                         <RadioButton fx:id="rbDescontoValor" text="Valor R$">
                             <toggleGroup>
-                                <ToggleGroup fx:id="tgTipoDescontoGlobal"/>
+                                <ToggleGroup fx:id="tgTipoDescontoGlobal" />
                             </toggleGroup>
                         </RadioButton>
 
-                        <TextField fx:id="txtDescontoValor"
-                                   promptText="0,00"
-                                   prefWidth="110"/>
+                        <TextField fx:id="txtDescontoValor" prefWidth="110" promptText="0,00" />
 
-                        <RadioButton fx:id="rbDescontoPercentual"
-                                     text="Percentual %"
-                                     toggleGroup="$tgTipoDescontoGlobal"/>
+                        <RadioButton fx:id="rbDescontoPercentual" text="Percentual %" toggleGroup="$tgTipoDescontoGlobal" />
 
-                        <TextField fx:id="txtDescontoPercentual"
-                                   promptText="0"
-                                   prefWidth="90"/>
+                        <TextField fx:id="txtDescontoPercentual" prefWidth="90" promptText="0" />
                     </HBox>
 
                     <HBox alignment="CENTER">
-                        <Button fx:id="btnAplicarDesconto"
-                                text="Aplicar Desconto"
-                                prefWidth="190"
-                                onAction="#onAplicarDesconto"/>
+                        <Button fx:id="btnAplicarDesconto" onAction="#onAplicarDesconto" prefWidth="190" text="Aplicar Desconto" />
                     </HBox>
                 </VBox>
 
                 <!-- Tipo de venda -->
                 <VBox spacing="12">
-                    <Separator/>
+                    <Separator />
 
-                    <HBox spacing="18" alignment="CENTER_LEFT">
+                    <HBox alignment="CENTER_LEFT" spacing="18">
                         <Label text="Tipo de Venda:">
                             <font>
-                                <Font size="17"/>
+                                <Font size="17" />
                             </font>
                         </Label>
 
                         <RadioButton fx:id="rbVendaAVista" text="À Vista">
                             <toggleGroup>
-                                <ToggleGroup fx:id="tgTipoVenda"/>
+                                <ToggleGroup fx:id="tgTipoVenda" />
                             </toggleGroup>
                         </RadioButton>
 
-                        <RadioButton fx:id="rbVendaAPrazo"
-                                     text="A Prazo"
-                                     toggleGroup="$tgTipoVenda"/>
+                        <RadioButton fx:id="rbVendaAPrazo" text="A Prazo" toggleGroup="$tgTipoVenda" />
                     </HBox>
                 </VBox>
             </VBox>
@@ -189,103 +151,88 @@
             <!-- =================================================
                  ÁREA DIREITA — CLIENTE E RESUMO
                  ================================================= -->
-            <VBox spacing="16" prefWidth="400">
+            <VBox prefWidth="400" spacing="16">
 
                 <!-- Área de cliente -->
-                <VBox spacing="12"
-                      style="-fx-border-color: #777777; -fx-border-width: 1; -fx-background-color: white;">
+                <VBox spacing="12" style="-fx-border-color: #777777; -fx-border-width: 1; -fx-background-color: white;">
                     <padding>
-                        <Insets top="12" right="12" bottom="12" left="12"/>
+                        <Insets bottom="12" left="12" right="12" top="12" />
                     </padding>
 
                     <Label text="Cliente:">
                         <font>
-                            <Font size="18"/>
+                            <Font size="18" />
                         </font>
                     </Label>
 
-                    <HBox spacing="10" alignment="CENTER_LEFT">
-                        <TextField fx:id="txtBuscaCliente"
-                                   promptText="Buscar cliente"
-                                   HBox.hgrow="ALWAYS"/>
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <TextField fx:id="txtBuscaCliente" promptText="Buscar cliente" HBox.hgrow="ALWAYS" />
 
-                        <Button fx:id="btnSelecionarCliente"
-                                text="Selecionar"
-                                prefWidth="110"
-                                onAction="#onSelecionarCliente"/>
+                        <Button fx:id="btnSelecionarCliente" onAction="#onSelecionarCliente" prefWidth="110" text="Selecionar" />
                     </HBox>
 
                     <GridPane hgap="10" vgap="12">
-                        <Label text="Nome:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                        <Label fx:id="lblNomeCliente"
-                               text="-"
-                               GridPane.rowIndex="0"
-                               GridPane.columnIndex="1"/>
+                        <Label text="Nome:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label fx:id="lblNomeCliente" text="-" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                        <Label text="Status:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-                        <Label fx:id="lblStatusCliente"
-                               text="-"
-                               GridPane.rowIndex="1"
-                               GridPane.columnIndex="1"/>
+                        <Label text="Status:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label fx:id="lblStatusCliente" text="-" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                        <Label text="Limite disponível:"
-                               GridPane.rowIndex="2"
-                               GridPane.columnIndex="0"/>
-                        <Label fx:id="lblLimiteDisponivel"
-                               text="R$ 0,00"
-                               GridPane.rowIndex="2"
-                               GridPane.columnIndex="1"/>
+                        <Label text="Limite disponível:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <Label fx:id="lblLimiteDisponivel" text="R$ 0,00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  <columnConstraints>
+                     <ColumnConstraints />
+                     <ColumnConstraints />
+                  </columnConstraints>
+                  <rowConstraints>
+                     <RowConstraints />
+                     <RowConstraints />
+                     <RowConstraints />
+                  </rowConstraints>
                     </GridPane>
                 </VBox>
 
                 <!-- Resumo da venda -->
-                <VBox spacing="14"
-                      style="-fx-border-color: #777777; -fx-border-width: 1; -fx-background-color: white;">
+                <VBox spacing="14" style="-fx-border-color: #777777; -fx-border-width: 1; -fx-background-color: white;">
                     <padding>
-                        <Insets top="12" right="12" bottom="12" left="12"/>
+                        <Insets bottom="12" left="12" right="12" top="12" />
                     </padding>
 
                     <Label text="Resumo da Venda:">
                         <font>
-                            <Font size="18"/>
+                            <Font size="18" />
                         </font>
                     </Label>
 
-                    <Separator/>
+                    <Separator />
 
                     <GridPane hgap="10" vgap="14">
-                        <Label text="Subtotal:"
-                               GridPane.rowIndex="0"
-                               GridPane.columnIndex="0"/>
-                        <Label fx:id="lblSubtotalVenda"
-                               text="R$ 0,00"
-                               GridPane.rowIndex="0"
-                               GridPane.columnIndex="1"/>
+                        <Label text="Subtotal:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label fx:id="lblSubtotalVenda" text="R$ 0,00" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                        <Label text="Desconto:"
-                               GridPane.rowIndex="1"
-                               GridPane.columnIndex="0"/>
-                        <Label fx:id="lblDescontoGlobal"
-                               text="R$ 0,00"
-                               GridPane.rowIndex="1"
-                               GridPane.columnIndex="1"/>
+                        <Label text="Desconto:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label fx:id="lblDescontoGlobal" text="R$ 0,00" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                        <Label text="Total:"
-                               GridPane.rowIndex="2"
-                               GridPane.columnIndex="0">
+                        <Label text="Total:" GridPane.columnIndex="0" GridPane.rowIndex="2">
                             <font>
-                                <Font size="20"/>
+                                <Font size="20" />
                             </font>
                         </Label>
 
-                        <Label fx:id="lblTotalVenda"
-                               text="R$ 0,00"
-                               GridPane.rowIndex="2"
-                               GridPane.columnIndex="1">
+                        <Label fx:id="lblTotalVenda" text="R$ 0,00" GridPane.columnIndex="1" GridPane.rowIndex="2">
                             <font>
-                                <Font size="22"/>
+                                <Font size="22" />
                             </font>
                         </Label>
+                  <columnConstraints>
+                     <ColumnConstraints />
+                     <ColumnConstraints />
+                  </columnConstraints>
+                  <rowConstraints>
+                     <RowConstraints />
+                     <RowConstraints />
+                     <RowConstraints />
+                  </rowConstraints>
                     </GridPane>
                 </VBox>
             </VBox>
@@ -296,27 +243,14 @@
          RODAPÉ — BOTÕES FINAIS
          ========================================================= -->
     <bottom>
-        <HBox spacing="16"
-              alignment="CENTER_LEFT"
-              prefHeight="82"
-              style="-fx-border-color: #666666; -fx-border-width: 1 0 0 0; -fx-background-color: white;">
+        <HBox alignment="CENTER_LEFT" prefHeight="82" spacing="16" style="-fx-border-color: #666666; -fx-border-width: 1 0 0 0; -fx-background-color: white;">
             <padding>
-                <Insets top="12" right="18" bottom="12" left="18"/>
+                <Insets bottom="12" left="18" right="18" top="12" />
             </padding>
 
-            <Button fx:id="btnFinalizarVenda"
-                    text="Finalizar Venda"
-                    prefWidth="230"
-                    prefHeight="44"
-                    style="-fx-font-size: 18px;"
-                    onAction="#onFinalizarVenda"/>
+            <Button fx:id="btnFinalizarVenda" onAction="#onFinalizarVenda" prefHeight="44" prefWidth="230" style="-fx-font-size: 18px;" text="Finalizar Venda" />
 
-            <Button fx:id="btnCancelarVenda"
-                    text="Cancelar"
-                    prefWidth="150"
-                    prefHeight="44"
-                    style="-fx-font-size: 16px;"
-                    onAction="#onCancelarVenda"/>
+            <Button fx:id="btnCancelarVenda" onAction="#onCancelarVenda" prefHeight="44" prefWidth="150" style="-fx-font-size: 16px;" text="Cancelar" />
         </HBox>
     </bottom>
 

@@ -7,34 +7,33 @@ import br.com.luis.model.Venda;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.viewmodel.ItemCarrinhoView;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.KeyCode;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-
-import javafx.scene.Node;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -53,6 +52,7 @@ import java.util.Optional;
 public class RegistroVendaController {
 
     private static final int USUARIO_TEMPORARIO_ID = 1;
+    private static final int QUANTIDADE_INICIAL_ITEM = 1;
 
     private final VendaService vendaService;
     private final ProdutoService produtoService;
@@ -64,7 +64,6 @@ public class RegistroVendaController {
     @FXML private Label lblDataHora;
 
     @FXML private TextField txtBuscaProduto;
-    @FXML private Spinner<Integer> spnQuantidadeProduto;
 
     @FXML private TableView<ItemCarrinhoView> tblItensVenda;
     @FXML private TableColumn<ItemCarrinhoView, String> colProduto;
@@ -111,7 +110,6 @@ public class RegistroVendaController {
     public void initialize() {
         inicializarVenda();
         configurarCabecalho();
-        configurarSpinnerQuantidade();
         configurarTabela();
         configurarCamposDescontoGlobal();
         atualizarTabelaCarrinho();
@@ -143,29 +141,13 @@ public class RegistroVendaController {
     }
 
     /**
-     * Configura o Spinner de quantidade do produto.
-     *
-     * Quantidade mínima: 1.
-     * Quantidade máxima: 999.
-     * Valor inicial: 1.
-     */
-    private void configurarSpinnerQuantidade() {
-        if (spnQuantidadeProduto == null) {
-            return;
-        }
-
-        SpinnerValueFactory<Integer> valueFactory =
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 999, 1);
-
-        spnQuantidadeProduto.setValueFactory(valueFactory);
-        spnQuantidadeProduto.setEditable(true);
-    }
-
-    /**
      * Configura as colunas da TableView do carrinho.
      *
      * A tabela usa ItemCarrinhoView, pois a entidade ItemVenda não contém
      * todos os dados formatados necessários para exibição amigável.
+     *
+     * A coluna Quantidade é editável para permitir que o vendedor altere
+     * diretamente a quantidade final do item no carrinho.
      */
     private void configurarTabela() {
         if (tblItensVenda == null) {
@@ -178,7 +160,200 @@ public class RegistroVendaController {
         colQuantidade.setCellValueFactory(new PropertyValueFactory<>("quantidade"));
         colSubtotal.setCellValueFactory(new PropertyValueFactory<>("subtotalFormatado"));
 
+        tblItensVenda.setEditable(true);
+        colQuantidade.setEditable(true);
+        colQuantidade.setCellFactory(coluna -> criarCelulaQuantidadeEditavel());
+
         tblItensVenda.setItems(itensCarrinhoView);
+    }
+
+    /**
+     * Cria uma célula editável para a coluna Quantidade.
+     *
+     * A célula usa TextField com TextFormatter para aceitar apenas dígitos.
+     * A validação de estoque e regras de negócio continuam no VendaService.
+     */
+    private TableCell<ItemCarrinhoView, Integer> criarCelulaQuantidadeEditavel() {
+
+        return new TableCell<>() {
+
+            private TextField textField;
+            private boolean finalizandoEdicao;
+
+            @Override
+            public void startEdit() {
+                if (isEmpty()) {
+                    return;
+                }
+
+                super.startEdit();
+
+                criarTextFieldSeNecessario();
+
+                Integer quantidadeAtual = getItem();
+                textField.setText(quantidadeAtual != null ? quantidadeAtual.toString() : "");
+
+                setText(null);
+                setGraphic(textField);
+
+                textField.selectAll();
+                textField.requestFocus();
+            }
+
+            @Override
+            public void cancelEdit() {
+                super.cancelEdit();
+
+                Integer quantidadeAtual = getItem();
+                setText(quantidadeAtual != null ? quantidadeAtual.toString() : "");
+                setGraphic(null);
+            }
+
+            @Override
+            protected void updateItem(Integer quantidade, boolean vazio) {
+                super.updateItem(quantidade, vazio);
+
+                if (vazio) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
+
+                if (isEditing()) {
+                    criarTextFieldSeNecessario();
+                    textField.setText(quantidade != null ? quantidade.toString() : "");
+                    setText(null);
+                    setGraphic(textField);
+                } else {
+                    setText(quantidade != null ? quantidade.toString() : "");
+                    setGraphic(null);
+                }
+            }
+
+            private void criarTextFieldSeNecessario() {
+                if (textField != null) {
+                    return;
+                }
+
+                textField = new TextField();
+
+                TextFormatter<String> textFormatter = new TextFormatter<>(change -> {
+                    String novoTexto = change.getControlNewText();
+
+                    if (novoTexto.matches("\\d*")) {
+                        return change;
+                    }
+
+                    return null;
+                });
+
+                textField.setTextFormatter(textFormatter);
+
+                textField.setOnKeyPressed(event -> {
+                    if (event.getCode() == KeyCode.ENTER) {
+                        confirmarEdicao();
+                        event.consume();
+                    }
+
+                    if (event.getCode() == KeyCode.ESCAPE) {
+                        cancelEdit();
+                        event.consume();
+                    }
+                });
+
+                textField.focusedProperty().addListener((observable, estavaFocado, estaFocado) -> {
+                    if (!estaFocado && isEditing()) {
+                        confirmarEdicao();
+                    }
+                });
+            }
+
+            private void confirmarEdicao() {
+                if (finalizandoEdicao) {
+                    return;
+                }
+
+                finalizandoEdicao = true;
+
+                try {
+                    confirmarEdicaoQuantidade(textField.getText(), this);
+                } finally {
+                    finalizandoEdicao = false;
+                }
+            }
+        };
+    }
+
+    /**
+     * Confirma a edição da quantidade digitada na célula da TableView.
+     *
+     * O Controller valida apenas a entrada básica da tela.
+     * A regra de estoque, promoção, subtotal e desconto global fica no VendaService.
+     */
+    private void confirmarEdicaoQuantidade(
+            String textoQuantidade,
+            TableCell<ItemCarrinhoView, Integer> celula
+    ) {
+
+        ItemCarrinhoView itemCarrinhoView = celula.getTableRow().getItem();
+
+        try {
+            if (itemCarrinhoView == null || itemCarrinhoView.getItemVenda() == null) {
+                throw new IllegalArgumentException("Item inválido para atualizar quantidade.");
+            }
+
+            Integer novaQuantidade = converterTextoQuantidadeEditada(textoQuantidade);
+
+            vendaService.atualizarQuantidadeItemCarrinho(
+                    vendaAtual,
+                    itemCarrinhoView.getItemVenda(),
+                    novaQuantidade
+            );
+
+            celula.commitEdit(novaQuantidade);
+
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+
+        } catch (IllegalArgumentException e) {
+            exibirErro(e.getMessage());
+
+            celula.cancelEdit();
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+
+        } catch (RuntimeException e) {
+            exibirErro("Não foi possível atualizar a quantidade do item.");
+            System.err.println("[ERRO] Falha inesperada ao atualizar quantidade do item.");
+            e.printStackTrace();
+
+            celula.cancelEdit();
+            atualizarTabelaCarrinho();
+            atualizarResumoVenda();
+        }
+    }
+
+    /**
+     * Converte e valida a quantidade digitada na célula editável.
+     */
+    private Integer converterTextoQuantidadeEditada(String textoQuantidade) {
+
+        if (textoQuantidade == null || textoQuantidade.isBlank()) {
+            throw new IllegalArgumentException("Informe uma quantidade inteira maior que zero.");
+        }
+
+        try {
+            Integer quantidade = Integer.parseInt(textoQuantidade.trim());
+
+            if (quantidade <= 0) {
+                throw new IllegalArgumentException("Informe uma quantidade inteira maior que zero.");
+            }
+
+            return quantidade;
+
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Informe uma quantidade inteira maior que zero.");
+        }
     }
 
     /**
@@ -288,6 +463,10 @@ public class RegistroVendaController {
      * - apenas números: trata como ID do produto;
      * - texto: busca produtos por descrição e abre uma caixa de seleção.
      *
+     * Ao adicionar um produto, a quantidade inicial é sempre 1.
+     * A quantidade final deve ser editada diretamente na coluna Quantidade
+     * da TableView.
+     *
      * O Controller apenas captura os dados da tela, chama o VendaService
      * e atualiza a interface.
      *
@@ -299,7 +478,7 @@ public class RegistroVendaController {
 
         try {
             String textoBusca = obterTextoBuscaProduto();
-            Integer quantidade = obterQuantidadeInformada();
+            Integer quantidade = QUANTIDADE_INICIAL_ITEM;
 
             if (textoEhNumero(textoBusca)) {
                 Integer idProduto = converterTextoParaIdProduto(textoBusca);
@@ -369,44 +548,10 @@ public class RegistroVendaController {
     }
 
     /**
-     * Obtém e valida a quantidade informada no Spinner.
-     *
-     * Como o Spinner é editável, o valor digitado manualmente também é tratado.
-     */
-    private Integer obterQuantidadeInformada() {
-
-        String textoQuantidade = spnQuantidadeProduto.getEditor().getText();
-
-        if (textoQuantidade == null || textoQuantidade.isBlank()) {
-            throw new IllegalArgumentException("Informe uma quantidade válida.");
-        }
-
-        try {
-            Integer quantidade = Integer.parseInt(textoQuantidade.trim());
-
-            if (quantidade <= 0) {
-                throw new IllegalArgumentException("A quantidade deve ser maior que zero.");
-            }
-
-            spnQuantidadeProduto.getValueFactory().setValue(quantidade);
-
-            return quantidade;
-
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("A quantidade deve ser um número válido.");
-        }
-    }
-
-    /**
      * Limpa os campos da área de produto após adicionar item ao carrinho.
      */
     private void limparCamposProduto() {
         txtBuscaProduto.clear();
-
-        if (spnQuantidadeProduto.getValueFactory() != null) {
-            spnQuantidadeProduto.getValueFactory().setValue(1);
-        }
-
         txtBuscaProduto.requestFocus();
     }
 
@@ -742,125 +887,115 @@ public class RegistroVendaController {
     /**
      * Abre a caixa de seleção de produto quando a busca é feita por descrição.
      *
-     * Mesmo quando houver apenas um produto encontrado, a caixa é aberta
-     * para o usuário confirmar a escolha.
+     * Quando houver produtos encontrados, exibe uma TableView com os produtos
+     * separados em colunas e permite selecionar uma linha.
+     *
+     * Quando não houver produtos encontrados, exibe a mensagem dentro da própria
+     * área da TableView usando placeholder, sem abrir Alert separado.
      */
     private Optional<Produto> abrirDialogSelecaoProduto(String termoBusca) {
 
         List<Produto> produtosEncontrados = produtoService.buscarPorDescricao(termoBusca);
 
-        if (produtosEncontrados == null || produtosEncontrados.isEmpty()) {
-            return abrirDialogSemProdutosEncontrados(termoBusca);
-        }
-
-        return abrirDialogComProdutosEncontrados(termoBusca, produtosEncontrados);
-    }
-
-    /**
-     * Abre uma caixa informando que nenhum produto foi encontrado.
-     *
-     * Não exibe Alert separado e não permite selecionar produto.
-     */
-    private Optional<Produto> abrirDialogSemProdutosEncontrados(String termoBusca) {
-
         Dialog<Produto> dialog = new Dialog<>();
         dialog.setTitle("Selecionar Produto");
         dialog.setHeaderText("Resultado da busca por: " + termoBusca);
 
-        Label mensagem = new Label("Nenhum produto encontrado para esta busca.");
-        mensagem.setWrapText(true);
-
-        dialog.getDialogPane().setContent(mensagem);
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-
-        dialog.setResultConverter(buttonType -> null);
-
-        return dialog.showAndWait();
-    }
-
-    /**
-     * Abre uma caixa com a lista de produtos encontrados para seleção.
-     */
-    private Optional<Produto> abrirDialogComProdutosEncontrados(
-            String termoBusca,
-            List<Produto> produtosEncontrados
-    ) {
-
-        Dialog<Produto> dialog = new Dialog<>();
-        dialog.setTitle("Selecionar Produto");
-        dialog.setHeaderText("Selecione o produto desejado para: " + termoBusca);
-
-        ButtonType botaoSelecionar = new ButtonType(
-                "Selecionar",
-                ButtonBar.ButtonData.OK_DONE
+        TableView<Produto> tableViewProdutos = new TableView<>(
+                FXCollections.observableArrayList(
+                        produtosEncontrados != null ? produtosEncontrados : List.of()
+                )
         );
 
-        dialog.getDialogPane().getButtonTypes().addAll(botaoSelecionar, ButtonType.CANCEL);
+        tableViewProdutos.setPrefWidth(720);
+        tableViewProdutos.setPrefHeight(280);
 
-        ListView<Produto> listViewProdutos = new ListView<>(
-                FXCollections.observableArrayList(produtosEncontrados)
+        Label placeholder = new Label("Nenhum produto encontrado para esta busca.");
+        placeholder.setWrapText(true);
+        tableViewProdutos.setPlaceholder(placeholder);
+
+        TableColumn<Produto, Integer> colunaId = new TableColumn<>("ID");
+        colunaId.setPrefWidth(80);
+        colunaId.setCellValueFactory(cellData ->
+                new SimpleIntegerProperty(
+                        cellData.getValue().getIdProduto() != null
+                                ? cellData.getValue().getIdProduto()
+                                : 0
+                ).asObject()
         );
 
-        listViewProdutos.setPrefWidth(620);
-        listViewProdutos.setPrefHeight(260);
+        TableColumn<Produto, String> colunaDescricao = new TableColumn<>("Produto");
+        colunaDescricao.setPrefWidth(330);
+        colunaDescricao.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        cellData.getValue().getDescricao() != null
+                                ? cellData.getValue().getDescricao()
+                                : "-"
+                )
+        );
 
-        listViewProdutos.setCellFactory(lista -> new ListCell<>() {
-            @Override
-            protected void updateItem(Produto produto, boolean vazio) {
-                super.updateItem(produto, vazio);
+        TableColumn<Produto, String> colunaPreco = new TableColumn<>("Preço");
+        colunaPreco.setPrefWidth(150);
+        colunaPreco.setCellValueFactory(cellData ->
+                new SimpleStringProperty(formatarMoeda(cellData.getValue().getPreco()))
+        );
 
-                if (vazio || produto == null) {
-                    setText(null);
-                } else {
-                    setText(formatarProdutoParaSelecao(produto));
+        TableColumn<Produto, Integer> colunaEstoque = new TableColumn<>("Estoque");
+        colunaEstoque.setPrefWidth(120);
+        colunaEstoque.setCellValueFactory(cellData ->
+                new SimpleIntegerProperty(
+                        cellData.getValue().getQuantidadeEstoque() != null
+                                ? cellData.getValue().getQuantidadeEstoque()
+                                : 0
+                ).asObject()
+        );
+
+        tableViewProdutos.getColumns().addAll(
+                colunaId,
+                colunaDescricao,
+                colunaPreco,
+                colunaEstoque
+        );
+
+        dialog.getDialogPane().setContent(tableViewProdutos);
+
+        boolean encontrouProdutos = produtosEncontrados != null && !produtosEncontrados.isEmpty();
+
+        if (encontrouProdutos) {
+            ButtonType botaoSelecionar = new ButtonType(
+                    "Selecionar",
+                    ButtonBar.ButtonData.OK_DONE
+            );
+
+            dialog.getDialogPane().getButtonTypes().addAll(botaoSelecionar, ButtonType.CANCEL);
+
+            Node botaoSelecionarNode = dialog.getDialogPane().lookupButton(botaoSelecionar);
+            botaoSelecionarNode.setDisable(true);
+
+            tableViewProdutos.getSelectionModel()
+                    .selectedItemProperty()
+                    .addListener((observable, produtoAnterior, produtoAtual) ->
+                            botaoSelecionarNode.setDisable(produtoAtual == null)
+                    );
+
+            dialog.setResultConverter(buttonType -> {
+                if (buttonType == botaoSelecionar) {
+                    return tableViewProdutos.getSelectionModel().getSelectedItem();
                 }
-            }
-        });
 
-        dialog.getDialogPane().setContent(listViewProdutos);
+                return null;
+            });
 
-        Node botaoSelecionarNode = dialog.getDialogPane().lookupButton(botaoSelecionar);
-        botaoSelecionarNode.setDisable(true);
+        } else {
+            ButtonType botaoFechar = new ButtonType(
+                    "Fechar",
+                    ButtonBar.ButtonData.CANCEL_CLOSE
+            );
 
-        listViewProdutos.getSelectionModel()
-                .selectedItemProperty()
-                .addListener((observable, produtoAnterior, produtoAtual) ->
-                        botaoSelecionarNode.setDisable(produtoAtual == null)
-                );
-
-        dialog.setResultConverter(buttonType -> {
-            if (buttonType == botaoSelecionar) {
-                return listViewProdutos.getSelectionModel().getSelectedItem();
-            }
-
-            return null;
-        });
+            dialog.getDialogPane().getButtonTypes().add(botaoFechar);
+            dialog.setResultConverter(buttonType -> null);
+        }
 
         return dialog.showAndWait();
-    }
-
-    /**
-     * Formata o produto para exibição amigável na lista de seleção.
-     *
-     * Formato:
-     * ID - Descrição - R$ Preço - Estoque: X
-     */
-    private String formatarProdutoParaSelecao(Produto produto) {
-
-        String descricao = produto.getDescricao() != null
-                ? produto.getDescricao()
-                : "-";
-
-        Integer estoque = produto.getQuantidadeEstoque() != null
-                ? produto.getQuantidadeEstoque()
-                : 0;
-
-        return produto.getIdProduto()
-                + " - "
-                + descricao
-                + " - "
-                + formatarMoeda(produto.getPreco())
-                + " - Estoque: "
-                + estoque;
     }
 }
