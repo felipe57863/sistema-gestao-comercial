@@ -91,6 +91,63 @@ public class VendaService {
     }
 
     /**
+     * Atualiza a quantidade final de um item já existente no carrinho.
+     *
+     * Diferente de adicionarItemAoCarrinho(...), este método não soma quantidade.
+     * Ele define a nova quantidade final do item.
+     *
+     * Antes de alterar o ItemVenda, todas as validações principais são executadas
+     * para evitar estado parcial em caso de erro.
+     *
+     * Sempre que a quantidade é alterada, o desconto global anterior é limpo,
+     * pois a base elegível do desconto pode mudar.
+     *
+     * @implNote Implementa a RN01 - Não permitir venda sem estoque.
+     * @implNote Implementa a RN02 - Aplicação automática de promoção.
+     * @implNote Apoia a RN03/RN04 - Recalcular desconto global quando o carrinho muda.
+     *
+     * @param venda venda em memória que contém o carrinho.
+     * @param itemVenda item do carrinho que terá a quantidade alterada.
+     * @param novaQuantidade nova quantidade final desejada para o item.
+     */
+    public void atualizarQuantidadeItemCarrinho(
+            Venda venda,
+            ItemVenda itemVenda,
+            Integer novaQuantidade
+    ) {
+
+        validarDadosAtualizacaoQuantidade(venda, itemVenda, novaQuantidade);
+
+        Produto produto = produtoService.buscarPorId(itemVenda.getProdutoId());
+
+        validarProdutoParaVenda(produto);
+
+        if (novaQuantidade > produto.getQuantidadeEstoque()) {
+            throw new IllegalArgumentException(
+                    "Quantidade indisponível em estoque. Estoque atual: "
+                            + produto.getQuantidadeEstoque()
+                            + " unidade(s)."
+            );
+        }
+
+        Promocao promocaoAtiva = promocaoService.buscarPromocaoAtivaPorProduto(produto);
+
+        BigDecimal descontoPromocional = calcularDescontoPromocional(
+                itemVenda.getPrecoUnitario(),
+                promocaoAtiva,
+                novaQuantidade
+        );
+
+        limparDescontoGlobal(venda);
+
+        itemVenda.setQuantidade(novaQuantidade);
+        itemVenda.setDescontoPromocional(descontoPromocional);
+        itemVenda.calcularSubtotal();
+
+        venda.recalcularTotal();
+    }
+
+    /**
      * Aplica desconto global sobre os itens elegíveis da venda.
      *
      * Itens com desconto promocional não recebem desconto global.
@@ -221,6 +278,40 @@ public class VendaService {
 
         venda.setValorDescontoGlobal(BigDecimal.ZERO);
         venda.recalcularTotal();
+    }
+
+    /**
+     * Valida os dados necessários para atualizar a quantidade de um item do carrinho.
+     *
+     * @implNote Apoia a RN01 - Não permitir venda sem estoque.
+     */
+    private void validarDadosAtualizacaoQuantidade(
+            Venda venda,
+            ItemVenda itemVenda,
+            Integer novaQuantidade
+    ) {
+
+        if (venda == null) {
+            throw new IllegalArgumentException("Venda inválida para atualizar quantidade.");
+        }
+
+        if (venda.getItens() == null || venda.getItens().isEmpty()) {
+            throw new IllegalArgumentException("Venda não possui itens para atualizar.");
+        }
+
+        if (itemVenda == null) {
+            throw new IllegalArgumentException("Item inválido para atualizar quantidade.");
+        }
+
+        if (!venda.getItens().contains(itemVenda)) {
+            throw new IllegalArgumentException("Item não encontrado no carrinho.");
+        }
+
+        if (itemVenda.getProdutoId() == null) {
+            throw new IllegalArgumentException("Item sem produto vinculado.");
+        }
+
+        validarQuantidade(novaQuantidade);
     }
 
     /**
