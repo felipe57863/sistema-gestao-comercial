@@ -71,10 +71,10 @@
                     </padding>
 
                     <HBox spacing="10" alignment="CENTER_LEFT">
-                        <Label text="Buscar produto (ID):"/>
+                        <Label text="Buscar produto:"/>
 
                         <TextField fx:id="txtBuscaProduto"
-                                   promptText="Digite o ID do produto"
+                                   promptText="Digite ID ou descrição do produto"
                                    prefWidth="280"/>
 
                         <Label text="Qtd:"/>

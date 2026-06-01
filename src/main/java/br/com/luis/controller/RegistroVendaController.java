@@ -27,6 +27,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+import javafx.scene.Node;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+
+import java.util.List;
+import java.util.Optional;
+
 /**
  * Controller da tela Registro de Venda.
  *
@@ -258,28 +268,55 @@ public class RegistroVendaController {
     }
 
     /**
+     * Adiciona o produto ao carrinho chamando o VendaService.
+     *
+     * Após sucesso, atualiza tabela, resumo e limpa os campos da área de produto.
+     */
+    private void adicionarProdutoAoCarrinho(Integer idProduto, Integer quantidade) {
+
+        vendaService.adicionarItemAoCarrinho(vendaAtual, idProduto, quantidade);
+
+        atualizarTabelaCarrinho();
+        atualizarResumoVenda();
+        limparCamposProduto();
+    }
+
+    /**
      * Evento do botão Adicionar Produto.
      *
-     * Nesta primeira versão da tela, o campo txtBuscaProduto é tratado
-     * temporariamente como ID do produto.
+     * Nesta versão, o campo txtBuscaProduto aceita:
+     * - apenas números: trata como ID do produto;
+     * - texto: busca produtos por descrição e abre uma caixa de seleção.
      *
      * O Controller apenas captura os dados da tela, chama o VendaService
      * e atualiza a interface.
      *
-     * Não salva venda, não baixa estoque e não executa financeiro.
+     * Não valida estoque, não valida produto ativo, não calcula promoção
+     * e não calcula subtotal. Essas regras continuam no VendaService.
      */
     @FXML
     private void onAdicionarProduto() {
 
         try {
-            Integer idProduto = obterIdProdutoInformado();
+            String textoBusca = obterTextoBuscaProduto();
             Integer quantidade = obterQuantidadeInformada();
 
-            vendaService.adicionarItemAoCarrinho(vendaAtual, idProduto, quantidade);
+            if (textoEhNumero(textoBusca)) {
+                Integer idProduto = converterTextoParaIdProduto(textoBusca);
+                adicionarProdutoAoCarrinho(idProduto, quantidade);
+                return;
+            }
 
-            atualizarTabelaCarrinho();
-            atualizarResumoVenda();
-            limparCamposProduto();
+            Optional<Produto> produtoSelecionado = abrirDialogSelecaoProduto(textoBusca);
+
+            if (produtoSelecionado.isEmpty()) {
+                return;
+            }
+
+            adicionarProdutoAoCarrinho(
+                    produtoSelecionado.get().getIdProduto(),
+                    quantidade
+            );
 
         } catch (IllegalArgumentException e) {
             exibirErro(e.getMessage());
@@ -292,17 +329,30 @@ public class RegistroVendaController {
     }
 
     /**
-     * Obtém e valida o ID do produto informado na tela.
-     *
-     * Nesta fase, txtBuscaProduto representa temporariamente o ID do produto.
+     * Obtém e valida o texto informado no campo de busca de produto.
      */
-    private Integer obterIdProdutoInformado() {
+    private String obterTextoBuscaProduto() {
 
-        String textoProduto = txtBuscaProduto.getText();
+        String textoBusca = txtBuscaProduto.getText();
 
-        if (textoProduto == null || textoProduto.isBlank()) {
-            throw new IllegalArgumentException("Informe o ID do produto.");
+        if (textoBusca == null || textoBusca.isBlank()) {
+            throw new IllegalArgumentException("Informe o ID ou a descrição do produto.");
         }
+
+        return textoBusca.trim();
+    }
+
+    /**
+     * Verifica se o texto digitado contém apenas números.
+     */
+    private boolean textoEhNumero(String texto) {
+        return texto != null && texto.matches("\\d+");
+    }
+
+    /**
+     * Converte o texto numérico informado para ID de produto.
+     */
+    private Integer converterTextoParaIdProduto(String textoProduto) {
 
         try {
             Integer idProduto = Integer.parseInt(textoProduto.trim());
@@ -687,5 +737,130 @@ public class RegistroVendaController {
         alert.setHeaderText(null);
         alert.setContentText(mensagem);
         alert.showAndWait();
+    }
+
+    /**
+     * Abre a caixa de seleção de produto quando a busca é feita por descrição.
+     *
+     * Mesmo quando houver apenas um produto encontrado, a caixa é aberta
+     * para o usuário confirmar a escolha.
+     */
+    private Optional<Produto> abrirDialogSelecaoProduto(String termoBusca) {
+
+        List<Produto> produtosEncontrados = produtoService.buscarPorDescricao(termoBusca);
+
+        if (produtosEncontrados == null || produtosEncontrados.isEmpty()) {
+            return abrirDialogSemProdutosEncontrados(termoBusca);
+        }
+
+        return abrirDialogComProdutosEncontrados(termoBusca, produtosEncontrados);
+    }
+
+    /**
+     * Abre uma caixa informando que nenhum produto foi encontrado.
+     *
+     * Não exibe Alert separado e não permite selecionar produto.
+     */
+    private Optional<Produto> abrirDialogSemProdutosEncontrados(String termoBusca) {
+
+        Dialog<Produto> dialog = new Dialog<>();
+        dialog.setTitle("Selecionar Produto");
+        dialog.setHeaderText("Resultado da busca por: " + termoBusca);
+
+        Label mensagem = new Label("Nenhum produto encontrado para esta busca.");
+        mensagem.setWrapText(true);
+
+        dialog.getDialogPane().setContent(mensagem);
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+        dialog.setResultConverter(buttonType -> null);
+
+        return dialog.showAndWait();
+    }
+
+    /**
+     * Abre uma caixa com a lista de produtos encontrados para seleção.
+     */
+    private Optional<Produto> abrirDialogComProdutosEncontrados(
+            String termoBusca,
+            List<Produto> produtosEncontrados
+    ) {
+
+        Dialog<Produto> dialog = new Dialog<>();
+        dialog.setTitle("Selecionar Produto");
+        dialog.setHeaderText("Selecione o produto desejado para: " + termoBusca);
+
+        ButtonType botaoSelecionar = new ButtonType(
+                "Selecionar",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        dialog.getDialogPane().getButtonTypes().addAll(botaoSelecionar, ButtonType.CANCEL);
+
+        ListView<Produto> listViewProdutos = new ListView<>(
+                FXCollections.observableArrayList(produtosEncontrados)
+        );
+
+        listViewProdutos.setPrefWidth(620);
+        listViewProdutos.setPrefHeight(260);
+
+        listViewProdutos.setCellFactory(lista -> new ListCell<>() {
+            @Override
+            protected void updateItem(Produto produto, boolean vazio) {
+                super.updateItem(produto, vazio);
+
+                if (vazio || produto == null) {
+                    setText(null);
+                } else {
+                    setText(formatarProdutoParaSelecao(produto));
+                }
+            }
+        });
+
+        dialog.getDialogPane().setContent(listViewProdutos);
+
+        Node botaoSelecionarNode = dialog.getDialogPane().lookupButton(botaoSelecionar);
+        botaoSelecionarNode.setDisable(true);
+
+        listViewProdutos.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, produtoAnterior, produtoAtual) ->
+                        botaoSelecionarNode.setDisable(produtoAtual == null)
+                );
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == botaoSelecionar) {
+                return listViewProdutos.getSelectionModel().getSelectedItem();
+            }
+
+            return null;
+        });
+
+        return dialog.showAndWait();
+    }
+
+    /**
+     * Formata o produto para exibição amigável na lista de seleção.
+     *
+     * Formato:
+     * ID - Descrição - R$ Preço - Estoque: X
+     */
+    private String formatarProdutoParaSelecao(Produto produto) {
+
+        String descricao = produto.getDescricao() != null
+                ? produto.getDescricao()
+                : "-";
+
+        Integer estoque = produto.getQuantidadeEstoque() != null
+                ? produto.getQuantidadeEstoque()
+                : 0;
+
+        return produto.getIdProduto()
+                + " - "
+                + descricao
+                + " - "
+                + formatarMoeda(produto.getPreco())
+                + " - Estoque: "
+                + estoque;
     }
 }
