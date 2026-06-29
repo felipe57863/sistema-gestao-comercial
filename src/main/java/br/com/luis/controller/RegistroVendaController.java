@@ -314,6 +314,7 @@ public class RegistroVendaController {
 
             atualizarTabelaCarrinho();
             atualizarResumoVenda();
+            limparCamposDescontoGlobal();
 
         } catch (IllegalArgumentException e) {
             exibirErro(e.getMessage());
@@ -453,6 +454,7 @@ public class RegistroVendaController {
 
         atualizarTabelaCarrinho();
         atualizarResumoVenda();
+        limparCamposDescontoGlobal();
         limparCamposProduto();
     }
 
@@ -594,6 +596,7 @@ public class RegistroVendaController {
 
             atualizarTabelaCarrinho();
             atualizarResumoVenda();
+            limparCamposDescontoGlobal();
 
         } catch (IllegalArgumentException e) {
             exibirErro(e.getMessage());
@@ -639,8 +642,11 @@ public class RegistroVendaController {
     /**
      * Configura o comportamento visual dos campos de desconto global.
      *
-     * Quando "Valor R$" estiver selecionado, habilita apenas o campo de valor.
-     * Quando "Percentual %" estiver selecionado, habilita apenas o campo percentual.
+     * Quando "Valor R$" estiver selecionado, habilita apenas o campo de valor
+     * e limpa o campo de percentual.
+     *
+     * Quando "Percentual %" estiver selecionado, habilita apenas o campo percentual
+     * e limpa o campo de valor.
      */
     private void configurarCamposDescontoGlobal() {
 
@@ -650,14 +656,22 @@ public class RegistroVendaController {
         rbDescontoValor.selectedProperty().addListener((observable, valorAntigo, selecionado) -> {
             if (selecionado) {
                 txtDescontoValor.setDisable(false);
+
+                txtDescontoPercentual.clear();
                 txtDescontoPercentual.setDisable(true);
+
+                txtDescontoValor.requestFocus();
             }
         });
 
         rbDescontoPercentual.selectedProperty().addListener((observable, valorAntigo, selecionado) -> {
             if (selecionado) {
                 txtDescontoPercentual.setDisable(false);
+
+                txtDescontoValor.clear();
                 txtDescontoValor.setDisable(true);
+
+                txtDescontoPercentual.requestFocus();
             }
         });
     }

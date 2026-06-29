@@ -26,3 +26,4 @@ buildNumber.properties
 # SISTEMA OPERACIONAL (Arquivos ocultos)
 .DS_Store
 Thumbs.db
+*~

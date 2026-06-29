@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
@@ -75,9 +76,17 @@
                     <HBox alignment="CENTER_LEFT" spacing="10">
                         <Label text="Buscar produto:" />
 
-                        <TextField fx:id="txtBuscaProduto" prefHeight="25.0" prefWidth="480.0" promptText="Digite ID ou descrição do produto" />
-                        
-                        <Button fx:id="btnAdicionarProduto" onAction="#onAdicionarProduto" prefWidth="120" text="Adicionar" />
+                        <TextField fx:id="txtBuscaProduto" prefHeight="25.0" prefWidth="480.0" promptText="Digite o ID ou a descrição">
+                            <tooltip>
+                                <Tooltip text="Busca por ID adiciona direto. Busca por descrição pode abrir a seleção." />
+                            </tooltip>
+                        </TextField>
+
+                        <Button fx:id="btnAdicionarProduto" onAction="#onAdicionarProduto" prefWidth="120" text="Buscar">
+                            <tooltip>
+                                <Tooltip text="Busca por ID adiciona direto. Busca por descrição pode abrir a seleção." />
+                            </tooltip>
+                        </Button>
                     </HBox>
 
                     <TableView fx:id="tblItensVenda" prefHeight="260" VBox.vgrow="ALWAYS">
@@ -180,15 +189,17 @@
 
                         <Label text="Limite disponível:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                         <Label fx:id="lblLimiteDisponivel" text="R$ 0,00" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                  <columnConstraints>
-                     <ColumnConstraints />
-                     <ColumnConstraints />
-                  </columnConstraints>
-                  <rowConstraints>
-                     <RowConstraints />
-                     <RowConstraints />
-                     <RowConstraints />
-                  </rowConstraints>
+
+                        <columnConstraints>
+                            <ColumnConstraints />
+                            <ColumnConstraints />
+                        </columnConstraints>
+
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
                     </GridPane>
                 </VBox>
 
@@ -224,15 +235,17 @@
                                 <Font size="22" />
                             </font>
                         </Label>
-                  <columnConstraints>
-                     <ColumnConstraints />
-                     <ColumnConstraints />
-                  </columnConstraints>
-                  <rowConstraints>
-                     <RowConstraints />
-                     <RowConstraints />
-                     <RowConstraints />
-                  </rowConstraints>
+
+                        <columnConstraints>
+                            <ColumnConstraints />
+                            <ColumnConstraints />
+                        </columnConstraints>
+
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
                     </GridPane>
                 </VBox>
             </VBox>
