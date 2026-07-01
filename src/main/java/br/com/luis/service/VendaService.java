@@ -320,6 +320,10 @@ public class VendaService {
             calcularTrocoVendaAVista(venda, formaPagamento, valorRecebido);
         }
 
+        if (tipoVenda == TipoVenda.A_PRAZO) {
+            validarDadosVendaAPrazo(tipoVenda, formaPagamento, clienteId, prazoPagamentoId);
+        }
+
         throw new UnsupportedOperationException("Finalização da venda ainda não implementada.");
     }
 
@@ -390,6 +394,38 @@ public class VendaService {
         }
 
         return BigDecimal.ZERO.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Valida os dados específicos de uma venda a prazo.
+     *
+     * Esta validação ainda não consulta cliente no banco, não valida limite
+     * de crédito e não gera conta a receber.
+     *
+     * @implNote Apoia a preparação da finalização da venda a prazo na Fase 5.
+     */
+    private void validarDadosVendaAPrazo(
+            TipoVenda tipoVenda,
+            FormaPagamento formaPagamento,
+            Integer clienteId,
+            Integer prazoPagamentoId
+    ) {
+
+        if (tipoVenda != TipoVenda.A_PRAZO) {
+            throw new IllegalArgumentException("Tipo de venda inválido para venda a prazo.");
+        }
+
+        if (formaPagamento != FormaPagamento.A_PRAZO) {
+            throw new IllegalArgumentException("Venda a prazo deve usar forma de pagamento A_PRAZO.");
+        }
+
+        if (clienteId == null || clienteId <= 0) {
+            throw new IllegalArgumentException("Cliente é obrigatório para venda a prazo.");
+        }
+
+        if (prazoPagamentoId == null || prazoPagamentoId <= 0) {
+            throw new IllegalArgumentException("Prazo de pagamento é obrigatório para venda a prazo.");
+        }
     }
 
     /**
