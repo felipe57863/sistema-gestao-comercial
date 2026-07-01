@@ -264,6 +264,117 @@ public class ProdutoDAO {
     }
 
     /**
+     * Busca um produto pelo ID usando uma Connection externa.
+     *
+     * Este método foi preparado para participar da mesma transação
+     * da finalização da venda.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param idProduto ID do produto.
+     * @return produto encontrado ou null caso não exista.
+     */
+    public Produto buscarPorId(Connection conn, Integer idProduto) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idProduto == null || idProduto <= 0) {
+            throw new IllegalArgumentException("ID do produto inválido.");
+        }
+
+        String sql = """
+            SELECT id_produto, descricao, preco, quantidade_estoque, estoque_minimo, ativo
+            FROM Produto
+            WHERE id_produto = ?
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idProduto);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapearProduto(rs);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar produto por ID usando conexão externa.", e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Baixa estoque de um produto usando uma Connection externa.
+     *
+     * Este método foi preparado para participar da mesma transação
+     * da finalização da venda.
+     *
+     * A baixa é feita de forma segura:
+     * - somente produto ativo pode ter estoque baixado;
+     * - a quantidade em estoque precisa ser suficiente;
+     * - o UPDATE só ocorre se a condição de estoque for satisfeita.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param idProduto ID do produto.
+     * @param quantidade quantidade que será baixada do estoque.
+     */
+    public void baixarEstoque(Connection conn, Integer idProduto, Integer quantidade) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idProduto == null || idProduto <= 0) {
+            throw new IllegalArgumentException("ID do produto inválido para baixa de estoque.");
+        }
+
+        if (quantidade == null || quantidade <= 0) {
+            throw new IllegalArgumentException("Quantidade inválida para baixa de estoque.");
+        }
+
+        String sql = """
+            UPDATE Produto
+            SET quantidade_estoque = quantidade_estoque - ?
+            WHERE id_produto = ?
+              AND ativo = 1
+              AND quantidade_estoque >= ?
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, quantidade);
+            stmt.setInt(2, idProduto);
+            stmt.setInt(3, quantidade);
+
+            int linhasAfetadas = stmt.executeUpdate();
+
+            if (linhasAfetadas == 0) {
+                throw new RuntimeException(
+                        "Não foi possível baixar o estoque. Produto inexistente, inativo ou com estoque insuficiente."
+                );
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao baixar estoque usando conexão externa.", e);
+        }
+    }
+
+    /**
      * Método utilitário para mapear ResultSet → Produto.
      * Evita duplicação de código e centraliza conversões.
      */

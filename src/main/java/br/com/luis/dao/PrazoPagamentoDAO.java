@@ -180,4 +180,58 @@ public class PrazoPagamentoDAO {
 
         return prazos;
     }
+
+    /**
+     * Busca um prazo de pagamento pelo ID usando uma Connection externa.
+     *
+     * Este método foi preparado para participar da mesma transação
+     * da finalização da venda a prazo.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param idPrazo ID do prazo de pagamento.
+     * @return prazo encontrado ou null caso não exista.
+     */
+    public PrazoPagamento buscarPorId(Connection conn, Integer idPrazo) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idPrazo == null || idPrazo <= 0) {
+            throw new IllegalArgumentException("ID do prazo de pagamento inválido.");
+        }
+
+        String sql = """
+            SELECT id_prazo, descricao, quantidade_dias, ativo
+            FROM PrazoPagamento
+            WHERE id_prazo = ?
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idPrazo);
+
+            try (var rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new PrazoPagamento(
+                            rs.getInt("id_prazo"),
+                            rs.getString("descricao"),
+                            rs.getInt("quantidade_dias"),
+                            rs.getInt("ativo") == 1
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar prazo de pagamento por ID usando conexão externa.", e);
+        }
+
+        return null;
+    }
 }

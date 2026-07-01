@@ -4,6 +4,7 @@ import br.com.luis.model.Cliente;
 import br.com.luis.model.PrazoPagamento;
 import br.com.luis.util.ConnectionFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -177,5 +178,85 @@ public class ClienteDAO {
 
             throw new RuntimeException("Erro ao atualizar cliente.", e);
         }
+    }
+
+    /**
+     * Busca um cliente pelo ID com seu prazo de pagamento vinculado,
+     * usando uma Connection externa.
+     *
+     * Este método foi preparado para participar da mesma transação
+     * da finalização da venda a prazo.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param idCliente ID do cliente.
+     * @return cliente encontrado com prazo vinculado ou null caso não exista.
+     */
+    public Cliente buscarPorIdComPrazo(Connection conn, Integer idCliente) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idCliente == null || idCliente <= 0) {
+            throw new IllegalArgumentException("ID do cliente inválido.");
+        }
+
+        String sql = """
+            SELECT c.id_cliente,
+                   c.nome,
+                   c.documento,
+                   c.tipo_cliente,
+                   COALESCE(c.limite_credito, 0) AS limite_credito,
+                   c.status,
+                   p.id_prazo,
+                   p.descricao AS prazo_descricao,
+                   p.quantidade_dias,
+                   p.ativo
+            FROM Cliente c
+            INNER JOIN PrazoPagamento p ON c.prazo_pagamento_id = p.id_prazo
+            WHERE c.id_cliente = ?
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idCliente);
+
+            try (var rs = stmt.executeQuery()) {
+                if (rs.next()) {
+
+                    PrazoPagamento prazo = new PrazoPagamento(
+                            rs.getInt("id_prazo"),
+                            rs.getString("prazo_descricao"),
+                            rs.getInt("quantidade_dias"),
+                            rs.getInt("ativo") == 1
+                    );
+
+                    BigDecimal limiteCredito = rs.getBigDecimal("limite_credito");
+
+                    Cliente cliente = new Cliente(
+                            rs.getInt("id_cliente"),
+                            rs.getString("nome"),
+                            rs.getString("documento"),
+                            Cliente.TipoCliente.valueOf(rs.getString("tipo_cliente")),
+                            limiteCredito,
+                            Cliente.StatusCliente.valueOf(rs.getString("status")),
+                            prazo
+                    );
+
+                    return cliente;
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar cliente por ID com prazo usando conexão externa.", e);
+        }
+
+        return null;
     }
 }
