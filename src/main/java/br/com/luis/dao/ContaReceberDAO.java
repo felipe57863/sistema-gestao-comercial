@@ -1,7 +1,10 @@
 package br.com.luis.dao;
 
 import br.com.luis.model.ContaReceber;
+import br.com.luis.model.StatusContaReceber;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -79,6 +82,63 @@ public class ContaReceberDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao inserir conta a receber no banco de dados.", e);
+        }
+    }
+
+    /**
+     * Soma o total pendente de contas a receber de um cliente.
+     *
+     * Regra da Fase 5:
+     * o limite disponível deve considerar somente contas com status PENDENTE.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param clienteId ID do cliente.
+     * @return soma dos valores pendentes do cliente.
+     */
+    public BigDecimal somarTotalPendentePorCliente(Connection conn, Integer clienteId) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (clienteId == null || clienteId <= 0) {
+            throw new IllegalArgumentException("ID do cliente inválido.");
+        }
+
+        String sql = """
+                SELECT COALESCE(SUM(valor), 0) AS total_pendente
+                FROM ContaReceber
+                WHERE cliente_id = ?
+                  AND status = ?
+                """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, clienteId);
+            stmt.setString(2, StatusContaReceber.PENDENTE.name());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    BigDecimal totalPendente = rs.getBigDecimal("total_pendente");
+
+                    if (totalPendente == null) {
+                        return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+                    }
+
+                    return totalPendente.setScale(2, RoundingMode.HALF_UP);
+                }
+            }
+
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao somar total pendente do cliente.", e);
         }
     }
 }
