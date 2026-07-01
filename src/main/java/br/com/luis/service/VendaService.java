@@ -7,18 +7,19 @@ import br.com.luis.dao.MovimentacaoFinanceiraDAO;
 import br.com.luis.dao.PrazoPagamentoDAO;
 import br.com.luis.dao.ProdutoDAO;
 import br.com.luis.dao.VendaDAO;
+import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
+import br.com.luis.model.StatusVenda;
 import br.com.luis.model.TipoDescontoGlobal;
-import br.com.luis.model.Venda;
-
-import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.TipoVenda;
+import br.com.luis.model.Venda;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -426,6 +427,51 @@ public class VendaService {
         if (prazoPagamentoId == null || prazoPagamentoId <= 0) {
             throw new IllegalArgumentException("Prazo de pagamento é obrigatório para venda a prazo.");
         }
+    }
+
+    /**
+     * Prepara os dados finais de uma venda à vista.
+     *
+     * Este método apenas ajusta o objeto Venda em memória.
+     * Ainda não persiste a venda no banco de dados.
+     *
+     * @implNote Apoia a preparação da finalização da venda à vista na Fase 5.
+     */
+    private void prepararDadosVendaAVista(
+            Venda venda,
+            FormaPagamento formaPagamento,
+            Integer clienteId,
+            Integer usuarioId
+    ) {
+
+        venda.setDataHora(LocalDateTime.now());
+        venda.setTipoVenda(TipoVenda.A_VISTA.name());
+        venda.setFormaPagamento(formaPagamento.name());
+        venda.setStatus(StatusVenda.PAGA.name());
+        venda.setUsuarioId(usuarioId);
+        venda.setClienteId(clienteId);
+    }
+
+    /**
+     * Prepara os dados finais de uma venda a prazo.
+     *
+     * Este método apenas ajusta o objeto Venda em memória.
+     * Ainda não persiste a venda no banco de dados.
+     *
+     * @implNote Apoia a preparação da finalização da venda a prazo na Fase 5.
+     */
+    private void prepararDadosVendaAPrazo(
+            Venda venda,
+            Integer clienteId,
+            Integer usuarioId
+    ) {
+
+        venda.setDataHora(LocalDateTime.now());
+        venda.setTipoVenda(TipoVenda.A_PRAZO.name());
+        venda.setFormaPagamento(FormaPagamento.A_PRAZO.name());
+        venda.setStatus(StatusVenda.PENDENTE.name());
+        venda.setUsuarioId(usuarioId);
+        venda.setClienteId(clienteId);
     }
 
     /**
