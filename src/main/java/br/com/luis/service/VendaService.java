@@ -315,7 +315,81 @@ public class VendaService {
     ) {
         validarDadosBasicosFinalizacao(venda, tipoVenda, formaPagamento, usuarioId);
 
+        if (tipoVenda == TipoVenda.A_VISTA) {
+            validarDadosVendaAVista(venda, tipoVenda, formaPagamento, valorRecebido);
+            calcularTrocoVendaAVista(venda, formaPagamento, valorRecebido);
+        }
+
         throw new UnsupportedOperationException("Finalização da venda ainda não implementada.");
+    }
+
+    /**
+     * Valida os dados específicos de uma venda à vista.
+     *
+     * Esta validação ainda não persiste venda, não baixa estoque
+     * e não gera movimentação financeira.
+     *
+     * @implNote Apoia a preparação da finalização da venda à vista na Fase 5.
+     */
+    private void validarDadosVendaAVista(
+            Venda venda,
+            TipoVenda tipoVenda,
+            FormaPagamento formaPagamento,
+            BigDecimal valorRecebido
+    ) {
+
+        if (tipoVenda != TipoVenda.A_VISTA) {
+            throw new IllegalArgumentException("Tipo de venda inválido para venda à vista.");
+        }
+
+        if (formaPagamento == FormaPagamento.A_PRAZO) {
+            throw new IllegalArgumentException("Forma de pagamento A_PRAZO não é permitida para venda à vista.");
+        }
+
+        if (formaPagamento != FormaPagamento.DINHEIRO
+                && formaPagamento != FormaPagamento.PIX
+                && formaPagamento != FormaPagamento.CARTAO) {
+            throw new IllegalArgumentException("Forma de pagamento inválida para venda à vista.");
+        }
+
+        if (formaPagamento == FormaPagamento.DINHEIRO) {
+            if (valorRecebido == null) {
+                throw new IllegalArgumentException("Valor recebido é obrigatório para pagamento em dinheiro.");
+            }
+
+            if (valorRecebido.compareTo(venda.getValorTotal()) < 0) {
+                throw new IllegalArgumentException("Valor recebido não pode ser menor que o total da venda.");
+            }
+        }
+    }
+
+    /**
+     * Calcula o troco de uma venda à vista.
+     *
+     * Para pagamento em dinheiro:
+     * troco = valor recebido - valor total.
+     *
+     * Para PIX ou CARTAO:
+     * o troco é zero.
+     *
+     * Este valor ainda não é retornado de verdade, pois a finalização
+     * real será implementada nos próximos passos.
+     *
+     * @implNote O troco não será persistido no banco.
+     */
+    private BigDecimal calcularTrocoVendaAVista(
+            Venda venda,
+            FormaPagamento formaPagamento,
+            BigDecimal valorRecebido
+    ) {
+
+        if (formaPagamento == FormaPagamento.DINHEIRO) {
+            return valorRecebido
+                    .subtract(venda.getValorTotal())
+                    .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+        }
+
+        return BigDecimal.ZERO.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
     }
 
     /**
