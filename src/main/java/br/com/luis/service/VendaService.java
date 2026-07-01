@@ -1,5 +1,12 @@
 package br.com.luis.service;
 
+import br.com.luis.dao.ClienteDAO;
+import br.com.luis.dao.ContaReceberDAO;
+import br.com.luis.dao.ItemVendaDAO;
+import br.com.luis.dao.MovimentacaoFinanceiraDAO;
+import br.com.luis.dao.PrazoPagamentoDAO;
+import br.com.luis.dao.ProdutoDAO;
+import br.com.luis.dao.VendaDAO;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
@@ -26,9 +33,25 @@ public class VendaService {
     private final ProdutoService produtoService;
     private final PromocaoService promocaoService;
 
+    private final VendaDAO vendaDAO;
+    private final ItemVendaDAO itemVendaDAO;
+    private final ProdutoDAO produtoDAO;
+    private final ClienteDAO clienteDAO;
+    private final PrazoPagamentoDAO prazoPagamentoDAO;
+    private final ContaReceberDAO contaReceberDAO;
+    private final MovimentacaoFinanceiraDAO movimentacaoFinanceiraDAO;
+
     public VendaService() {
         this.produtoService = new ProdutoService();
         this.promocaoService = new PromocaoService();
+
+        this.vendaDAO = new VendaDAO();
+        this.itemVendaDAO = new ItemVendaDAO();
+        this.produtoDAO = new ProdutoDAO();
+        this.clienteDAO = new ClienteDAO();
+        this.prazoPagamentoDAO = new PrazoPagamentoDAO();
+        this.contaReceberDAO = new ContaReceberDAO();
+        this.movimentacaoFinanceiraDAO = new MovimentacaoFinanceiraDAO();
     }
 
     /**
