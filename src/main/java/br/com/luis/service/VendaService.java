@@ -313,7 +313,84 @@ public class VendaService {
             Integer prazoPagamentoId,
             Integer usuarioId
     ) {
+        validarDadosBasicosFinalizacao(venda, tipoVenda, formaPagamento, usuarioId);
+
         throw new UnsupportedOperationException("Finalização da venda ainda não implementada.");
+    }
+
+    /**
+     * Valida os dados básicos comuns para qualquer tipo de finalização de venda.
+     *
+     * Esta validação ainda não executa regras específicas de venda à vista
+     * ou venda a prazo.
+     *
+     * Também não abre transação e não acessa o banco de dados.
+     *
+     * @implNote Apoia a preparação da finalização da venda na Fase 5.
+     */
+    private void validarDadosBasicosFinalizacao(
+            Venda venda,
+            TipoVenda tipoVenda,
+            FormaPagamento formaPagamento,
+            Integer usuarioId
+    ) {
+
+        if (venda == null) {
+            throw new IllegalArgumentException("Venda inválida para finalização.");
+        }
+
+        if (venda.getItens() == null || venda.getItens().isEmpty()) {
+            throw new IllegalArgumentException("Não é possível finalizar uma venda sem itens.");
+        }
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException("Usuário inválido para finalização da venda.");
+        }
+
+        if (tipoVenda == null) {
+            throw new IllegalArgumentException("Tipo de venda é obrigatório.");
+        }
+
+        if (formaPagamento == null) {
+            throw new IllegalArgumentException("Forma de pagamento é obrigatória.");
+        }
+
+        if (venda.getValorTotal() == null || venda.getValorTotal().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor total da venda deve ser maior que zero.");
+        }
+
+        for (ItemVenda item : venda.getItens()) {
+            validarItemParaFinalizacao(item);
+        }
+    }
+
+    /**
+     * Valida os dados mínimos de um item antes da finalização.
+     *
+     * Esta validação não revalida estoque no banco.
+     * A revalidação de estoque será feita futuramente dentro da transação.
+     */
+    private void validarItemParaFinalizacao(ItemVenda item) {
+
+        if (item == null) {
+            throw new IllegalArgumentException("Item inválido na venda.");
+        }
+
+        if (item.getProdutoId() == null || item.getProdutoId() <= 0) {
+            throw new IllegalArgumentException("Item da venda sem produto válido.");
+        }
+
+        if (item.getQuantidade() == null || item.getQuantidade() <= 0) {
+            throw new IllegalArgumentException("Item da venda com quantidade inválida.");
+        }
+
+        if (item.getPrecoUnitario() == null || item.getPrecoUnitario().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Item da venda com preço unitário inválido.");
+        }
+
+        if (item.getSubtotal() == null || item.getSubtotal().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Item da venda com subtotal inválido.");
+        }
     }
 
     /**
