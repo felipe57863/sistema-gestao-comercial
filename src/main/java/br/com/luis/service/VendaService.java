@@ -13,6 +13,10 @@ import br.com.luis.model.Promocao;
 import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.Venda;
 
+import br.com.luis.model.FormaPagamento;
+import br.com.luis.model.TipoVenda;
+import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -282,6 +286,34 @@ public class VendaService {
 
         venda.setValorDescontoGlobal(BigDecimal.ZERO);
         venda.recalcularTotal();
+    }
+
+    /**
+     * Finaliza uma venda, persistindo os dados principais, itens,
+     * baixa de estoque e financeiro.
+     *
+     * Este método ainda não possui implementação real.
+     * A lógica transacional será adicionada nos próximos passos da Fase 5.
+     *
+     * @param venda venda em memória que será finalizada.
+     * @param tipoVenda tipo da venda: A_VISTA ou A_PRAZO.
+     * @param formaPagamento forma de pagamento selecionada.
+     * @param valorRecebido valor recebido, usado principalmente para pagamento em dinheiro.
+     * @param clienteId ID do cliente, obrigatório para venda a prazo e opcional para venda à vista.
+     * @param prazoPagamentoId ID do prazo efetivo, obrigatório para venda a prazo.
+     * @param usuarioId ID do usuário logado responsável pela venda.
+     * @return resultado da finalização da venda.
+     */
+    public ResultadoFinalizacaoVenda finalizarVenda(
+            Venda venda,
+            TipoVenda tipoVenda,
+            FormaPagamento formaPagamento,
+            BigDecimal valorRecebido,
+            Integer clienteId,
+            Integer prazoPagamentoId,
+            Integer usuarioId
+    ) {
+        throw new UnsupportedOperationException("Finalização da venda ainda não implementada.");
     }
 
     /**
