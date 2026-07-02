@@ -580,6 +580,99 @@ public class VendaService {
     }
 
     /**
+     * Monta o resultado da finalização de uma venda à vista.
+     *
+     * Este método apenas cria o objeto de retorno em memória.
+     * Ainda não é chamado pelo finalizarVenda(...).
+     *
+     * @implNote Apoia o futuro retorno da finalização da venda à vista na Fase 5.
+     */
+    private ResultadoFinalizacaoVenda montarResultadoFinalizacaoVendaAVista(
+            Integer vendaId,
+            FormaPagamento formaPagamento,
+            BigDecimal valorTotal,
+            BigDecimal troco,
+            Integer movimentacaoFinanceiraId
+    ) {
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda é obrigatório para montar o resultado.");
+        }
+
+        if (formaPagamento == null) {
+            throw new IllegalArgumentException("Forma de pagamento é obrigatória para montar o resultado.");
+        }
+
+        if (formaPagamento == FormaPagamento.A_PRAZO) {
+            throw new IllegalArgumentException("Forma de pagamento inválida para resultado de venda à vista.");
+        }
+
+        if (valorTotal == null || valorTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor total inválido para montar o resultado.");
+        }
+
+        if (movimentacaoFinanceiraId == null || movimentacaoFinanceiraId <= 0) {
+            throw new IllegalArgumentException("ID da movimentação financeira é obrigatório para venda à vista.");
+        }
+
+        return new ResultadoFinalizacaoVenda(
+                vendaId,
+                TipoVenda.A_VISTA,
+                StatusVenda.PAGA,
+                formaPagamento,
+                valorTotal,
+                troco,
+                null,
+                null,
+                movimentacaoFinanceiraId
+        );
+    }
+
+    /**
+     * Monta o resultado da finalização de uma venda a prazo.
+     *
+     * Este método apenas cria o objeto de retorno em memória.
+     * Ainda não é chamado pelo finalizarVenda(...).
+     *
+     * @implNote Apoia o futuro retorno da finalização da venda a prazo na Fase 5.
+     */
+    private ResultadoFinalizacaoVenda montarResultadoFinalizacaoVendaAPrazo(
+            Integer vendaId,
+            BigDecimal valorTotal,
+            LocalDate dataVencimento,
+            Integer contaReceberId
+    ) {
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda é obrigatório para montar o resultado.");
+        }
+
+        if (valorTotal == null || valorTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor total inválido para montar o resultado.");
+        }
+
+        if (dataVencimento == null) {
+            throw new IllegalArgumentException("Data de vencimento é obrigatória para venda a prazo.");
+        }
+
+        if (contaReceberId == null || contaReceberId <= 0) {
+            throw new IllegalArgumentException("ID da conta a receber é obrigatório para venda a prazo.");
+        }
+
+        return new ResultadoFinalizacaoVenda(
+                vendaId,
+                TipoVenda.A_PRAZO,
+                StatusVenda.PENDENTE,
+                FormaPagamento.A_PRAZO,
+                valorTotal,
+                BigDecimal.ZERO,
+                dataVencimento,
+                contaReceberId,
+                null
+        );
+    }
+
+    /**
      * Valida os dados básicos comuns para qualquer tipo de finalização de venda.
      *
      * Esta validação ainda não executa regras específicas de venda à vista
