@@ -721,6 +721,33 @@ public class VendaService {
     }
 
     /**
+     * Persiste a venda dentro de uma transação.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     */
+    private Integer persistirVenda(Connection conn, Venda venda) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para persistir a venda.");
+        }
+
+        if (venda == null) {
+            throw new IllegalArgumentException("Venda inválida para persistir.");
+        }
+
+        Integer vendaId = vendaDAO.inserir(conn, venda);
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalStateException("Não foi possível obter o ID da venda persistida.");
+        }
+
+        return vendaId;
+    }
+
+    /**
      * Persiste os itens da venda dentro de uma transação.
      *
      * Este método não abre transação, não executa commit e não executa rollback.
