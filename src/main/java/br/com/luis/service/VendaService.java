@@ -927,6 +927,68 @@ public class VendaService {
     }
 
     /**
+     * Valida se o cliente possui limite de crédito disponível
+     * para realizar a venda a prazo.
+     *
+     * Este método considera:
+     * limite disponível = limite de crédito do cliente - total pendente em contas a receber.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     */
+    private void validarLimiteCreditoDisponivelVendaAPrazo(
+            Connection conn,
+            Cliente cliente,
+            BigDecimal valorVenda
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para validar limite de crédito.");
+        }
+
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente é obrigatório para validar limite de crédito.");
+        }
+
+        if (cliente.getIdCliente() == null || cliente.getIdCliente() <= 0) {
+            throw new IllegalArgumentException("Cliente inválido para validar limite de crédito.");
+        }
+
+        if (valorVenda == null || valorVenda.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor da venda é obrigatório para validar limite de crédito.");
+        }
+
+        BigDecimal limiteCredito = cliente.getLimiteCredito() != null
+                ? cliente.getLimiteCredito()
+                : BigDecimal.ZERO;
+
+        limiteCredito = limiteCredito.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        BigDecimal totalPendente = contaReceberDAO.somarTotalPendentePorCliente(
+                conn,
+                cliente.getIdCliente()
+        );
+
+        if (totalPendente == null) {
+            totalPendente = BigDecimal.ZERO;
+        }
+
+        totalPendente = totalPendente.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        BigDecimal limiteDisponivel = limiteCredito
+                .subtract(totalPendente)
+                .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        BigDecimal valorVendaAjustado = valorVenda.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        if (valorVendaAjustado.compareTo(limiteDisponivel) > 0) {
+            throw new IllegalArgumentException("Limite de crédito insuficiente para venda a prazo.");
+        }
+    }
+
+    /**
      * Persiste os itens da venda dentro de uma transação.
      *
      * Este método não abre transação, não executa commit e não executa rollback.
