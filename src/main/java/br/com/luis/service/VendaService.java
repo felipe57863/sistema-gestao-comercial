@@ -778,6 +778,36 @@ public class VendaService {
     }
 
     /**
+     * Persiste a conta a receber dentro de uma transação.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     */
+    private Integer persistirContaReceber(
+            Connection conn,
+            ContaReceber contaReceber
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para persistir conta a receber.");
+        }
+
+        if (contaReceber == null) {
+            throw new IllegalArgumentException("Conta a receber inválida para persistir.");
+        }
+
+        Integer contaReceberId = contaReceberDAO.inserir(conn, contaReceber);
+
+        if (contaReceberId == null || contaReceberId <= 0) {
+            throw new IllegalStateException("Não foi possível obter o ID da conta a receber persistida.");
+        }
+
+        return contaReceberId;
+    }
+
+    /**
      * Persiste os itens da venda dentro de uma transação.
      *
      * Este método não abre transação, não executa commit e não executa rollback.
