@@ -9,10 +9,13 @@ import br.com.luis.dao.ProdutoDAO;
 import br.com.luis.dao.VendaDAO;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.ItemVenda;
+import br.com.luis.model.MovimentacaoFinanceira;
+import br.com.luis.model.OrigemMovimentacaoFinanceira;
 import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
 import br.com.luis.model.StatusVenda;
 import br.com.luis.model.TipoDescontoGlobal;
+import br.com.luis.model.TipoMovimentacaoFinanceira;
 import br.com.luis.model.TipoVenda;
 import br.com.luis.model.Venda;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
@@ -472,6 +475,55 @@ public class VendaService {
         venda.setStatus(StatusVenda.PENDENTE.name());
         venda.setUsuarioId(usuarioId);
         venda.setClienteId(clienteId);
+    }
+
+    /**
+     * Monta uma movimentação financeira para venda à vista.
+     *
+     * Este método apenas cria e preenche o objeto em memória.
+     * Ainda não insere a movimentação no banco de dados.
+     *
+     * @implNote Apoia a futura geração de MovimentacaoFinanceira
+     * para venda à vista na Fase 5.
+     */
+    private MovimentacaoFinanceira montarMovimentacaoFinanceiraVendaAVista(
+            Integer vendaId,
+            FormaPagamento formaPagamento,
+            BigDecimal valorTotal,
+            Integer usuarioId
+    ) {
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda é obrigatório para gerar movimentação financeira.");
+        }
+
+        if (formaPagamento == null) {
+            throw new IllegalArgumentException("Forma de pagamento é obrigatória para movimentação financeira.");
+        }
+
+        if (formaPagamento == FormaPagamento.A_PRAZO) {
+            throw new IllegalArgumentException("Venda a prazo não gera movimentação financeira imediata.");
+        }
+
+        if (valorTotal == null || valorTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor total inválido para movimentação financeira.");
+        }
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException("Usuário é obrigatório para movimentação financeira.");
+        }
+
+        MovimentacaoFinanceira movimentacaoFinanceira = new MovimentacaoFinanceira();
+        movimentacaoFinanceira.setDataHora(LocalDateTime.now());
+        movimentacaoFinanceira.setTipo(TipoMovimentacaoFinanceira.ENTRADA);
+        movimentacaoFinanceira.setOrigem(OrigemMovimentacaoFinanceira.VENDA_A_VISTA);
+        movimentacaoFinanceira.setFormaPagamento(formaPagamento);
+        movimentacaoFinanceira.setValor(valorTotal);
+        movimentacaoFinanceira.setVendaId(vendaId);
+        movimentacaoFinanceira.setContaReceberId(null);
+        movimentacaoFinanceira.setUsuarioId(usuarioId);
+
+        return movimentacaoFinanceira;
     }
 
     /**
