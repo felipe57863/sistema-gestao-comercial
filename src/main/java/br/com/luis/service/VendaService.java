@@ -13,6 +13,7 @@ import br.com.luis.model.MovimentacaoFinanceira;
 import br.com.luis.model.OrigemMovimentacaoFinanceira;
 import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
+import br.com.luis.model.PrazoPagamento;
 import br.com.luis.model.StatusVenda;
 import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.TipoMovimentacaoFinanceira;
@@ -842,6 +843,44 @@ public class VendaService {
         }
 
         return cliente;
+    }
+
+    /**
+     * Busca e valida o prazo efetivo da venda a prazo dentro de uma transação.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     */
+    private PrazoPagamento buscarEValidarPrazoEfetivoVendaAPrazo(
+            Connection conn,
+            Integer prazoPagamentoId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para validar prazo da venda a prazo.");
+        }
+
+        if (prazoPagamentoId == null || prazoPagamentoId <= 0) {
+            throw new IllegalArgumentException("Prazo de pagamento é obrigatório para venda a prazo.");
+        }
+
+        PrazoPagamento prazoPagamento = prazoPagamentoDAO.buscarPorId(conn, prazoPagamentoId);
+
+        if (prazoPagamento == null) {
+            throw new IllegalArgumentException("Prazo de pagamento não encontrado para venda a prazo.");
+        }
+
+        if (!prazoPagamento.isAtivo()) {
+            throw new IllegalArgumentException("Prazo de pagamento inativo não pode ser usado na venda a prazo.");
+        }
+
+        if (prazoPagamento.getQuantidadeDias() == null || prazoPagamento.getQuantidadeDias() <= 0) {
+            throw new IllegalArgumentException("Prazo de pagamento deve possuir quantidade de dias maior que zero.");
+        }
+
+        return prazoPagamento;
     }
 
     /**
