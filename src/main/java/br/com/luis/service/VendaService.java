@@ -24,6 +24,7 @@ import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -670,6 +671,53 @@ public class VendaService {
                 contaReceberId,
                 null
         );
+    }
+
+    /**
+     * Revalida e baixa o estoque dos itens da venda dentro de uma transação.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * A validação definitiva de produto ativo e estoque suficiente é feita pelo
+     * ProdutoDAO.baixarEstoque(...), usando UPDATE seguro no banco de dados.
+     *
+     * @implNote Apoia a RN01 - Não permitir venda sem estoque.
+     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     */
+    private void revalidarEBaixarEstoqueItens(Connection conn, Venda venda) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para baixar estoque.");
+        }
+
+        if (venda == null) {
+            throw new IllegalArgumentException("Venda inválida para baixar estoque.");
+        }
+
+        if (venda.getItens() == null || venda.getItens().isEmpty()) {
+            throw new IllegalArgumentException("Venda não possui itens para baixar estoque.");
+        }
+
+        for (ItemVenda item : venda.getItens()) {
+            if (item == null) {
+                throw new IllegalArgumentException("Item inválido para baixar estoque.");
+            }
+
+            if (item.getProdutoId() == null || item.getProdutoId() <= 0) {
+                throw new IllegalArgumentException("Item da venda sem produto válido para baixar estoque.");
+            }
+
+            if (item.getQuantidade() == null || item.getQuantidade() <= 0) {
+                throw new IllegalArgumentException("Item da venda com quantidade inválida para baixar estoque.");
+            }
+
+            produtoDAO.baixarEstoque(
+                    conn,
+                    item.getProdutoId(),
+                    item.getQuantidade()
+            );
+        }
     }
 
     /**
