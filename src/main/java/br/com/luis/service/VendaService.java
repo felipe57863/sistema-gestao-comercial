@@ -721,6 +721,47 @@ public class VendaService {
     }
 
     /**
+     * Persiste os itens da venda dentro de uma transação.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * Antes de inserir cada item, o ID da venda é vinculado ao ItemVenda.
+     *
+     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     */
+    private void persistirItensVenda(
+            Connection conn,
+            Integer vendaId,
+            Venda venda
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para persistir itens da venda.");
+        }
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda é obrigatório para persistir itens da venda.");
+        }
+
+        if (venda == null) {
+            throw new IllegalArgumentException("Venda inválida para persistir itens.");
+        }
+
+        if (venda.getItens() == null || venda.getItens().isEmpty()) {
+            throw new IllegalArgumentException("Venda não possui itens para persistir.");
+        }
+
+        for (ItemVenda item : venda.getItens()) {
+            validarItemParaFinalizacao(item);
+
+            item.setVendaId(vendaId);
+
+            itemVendaDAO.inserir(conn, item);
+        }
+    }
+
+    /**
      * Valida os dados básicos comuns para qualquer tipo de finalização de venda.
      *
      * Esta validação ainda não executa regras específicas de venda à vista
