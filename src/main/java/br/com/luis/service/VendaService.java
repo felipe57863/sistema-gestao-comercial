@@ -18,11 +18,14 @@ import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.TipoMovimentacaoFinanceira;
 import br.com.luis.model.TipoVenda;
 import br.com.luis.model.Venda;
+import br.com.luis.model.ContaReceber;
+import br.com.luis.model.StatusContaReceber;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -524,6 +527,56 @@ public class VendaService {
         movimentacaoFinanceira.setUsuarioId(usuarioId);
 
         return movimentacaoFinanceira;
+    }
+
+    /**
+     * Monta uma conta a receber para venda a prazo.
+     *
+     * Este método apenas cria e preenche o objeto em memória.
+     * Ainda não insere a conta a receber no banco de dados.
+     *
+     * @implNote Apoia a futura geração de ContaReceber
+     * para venda a prazo na Fase 5.
+     */
+    private ContaReceber montarContaReceberVendaAPrazo(
+            Integer vendaId,
+            Integer clienteId,
+            Integer prazoPagamentoId,
+            Integer quantidadeDiasPrazo,
+            BigDecimal valorTotal
+    ) {
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda é obrigatório para gerar conta a receber.");
+        }
+
+        if (clienteId == null || clienteId <= 0) {
+            throw new IllegalArgumentException("Cliente é obrigatório para gerar conta a receber.");
+        }
+
+        if (prazoPagamentoId == null || prazoPagamentoId <= 0) {
+            throw new IllegalArgumentException("Prazo de pagamento é obrigatório para gerar conta a receber.");
+        }
+
+        if (quantidadeDiasPrazo == null || quantidadeDiasPrazo <= 0) {
+            throw new IllegalArgumentException("Quantidade de dias do prazo é obrigatória para gerar conta a receber.");
+        }
+
+        if (valorTotal == null || valorTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Valor total inválido para gerar conta a receber.");
+        }
+
+        ContaReceber contaReceber = new ContaReceber();
+        contaReceber.setValor(valorTotal);
+        contaReceber.setDataVencimento(LocalDate.now().plusDays(quantidadeDiasPrazo));
+        contaReceber.setStatus(StatusContaReceber.PENDENTE);
+        contaReceber.setVendaId(vendaId);
+        contaReceber.setClienteId(clienteId);
+        contaReceber.setPrazoPagamentoId(prazoPagamentoId);
+        contaReceber.setQuantidadeDiasPrazo(quantidadeDiasPrazo);
+        contaReceber.setDataCriacao(LocalDateTime.now());
+
+        return contaReceber;
     }
 
     /**
