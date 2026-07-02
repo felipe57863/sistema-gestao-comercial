@@ -884,6 +884,49 @@ public class VendaService {
     }
 
     /**
+     * Valida se o prazo efetivo escolhido na venda a prazo está dentro
+     * do prazo máximo autorizado para o cliente.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas compara os objetos já carregados.
+     *
+     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     */
+    private void validarPrazoEfetivoDentroDoLimiteDoCliente(
+            Cliente cliente,
+            PrazoPagamento prazoEfetivo
+    ) {
+
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente é obrigatório para validar prazo da venda a prazo.");
+        }
+
+        if (prazoEfetivo == null) {
+            throw new IllegalArgumentException("Prazo efetivo é obrigatório para validar venda a prazo.");
+        }
+
+        PrazoPagamento prazoMaximoCliente = cliente.getPrazoPagamento();
+
+        if (prazoMaximoCliente == null) {
+            throw new IllegalArgumentException("Cliente não possui prazo máximo autorizado.");
+        }
+
+        if (prazoMaximoCliente.getQuantidadeDias() == null || prazoMaximoCliente.getQuantidadeDias() <= 0) {
+            throw new IllegalArgumentException("Prazo máximo do cliente é inválido.");
+        }
+
+        if (prazoEfetivo.getQuantidadeDias() == null || prazoEfetivo.getQuantidadeDias() <= 0) {
+            throw new IllegalArgumentException("Prazo efetivo da venda é inválido.");
+        }
+
+        if (prazoEfetivo.getQuantidadeDias() > prazoMaximoCliente.getQuantidadeDias()) {
+            throw new IllegalArgumentException(
+                    "O prazo escolhido ultrapassa o prazo máximo autorizado para este cliente."
+            );
+        }
+    }
+
+    /**
      * Persiste os itens da venda dentro de uma transação.
      *
      * Este método não abre transação, não executa commit e não executa rollback.
