@@ -18,6 +18,7 @@ import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.TipoMovimentacaoFinanceira;
 import br.com.luis.model.TipoVenda;
 import br.com.luis.model.Venda;
+import br.com.luis.model.Cliente;
 import br.com.luis.model.ContaReceber;
 import br.com.luis.model.StatusContaReceber;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
@@ -805,6 +806,42 @@ public class VendaService {
         }
 
         return contaReceberId;
+    }
+
+    /**
+     * Busca e valida o cliente da venda a prazo dentro de uma transação.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * A busca já carrega o prazo máximo vinculado ao cliente.
+     *
+     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     */
+    private Cliente buscarEValidarClienteVendaAPrazo(
+            Connection conn,
+            Integer clienteId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para validar cliente da venda a prazo.");
+        }
+
+        if (clienteId == null || clienteId <= 0) {
+            throw new IllegalArgumentException("Cliente é obrigatório para venda a prazo.");
+        }
+
+        Cliente cliente = clienteDAO.buscarPorIdComPrazo(conn, clienteId);
+
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente não encontrado para venda a prazo.");
+        }
+
+        if (cliente.getStatus() != Cliente.StatusCliente.ATIVO) {
+            throw new IllegalArgumentException("Cliente inativo não pode realizar venda a prazo.");
+        }
+
+        return cliente;
     }
 
     /**
