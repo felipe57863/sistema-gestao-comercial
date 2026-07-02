@@ -748,6 +748,36 @@ public class VendaService {
     }
 
     /**
+     * Persiste a movimentação financeira dentro de uma transação.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * @implNote Apoia a futura finalização transacional da venda à vista na Fase 5.
+     */
+    private Integer persistirMovimentacaoFinanceira(
+            Connection conn,
+            MovimentacaoFinanceira movimentacaoFinanceira
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para persistir movimentação financeira.");
+        }
+
+        if (movimentacaoFinanceira == null) {
+            throw new IllegalArgumentException("Movimentação financeira inválida para persistir.");
+        }
+
+        Integer movimentacaoFinanceiraId = movimentacaoFinanceiraDAO.inserir(conn, movimentacaoFinanceira);
+
+        if (movimentacaoFinanceiraId == null || movimentacaoFinanceiraId <= 0) {
+            throw new IllegalStateException("Não foi possível obter o ID da movimentação financeira persistida.");
+        }
+
+        return movimentacaoFinanceiraId;
+    }
+
+    /**
      * Persiste os itens da venda dentro de uma transação.
      *
      * Este método não abre transação, não executa commit e não executa rollback.
