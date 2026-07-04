@@ -499,6 +499,65 @@ public class VendaService {
     }
 
     /**
+     * Finaliza uma venda a prazo usando uma Connection externa.
+     *
+     * Este método não abre conexão, não executa commit e não executa rollback.
+     * Ele apenas orquestra as operações da venda a prazo dentro de uma transação
+     * que será controlada externamente.
+     *
+     * Ordem do fluxo:
+     * Validações transacionais -> Venda -> ItensVenda -> Baixa de estoque -> ContaReceber -> Resultado.
+     *
+     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     */
+    private ResultadoFinalizacaoVenda finalizarVendaAPrazoTransacional(
+            Connection conn,
+            Venda venda,
+            Integer clienteId,
+            Integer prazoPagamentoId,
+            Integer usuarioId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para finalizar venda a prazo.");
+        }
+
+        DadosValidadosVendaAPrazo dadosValidados = validarDadosTransacionaisVendaAPrazo(
+                conn,
+                clienteId,
+                prazoPagamentoId,
+                venda.getValorTotal()
+        );
+
+        PrazoPagamento prazoEfetivo = dadosValidados.getPrazoEfetivo();
+
+        prepararDadosVendaAPrazo(venda, clienteId, usuarioId);
+
+        Integer vendaId = persistirVenda(conn, venda);
+
+        persistirItensVenda(conn, vendaId, venda);
+
+        revalidarEBaixarEstoqueItens(conn, venda);
+
+        ContaReceber contaReceber = montarContaReceberVendaAPrazo(
+                vendaId,
+                clienteId,
+                prazoEfetivo.getIdPrazo(),
+                prazoEfetivo.getQuantidadeDias(),
+                venda.getValorTotal()
+        );
+
+        Integer contaReceberId = persistirContaReceber(conn, contaReceber);
+
+        return montarResultadoFinalizacaoVendaAPrazo(
+                vendaId,
+                venda.getValorTotal(),
+                contaReceber.getDataVencimento(),
+                contaReceberId
+        );
+    }
+
+    /**
      * Prepara os dados finais de uma venda à vista.
      *
      * Este método apenas ajusta o objeto Venda em memória.
