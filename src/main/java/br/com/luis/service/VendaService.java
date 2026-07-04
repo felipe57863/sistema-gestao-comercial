@@ -407,6 +407,66 @@ public class VendaService {
     }
 
     /**
+     * Finaliza uma venda à vista usando uma Connection externa.
+     *
+     * Este método não abre conexão, não executa commit e não executa rollback.
+     * Ele apenas orquestra as operações da venda à vista dentro de uma transação
+     * que será controlada externamente.
+     *
+     * Ordem do fluxo:
+     * Venda -> ItensVenda -> Baixa de estoque -> MovimentacaoFinanceira -> Resultado.
+     *
+     * @implNote Apoia a futura finalização transacional da venda à vista na Fase 5.
+     */
+    private ResultadoFinalizacaoVenda finalizarVendaAVistaTransacional(
+            Connection conn,
+            Venda venda,
+            FormaPagamento formaPagamento,
+            BigDecimal valorRecebido,
+            Integer clienteId,
+            Integer usuarioId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para finalizar venda à vista.");
+        }
+
+        prepararDadosVendaAVista(venda, formaPagamento, clienteId, usuarioId);
+
+        BigDecimal troco = calcularTrocoVendaAVista(
+                venda,
+                formaPagamento,
+                valorRecebido
+        );
+
+        Integer vendaId = persistirVenda(conn, venda);
+
+        persistirItensVenda(conn, vendaId, venda);
+
+        revalidarEBaixarEstoqueItens(conn, venda);
+
+        MovimentacaoFinanceira movimentacaoFinanceira = montarMovimentacaoFinanceiraVendaAVista(
+                vendaId,
+                formaPagamento,
+                venda.getValorTotal(),
+                usuarioId
+        );
+
+        Integer movimentacaoFinanceiraId = persistirMovimentacaoFinanceira(
+                conn,
+                movimentacaoFinanceira
+        );
+
+        return montarResultadoFinalizacaoVendaAVista(
+                vendaId,
+                formaPagamento,
+                venda.getValorTotal(),
+                troco,
+                movimentacaoFinanceiraId
+        );
+    }
+
+    /**
      * Valida os dados específicos de uma venda a prazo.
      *
      * Esta validação ainda não consulta cliente no banco, não valida limite
