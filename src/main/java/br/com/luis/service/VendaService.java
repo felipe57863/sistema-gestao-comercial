@@ -27,6 +27,7 @@ import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -555,6 +556,69 @@ public class VendaService {
                 contaReceber.getDataVencimento(),
                 contaReceberId
         );
+    }
+
+    /**
+     * Executa rollback de forma segura.
+     *
+     * Se o rollback falhar e existir um erro original, a falha do rollback
+     * será adicionada como erro suprimido no erro original.
+     *
+     * Este método não abre conexão e não controla transação sozinho.
+     *
+     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     */
+    private void executarRollbackSeguro(
+            Connection conn,
+            Exception erroOriginal
+    ) {
+
+        if (conn == null) {
+            return;
+        }
+
+        try {
+            conn.rollback();
+        } catch (SQLException erroRollback) {
+            if (erroOriginal != null) {
+                erroOriginal.addSuppressed(erroRollback);
+                return;
+            }
+
+            throw new IllegalStateException("Falha ao executar rollback da transação.", erroRollback);
+        }
+    }
+
+    /**
+     * Restaura o autoCommit da conexão de forma segura.
+     *
+     * Se a restauração falhar e existir um erro original, a falha da restauração
+     * será adicionada como erro suprimido no erro original.
+     *
+     * Este método não abre conexão e não controla transação sozinho.
+     *
+     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     */
+    private void restaurarAutoCommitSeguro(
+            Connection conn,
+            boolean autoCommitAnterior,
+            Exception erroOriginal
+    ) {
+
+        if (conn == null) {
+            return;
+        }
+
+        try {
+            conn.setAutoCommit(autoCommitAnterior);
+        } catch (SQLException erroAutoCommit) {
+            if (erroOriginal != null) {
+                erroOriginal.addSuppressed(erroAutoCommit);
+                return;
+            }
+
+            throw new IllegalStateException("Falha ao restaurar autoCommit da conexão.", erroAutoCommit);
+        }
     }
 
     /**
