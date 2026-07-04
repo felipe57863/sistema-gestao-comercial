@@ -23,6 +23,7 @@ import br.com.luis.model.Cliente;
 import br.com.luis.model.ContaReceber;
 import br.com.luis.model.StatusContaReceber;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
+import br.com.luis.util.ConnectionFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -328,14 +329,72 @@ public class VendaService {
 
         if (tipoVenda == TipoVenda.A_VISTA) {
             validarDadosVendaAVista(venda, tipoVenda, formaPagamento, valorRecebido);
-            calcularTrocoVendaAVista(venda, formaPagamento, valorRecebido);
-        }
-
-        if (tipoVenda == TipoVenda.A_PRAZO) {
+        } else if (tipoVenda == TipoVenda.A_PRAZO) {
             validarDadosVendaAPrazo(tipoVenda, formaPagamento, clienteId, prazoPagamentoId);
+        } else {
+            throw new IllegalArgumentException("Tipo de venda inválido para finalização.");
         }
 
-        throw new UnsupportedOperationException("Finalização da venda ainda não implementada.");
+        try (Connection conn = ConnectionFactory.getConnection()) {
+            boolean autoCommitAnterior = conn.getAutoCommit();
+            Exception erroOriginal = null;
+
+            try {
+                conn.setAutoCommit(false);
+
+                ResultadoFinalizacaoVenda resultado;
+
+                if (tipoVenda == TipoVenda.A_VISTA) {
+                    resultado = finalizarVendaAVistaTransacional(
+                            conn,
+                            venda,
+                            formaPagamento,
+                            valorRecebido,
+                            clienteId,
+                            usuarioId
+                    );
+                } else if (tipoVenda == TipoVenda.A_PRAZO) {
+                    resultado = finalizarVendaAPrazoTransacional(
+                            conn,
+                            venda,
+                            clienteId,
+                            prazoPagamentoId,
+                            usuarioId
+                    );
+                } else {
+                    throw new IllegalArgumentException("Tipo de venda inválido para finalização.");
+                }
+
+                conn.commit();
+
+                return resultado;
+
+            } catch (Exception erro) {
+                erroOriginal = erro;
+
+                executarRollbackSeguro(conn, erroOriginal);
+
+                if (erro instanceof IllegalArgumentException) {
+                    throw (IllegalArgumentException) erro;
+                }
+
+                if (erro instanceof IllegalStateException) {
+                    throw (IllegalStateException) erro;
+                }
+
+                if (erro instanceof SQLException) {
+                    throw new IllegalStateException("Erro ao finalizar venda.", erro);
+                }
+
+                throw new IllegalStateException("Erro inesperado ao finalizar venda.", erro);
+
+            } finally {
+                restaurarAutoCommitSeguro(conn, autoCommitAnterior, erroOriginal);
+            }
+
+        } catch (SQLException erro) {
+            throw new IllegalStateException("Erro ao finalizar venda.", erro);
+        }
     }
 
     /**
