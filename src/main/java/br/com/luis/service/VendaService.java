@@ -989,6 +989,38 @@ public class VendaService {
     }
 
     /**
+     * Valida os dados transacionais necessários para uma venda a prazo.
+     *
+     * Este método agrupa as validações de cliente, prazo efetivo,
+     * prazo máximo autorizado e limite de crédito.
+     *
+     * Este método não abre transação, não executa commit e não executa rollback.
+     * Ele apenas usa a Connection externa recebida.
+     *
+     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     */
+    private DadosValidadosVendaAPrazo validarDadosTransacionaisVendaAPrazo(
+            Connection conn,
+            Integer clienteId,
+            Integer prazoPagamentoId,
+            BigDecimal valorVenda
+    ) {
+
+        Cliente cliente = buscarEValidarClienteVendaAPrazo(conn, clienteId);
+
+        PrazoPagamento prazoEfetivo = buscarEValidarPrazoEfetivoVendaAPrazo(
+                conn,
+                prazoPagamentoId
+        );
+
+        validarPrazoEfetivoDentroDoLimiteDoCliente(cliente, prazoEfetivo);
+
+        validarLimiteCreditoDisponivelVendaAPrazo(conn, cliente, valorVenda);
+
+        return new DadosValidadosVendaAPrazo(cliente, prazoEfetivo);
+    }
+
+    /**
      * Persiste os itens da venda dentro de uma transação.
      *
      * Este método não abre transação, não executa commit e não executa rollback.
@@ -1533,4 +1565,33 @@ public class VendaService {
 
         return desconto.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
     }
+
+    /**
+     * Estrutura auxiliar interna para transportar os dados validados
+     * da venda a prazo dentro do VendaService.
+     *
+     * Esta classe não é model, não é viewmodel e não deve sair desta classe.
+     */
+    private static class DadosValidadosVendaAPrazo {
+
+        private final Cliente cliente;
+        private final PrazoPagamento prazoEfetivo;
+
+        private DadosValidadosVendaAPrazo(
+                Cliente cliente,
+                PrazoPagamento prazoEfetivo
+        ) {
+            this.cliente = cliente;
+            this.prazoEfetivo = prazoEfetivo;
+        }
+
+        private Cliente getCliente() {
+            return cliente;
+        }
+
+        private PrazoPagamento getPrazoEfetivo() {
+            return prazoEfetivo;
+        }
+    }
+
 }
