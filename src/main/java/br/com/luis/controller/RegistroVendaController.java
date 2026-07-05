@@ -6,6 +6,7 @@ import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.Venda;
 import br.com.luis.model.Usuario;
 import br.com.luis.model.TipoVenda;
+import br.com.luis.model.FormaPagamento;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
@@ -1054,5 +1055,32 @@ public class RegistroVendaController {
         }
 
         return dialog.showAndWait();
+    }
+    /**
+     * Estrutura auxiliar interna para transportar os dados de pagamento
+     * da venda à vista dentro do RegistroVendaController.
+     *
+     * Esta classe não é model, não é viewmodel e não deve sair deste Controller.
+     */
+    private static class DadosPagamentoAVista {
+
+        private final FormaPagamento formaPagamento;
+        private final BigDecimal valorRecebido;
+
+        private DadosPagamentoAVista(
+                FormaPagamento formaPagamento,
+                BigDecimal valorRecebido
+        ) {
+            this.formaPagamento = formaPagamento;
+            this.valorRecebido = valorRecebido;
+        }
+
+        private FormaPagamento getFormaPagamento() {
+            return formaPagamento;
+        }
+
+        private BigDecimal getValorRecebido() {
+            return valorRecebido;
+        }
     }
 }
