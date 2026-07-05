@@ -4,6 +4,8 @@ import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
 import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.Venda;
+import br.com.luis.model.Usuario;
+import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.viewmodel.ItemCarrinhoView;
@@ -123,7 +125,28 @@ public class RegistroVendaController {
      * A ligação definitiva com SessaoUsuario será ajustada em etapa futura.
      */
     private void inicializarVenda() {
-        this.vendaAtual = new Venda(USUARIO_TEMPORARIO_ID);
+        this.vendaAtual = new Venda(obterUsuarioIdAtual());
+    }
+
+    /**
+     * Obtém o ID do usuário atualmente logado.
+     *
+     * Enquanto a integração completa da sessão não é finalizada,
+     * mantém USUARIO_TEMPORARIO_ID apenas como fallback de segurança.
+     */
+    private Integer obterUsuarioIdAtual() {
+
+        Usuario usuarioLogado = SessaoUsuario.getInstance().getUsuarioLogado();
+
+        if (usuarioLogado == null) {
+            return USUARIO_TEMPORARIO_ID;
+        }
+
+        if (usuarioLogado.getIdUsuario() == null || usuarioLogado.getIdUsuario() <= 0) {
+            return USUARIO_TEMPORARIO_ID;
+        }
+
+        return usuarioLogado.getIdUsuario();
     }
 
     /**
