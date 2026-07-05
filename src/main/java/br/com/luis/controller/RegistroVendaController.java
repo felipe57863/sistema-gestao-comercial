@@ -5,6 +5,7 @@ import br.com.luis.model.Produto;
 import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.Venda;
 import br.com.luis.model.Usuario;
+import br.com.luis.model.TipoVenda;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
@@ -846,6 +847,25 @@ public class RegistroVendaController {
 
         txtDescontoValor.setDisable(true);
         txtDescontoPercentual.setDisable(true);
+    }
+
+    /**
+     * Obtém o tipo de venda selecionado na tela.
+     *
+     * O Controller apenas identifica a seleção visual.
+     * As regras de finalização continuam no VendaService.
+     */
+    private TipoVenda obterTipoVendaSelecionado() {
+
+        if (rbVendaAVista.isSelected()) {
+            return TipoVenda.A_VISTA;
+        }
+
+        if (rbVendaAPrazo.isSelected()) {
+            return TipoVenda.A_PRAZO;
+        }
+
+        throw new IllegalArgumentException("Selecione o tipo de venda.");
     }
 
     /**
