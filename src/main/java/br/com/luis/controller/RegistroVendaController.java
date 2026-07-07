@@ -11,6 +11,7 @@ import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.viewmodel.ItemCarrinhoView;
+import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -1049,10 +1050,104 @@ public class RegistroVendaController {
      */
     @FXML
     private void onFinalizarVenda() {
+
+        try {
+            TipoVenda tipoVenda = obterTipoVendaSelecionado();
+
+            if (tipoVenda == TipoVenda.A_PRAZO) {
+                exibirInformacao(
+                        "Finalização de Venda",
+                        "Finalização de venda a prazo será integrada nos próximos passos."
+                );
+                return;
+            }
+
+            Optional<DadosPagamentoAVista> dadosPagamentoOptional = solicitarDadosPagamentoAVista();
+
+            if (dadosPagamentoOptional.isEmpty()) {
+                return;
+            }
+
+            DadosPagamentoAVista dadosPagamento = dadosPagamentoOptional.get();
+
+            ResultadoFinalizacaoVenda resultado = vendaService.finalizarVenda(
+                    vendaAtual,
+                    TipoVenda.A_VISTA,
+                    dadosPagamento.getFormaPagamento(),
+                    dadosPagamento.getValorRecebido(),
+                    null,
+                    null,
+                    obterUsuarioIdAtual()
+            );
+
+            exibirResultadoFinalizacaoAVista(resultado);
+            limparTelaAposFinalizacao();
+
+        } catch (IllegalArgumentException e) {
+            exibirErro(e.getMessage());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            exibirErro("Erro inesperado ao finalizar venda.");
+        }
+    }
+
+    /**
+     * Exibe o resultado da finalização de uma venda à vista.
+     */
+    private void exibirResultadoFinalizacaoAVista(ResultadoFinalizacaoVenda resultado) {
+
+        if (resultado == null) {
+            exibirInformacao(
+                    "Venda finalizada",
+                    "Venda finalizada com sucesso."
+            );
+            return;
+        }
+
+        StringBuilder mensagem = new StringBuilder();
+
+        mensagem.append("Venda finalizada com sucesso.")
+                .append("\n\n")
+                .append("Venda: ")
+                .append(resultado.getVendaId())
+                .append("\n")
+                .append("Total: ")
+                .append(formatarMoeda(resultado.getValorTotal()))
+                .append("\n")
+                .append("Forma de pagamento: ")
+                .append(resultado.getFormaPagamento());
+
+        if (resultado.getTroco() != null
+                && resultado.getTroco().compareTo(BigDecimal.ZERO) > 0) {
+            mensagem.append("\n")
+                    .append("Troco: ")
+                    .append(formatarMoeda(resultado.getTroco()));
+        }
+
         exibirInformacao(
-                "Finalização de Venda",
-                "A finalização da venda será implementada na Fase 5."
+                "Venda finalizada",
+                mensagem.toString()
         );
+    }
+
+    /**
+     * Limpa a tela após uma venda ser finalizada com sucesso.
+     *
+     * Este método só deve ser chamado depois que o VendaService finalizar
+     * a venda sem erro.
+     */
+    private void limparTelaAposFinalizacao() {
+
+        inicializarVenda();
+
+        atualizarTabelaCarrinho();
+        atualizarResumoVenda();
+
+        limparCamposProduto();
+        limparCamposDescontoGlobal();
+        limparSelecaoTipoVenda();
+        limparAreaCliente();
     }
 
     /**
