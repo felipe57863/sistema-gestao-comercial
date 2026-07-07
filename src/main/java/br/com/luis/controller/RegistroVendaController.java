@@ -31,6 +31,8 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
+import javafx.event.ActionEvent;
+import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -895,6 +897,145 @@ public class RegistroVendaController {
         lblNomeCliente.setText("-");
         lblStatusCliente.setText("-");
         lblLimiteDisponivel.setText("R$ 0,00");
+    }
+
+    /**
+     * Solicita os dados de pagamento para uma venda à vista.
+     *
+     * Este Dialog é temporário para a Fase 5 e não altera o FXML.
+     * Se o usuário cancelar ou fechar a janela, retorna Optional.empty().
+     */
+    private Optional<DadosPagamentoAVista> solicitarDadosPagamentoAVista() {
+
+        Dialog<DadosPagamentoAVista> dialog = new Dialog<>();
+        dialog.setTitle("Pagamento à vista");
+        dialog.setHeaderText("Informe a forma de pagamento da venda à vista.");
+
+        ButtonType botaoConfirmar = new ButtonType(
+                "Confirmar",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        dialog.getDialogPane().getButtonTypes().addAll(
+                botaoConfirmar,
+                ButtonType.CANCEL
+        );
+
+        RadioButton rbPagamentoDinheiro = new RadioButton("Dinheiro");
+        RadioButton rbPagamentoPix = new RadioButton("PIX");
+        RadioButton rbPagamentoCartao = new RadioButton("Cartão");
+
+        ToggleGroup tgFormaPagamento = new ToggleGroup();
+        rbPagamentoDinheiro.setToggleGroup(tgFormaPagamento);
+        rbPagamentoPix.setToggleGroup(tgFormaPagamento);
+        rbPagamentoCartao.setToggleGroup(tgFormaPagamento);
+
+        Label lblValorRecebido = new Label("Valor recebido:");
+        TextField txtValorRecebido = new TextField();
+        txtValorRecebido.setPromptText("Ex.: 100,00");
+
+        Label lblMensagemErro = new Label();
+        lblMensagemErro.setStyle("-fx-text-fill: red;");
+
+        lblValorRecebido.setVisible(false);
+        lblValorRecebido.setManaged(false);
+        txtValorRecebido.setVisible(false);
+        txtValorRecebido.setManaged(false);
+
+        tgFormaPagamento.selectedToggleProperty().addListener((observable, formaAnterior, formaAtual) -> {
+            boolean pagamentoEmDinheiro = formaAtual == rbPagamentoDinheiro;
+
+            lblValorRecebido.setVisible(pagamentoEmDinheiro);
+            lblValorRecebido.setManaged(pagamentoEmDinheiro);
+
+            txtValorRecebido.setVisible(pagamentoEmDinheiro);
+            txtValorRecebido.setManaged(pagamentoEmDinheiro);
+
+            if (pagamentoEmDinheiro) {
+                txtValorRecebido.requestFocus();
+            } else {
+                txtValorRecebido.clear();
+            }
+
+            lblMensagemErro.setText("");
+        });
+
+        VBox conteudo = new VBox(
+                8,
+                rbPagamentoDinheiro,
+                rbPagamentoPix,
+                rbPagamentoCartao,
+                lblValorRecebido,
+                txtValorRecebido,
+                lblMensagemErro
+        );
+
+        dialog.getDialogPane().setContent(conteudo);
+
+        final DadosPagamentoAVista[] dadosPagamentoSelecionados = new DadosPagamentoAVista[1];
+
+        Node botaoConfirmarNode = dialog.getDialogPane().lookupButton(botaoConfirmar);
+
+        botaoConfirmarNode.addEventFilter(ActionEvent.ACTION, event -> {
+            try {
+                lblMensagemErro.setText("");
+
+                FormaPagamento formaPagamento;
+
+                if (rbPagamentoDinheiro.isSelected()) {
+                    formaPagamento = FormaPagamento.DINHEIRO;
+                } else if (rbPagamentoPix.isSelected()) {
+                    formaPagamento = FormaPagamento.PIX;
+                } else if (rbPagamentoCartao.isSelected()) {
+                    formaPagamento = FormaPagamento.CARTAO;
+                } else {
+                    throw new IllegalArgumentException("Selecione a forma de pagamento.");
+                }
+
+                BigDecimal valorRecebido = null;
+
+                if (formaPagamento == FormaPagamento.DINHEIRO) {
+                    String textoValorRecebido = txtValorRecebido.getText();
+
+                    if (textoValorRecebido == null || textoValorRecebido.isBlank()) {
+                        throw new IllegalArgumentException("Informe o valor recebido.");
+                    }
+
+                    String textoNormalizado = textoValorRecebido
+                            .trim()
+                            .replace(",", ".");
+
+                    try {
+                        valorRecebido = new BigDecimal(textoNormalizado);
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Informe um valor recebido válido.");
+                    }
+
+                    if (valorRecebido.compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new IllegalArgumentException("Valor recebido deve ser maior que zero.");
+                    }
+                }
+
+                dadosPagamentoSelecionados[0] = new DadosPagamentoAVista(
+                        formaPagamento,
+                        valorRecebido
+                );
+
+            } catch (IllegalArgumentException e) {
+                lblMensagemErro.setText(e.getMessage());
+                event.consume();
+            }
+        });
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == botaoConfirmar) {
+                return dadosPagamentoSelecionados[0];
+            }
+
+            return null;
+        });
+
+        return dialog.showAndWait();
     }
 
     /**
