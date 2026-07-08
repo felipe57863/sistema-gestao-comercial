@@ -1187,6 +1187,188 @@ public class RegistroVendaController {
     }
 
     /**
+     * Filtra clientes em memória usando nome ou documento.
+     *
+     * Este método não acessa banco e não aplica regra de negócio.
+     * Ele apenas apoia a seleção visual de cliente no Controller.
+     */
+    private List<Cliente> filtrarClientesPorTermo(
+            List<Cliente> clientes,
+            String termoBusca
+    ) {
+
+        if (clientes == null) {
+            return List.of();
+        }
+
+        if (termoBusca == null || termoBusca.isBlank()) {
+            return clientes.stream()
+                    .filter(cliente -> cliente != null)
+                    .toList();
+        }
+
+        String termoNormalizado = termoBusca
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        return clientes.stream()
+                .filter(cliente -> {
+                    if (cliente == null) {
+                        return false;
+                    }
+
+                    String nome = cliente.getNome() != null
+                            ? cliente.getNome().toLowerCase(Locale.ROOT)
+                            : "";
+
+                    String documento = cliente.getDocumento() != null
+                            ? cliente.getDocumento().toLowerCase(Locale.ROOT)
+                            : "";
+
+                    return nome.contains(termoNormalizado)
+                            || documento.contains(termoNormalizado);
+                })
+                .toList();
+    }
+
+    /**
+     * Abre um Dialog para seleção real de cliente.
+     *
+     * Este método apenas retorna o cliente escolhido.
+     * Ele não altera clienteSelecionado e não limpa a área de cliente.
+     */
+    private Optional<Cliente> abrirDialogSelecaoCliente(
+            String termoBusca
+    ) {
+
+        List<Cliente> clientes = clienteService.listarTodos();
+        List<Cliente> clientesEncontrados = filtrarClientesPorTermo(
+                clientes,
+                termoBusca
+        );
+
+        Dialog<Cliente> dialog = new Dialog<>();
+        dialog.setTitle("Selecionar Cliente");
+
+        String termoCabecalho = termoBusca != null && !termoBusca.isBlank()
+                ? termoBusca.trim()
+                : "todos os clientes";
+
+        dialog.setHeaderText("Resultado da busca por: " + termoCabecalho);
+
+        TableView<Cliente> tableViewClientes = new TableView<>(
+                FXCollections.observableArrayList(clientesEncontrados)
+        );
+
+        tableViewClientes.setPrefWidth(820);
+        tableViewClientes.setPrefHeight(300);
+
+        Label placeholder = new Label("Nenhum cliente encontrado para esta busca.");
+        placeholder.setWrapText(true);
+        tableViewClientes.setPlaceholder(placeholder);
+
+        TableColumn<Cliente, Integer> colunaId = new TableColumn<>("ID");
+        colunaId.setPrefWidth(80);
+        colunaId.setCellValueFactory(cellData ->
+                new SimpleIntegerProperty(
+                        cellData.getValue().getIdCliente() != null
+                                ? cellData.getValue().getIdCliente()
+                                : 0
+                ).asObject()
+        );
+
+        TableColumn<Cliente, String> colunaNome = new TableColumn<>("Nome");
+        colunaNome.setPrefWidth(260);
+        colunaNome.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        cellData.getValue().getNome() != null
+                                ? cellData.getValue().getNome()
+                                : "-"
+                )
+        );
+
+        TableColumn<Cliente, String> colunaDocumento = new TableColumn<>("Documento");
+        colunaDocumento.setPrefWidth(180);
+        colunaDocumento.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        cellData.getValue().getDocumento() != null
+                                ? cellData.getValue().getDocumento()
+                                : "-"
+                )
+        );
+
+        TableColumn<Cliente, String> colunaStatus = new TableColumn<>("Status");
+        colunaStatus.setPrefWidth(120);
+        colunaStatus.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        cellData.getValue().getStatus() != null
+                                ? cellData.getValue().getStatus().name()
+                                : "-"
+                )
+        );
+
+        TableColumn<Cliente, String> colunaLimite = new TableColumn<>("Limite");
+        colunaLimite.setPrefWidth(150);
+        colunaLimite.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        formatarMoeda(cellData.getValue().getLimiteCredito())
+                )
+        );
+
+        tableViewClientes.getColumns().addAll(
+                colunaId,
+                colunaNome,
+                colunaDocumento,
+                colunaStatus,
+                colunaLimite
+        );
+
+        dialog.getDialogPane().setContent(tableViewClientes);
+
+        boolean encontrouClientes = !clientesEncontrados.isEmpty();
+
+        if (encontrouClientes) {
+            ButtonType botaoSelecionar = new ButtonType(
+                    "Selecionar",
+                    ButtonBar.ButtonData.OK_DONE
+            );
+
+            dialog.getDialogPane().getButtonTypes().addAll(
+                    botaoSelecionar,
+                    ButtonType.CANCEL
+            );
+
+            Node botaoSelecionarNode = dialog.getDialogPane().lookupButton(botaoSelecionar);
+            botaoSelecionarNode.setDisable(true);
+
+            tableViewClientes.getSelectionModel()
+                    .selectedItemProperty()
+                    .addListener((observable, clienteAnterior, clienteAtual) ->
+                            botaoSelecionarNode.setDisable(clienteAtual == null)
+                    );
+
+            dialog.setResultConverter(buttonType -> {
+                if (buttonType == botaoSelecionar) {
+                    return tableViewClientes.getSelectionModel().getSelectedItem();
+                }
+
+                return null;
+            });
+
+        } else {
+            ButtonType botaoFechar = new ButtonType(
+                    "Fechar",
+                    ButtonBar.ButtonData.CANCEL_CLOSE
+            );
+
+            dialog.getDialogPane().getButtonTypes().add(botaoFechar);
+            dialog.setResultConverter(buttonType -> null);
+        }
+
+        return dialog.showAndWait();
+    }
+
+    /**
      * Evento do botão Selecionar Cliente.
      *
      * Nesta fase, a seleção real de cliente ainda não será implementada.
