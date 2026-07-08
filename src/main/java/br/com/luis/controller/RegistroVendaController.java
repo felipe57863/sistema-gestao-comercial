@@ -1,5 +1,6 @@
 package br.com.luis.controller;
 
+import br.com.luis.model.Cliente;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
 import br.com.luis.model.TipoDescontoGlobal;
@@ -8,6 +9,7 @@ import br.com.luis.model.Usuario;
 import br.com.luis.model.TipoVenda;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.util.SessaoUsuario;
+import br.com.luis.service.ClienteService;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.viewmodel.ItemCarrinhoView;
@@ -63,9 +65,11 @@ public class RegistroVendaController {
 
     private final VendaService vendaService;
     private final ProdutoService produtoService;
+    private final ClienteService clienteService;
     private final ObservableList<ItemCarrinhoView> itensCarrinhoView;
 
     private Venda vendaAtual;
+    private Cliente clienteSelecionado;
 
     @FXML private Label lblUsuarioLogado;
     @FXML private Label lblDataHora;
@@ -107,6 +111,7 @@ public class RegistroVendaController {
     public RegistroVendaController() {
         this.vendaService = new VendaService();
         this.produtoService = new ProdutoService();
+        this.clienteService = new ClienteService();
         this.itensCarrinhoView = FXCollections.observableArrayList();
     }
 
@@ -894,10 +899,41 @@ public class RegistroVendaController {
      */
     private void limparAreaCliente() {
 
+        clienteSelecionado = null;
+
         txtBuscaCliente.clear();
         lblNomeCliente.setText("-");
         lblStatusCliente.setText("-");
         lblLimiteDisponivel.setText("R$ 0,00");
+    }
+
+    /**
+     * Atualiza a área visual de cliente com base no cliente selecionado.
+     */
+    private void atualizarAreaClienteSelecionado() {
+
+        if (clienteSelecionado == null) {
+            limparAreaCliente();
+            return;
+        }
+
+        lblNomeCliente.setText(
+                clienteSelecionado.getNome() != null
+                        ? clienteSelecionado.getNome()
+                        : "-"
+        );
+
+        if (clienteSelecionado.getStatus() != null) {
+            lblStatusCliente.setText(clienteSelecionado.getStatus().name());
+        } else {
+            lblStatusCliente.setText("-");
+        }
+
+        BigDecimal limiteCredito = clienteSelecionado.getLimiteCredito() != null
+                ? clienteSelecionado.getLimiteCredito()
+                : BigDecimal.ZERO;
+
+        lblLimiteDisponivel.setText(formatarMoeda(limiteCredito));
     }
 
     /**
@@ -1292,6 +1328,7 @@ public class RegistroVendaController {
 
         return dialog.showAndWait();
     }
+
     /**
      * Estrutura auxiliar interna para transportar os dados de pagamento
      * da venda à vista dentro do RegistroVendaController.
