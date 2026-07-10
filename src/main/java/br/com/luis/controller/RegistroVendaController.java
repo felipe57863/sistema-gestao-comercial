@@ -1379,10 +1379,31 @@ public class RegistroVendaController {
      */
     @FXML
     private void onSelecionarCliente() {
-        exibirInformacao(
-                "Seleção de Cliente",
-                "A seleção de cliente será implementada na Fase 5."
-        );
+
+        try {
+            String termoBusca = txtBuscaCliente.getText();
+
+            if (termoBusca == null) {
+                termoBusca = "";
+            }
+
+            Optional<Cliente> clienteSelecionadoOptional = abrirDialogSelecaoCliente(termoBusca);
+
+            if (clienteSelecionadoOptional.isEmpty()) {
+                return;
+            }
+
+            clienteSelecionado = clienteSelecionadoOptional.get();
+            atualizarAreaClienteSelecionado();
+
+        } catch (IllegalArgumentException e) {
+            exibirErro(e.getMessage());
+
+        } catch (RuntimeException e) {
+            exibirErro("Não foi possível selecionar o cliente.");
+            System.err.println("[ERRO] Falha inesperada ao selecionar cliente.");
+            e.printStackTrace();
+        }
     }
 
     /**
