@@ -8,10 +8,12 @@ import br.com.luis.model.Venda;
 import br.com.luis.model.Usuario;
 import br.com.luis.model.TipoVenda;
 import br.com.luis.model.FormaPagamento;
+import br.com.luis.model.PrazoPagamento;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ClienteService;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
+import br.com.luis.service.PrazoPagamentoService;
 import br.com.luis.viewmodel.ItemCarrinhoView;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -44,6 +46,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Map;
 
 /**
  * Controller da tela Registro de Venda.
@@ -66,6 +69,7 @@ public class RegistroVendaController {
     private final VendaService vendaService;
     private final ProdutoService produtoService;
     private final ClienteService clienteService;
+    private final PrazoPagamentoService prazoPagamentoService;
     private final ObservableList<ItemCarrinhoView> itensCarrinhoView;
 
     private Venda vendaAtual;
@@ -112,6 +116,7 @@ public class RegistroVendaController {
         this.vendaService = new VendaService();
         this.produtoService = new ProdutoService();
         this.clienteService = new ClienteService();
+        this.prazoPagamentoService = new PrazoPagamentoService();
         this.itensCarrinhoView = FXCollections.observableArrayList();
     }
 
@@ -917,6 +922,10 @@ public class RegistroVendaController {
             return;
         }
 
+        BigDecimal limiteDisponivel = vendaService.calcularLimiteCreditoDisponivel(
+                clienteSelecionado.getIdCliente()
+        );
+
         lblNomeCliente.setText(
                 clienteSelecionado.getNome() != null
                         ? clienteSelecionado.getNome()
@@ -929,11 +938,7 @@ public class RegistroVendaController {
             lblStatusCliente.setText("-");
         }
 
-        BigDecimal limiteCredito = clienteSelecionado.getLimiteCredito() != null
-                ? clienteSelecionado.getLimiteCredito()
-                : BigDecimal.ZERO;
-
-        lblLimiteDisponivel.setText(formatarMoeda(limiteCredito));
+        lblLimiteDisponivel.setText(formatarMoeda(limiteDisponivel));
     }
 
     /**
@@ -1076,6 +1081,151 @@ public class RegistroVendaController {
     }
 
     /**
+     * Abre um Dialog para seleção do prazo efetivo da venda a prazo.
+     *
+     * Este método apenas retorna o prazo escolhido.
+     * Ele não altera estado da tela e não aplica regra de negócio.
+     */
+    private Optional<PrazoPagamento> abrirDialogSelecaoPrazoPagamento() {
+
+        List<PrazoPagamento> prazos = prazoPagamentoService.listarAtivos();
+
+        List<PrazoPagamento> prazosAtivos = prazos != null
+                ? prazos.stream()
+                  .filter(prazoPagamento -> prazoPagamento != null)
+                  .toList()
+                : List.of();
+
+        Dialog<PrazoPagamento> dialog = new Dialog<>();
+        dialog.setTitle("Selecionar Prazo");
+        dialog.setHeaderText("Selecione o prazo efetivo da venda a prazo.");
+
+        TableView<PrazoPagamento> tableViewPrazos = new TableView<>(
+                FXCollections.observableArrayList(prazosAtivos)
+        );
+
+        tableViewPrazos.setPrefWidth(520);
+        tableViewPrazos.setPrefHeight(260);
+
+        Label placeholder = new Label("Nenhum prazo ativo encontrado.");
+        placeholder.setWrapText(true);
+        tableViewPrazos.setPlaceholder(placeholder);
+
+        TableColumn<PrazoPagamento, String> colunaDescricao = new TableColumn<>("Descrição");
+        colunaDescricao.setPrefWidth(320);
+        colunaDescricao.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        cellData.getValue().getDescricao() != null
+                                ? cellData.getValue().getDescricao()
+                                : "-"
+                )
+        );
+
+        TableColumn<PrazoPagamento, String> colunaDias = new TableColumn<>("Dias");
+        colunaDias.setPrefWidth(140);
+        colunaDias.setCellValueFactory(cellData -> {
+            Integer quantidadeDias = cellData.getValue().getQuantidadeDias();
+
+            return new SimpleStringProperty(
+                    quantidadeDias != null
+                            ? quantidadeDias.toString()
+                            : "-"
+            );
+        });
+
+        tableViewPrazos.getColumns().addAll(
+                colunaDescricao,
+                colunaDias
+        );
+
+        dialog.getDialogPane().setContent(tableViewPrazos);
+
+        boolean encontrouPrazos = !prazosAtivos.isEmpty();
+
+        if (encontrouPrazos) {
+            ButtonType botaoSelecionar = new ButtonType(
+                    "Selecionar",
+                    ButtonBar.ButtonData.OK_DONE
+            );
+
+            dialog.getDialogPane().getButtonTypes().addAll(
+                    botaoSelecionar,
+                    ButtonType.CANCEL
+            );
+
+            Node botaoSelecionarNode = dialog.getDialogPane().lookupButton(botaoSelecionar);
+            botaoSelecionarNode.setDisable(true);
+
+            tableViewPrazos.getSelectionModel()
+                    .selectedItemProperty()
+                    .addListener((observable, prazoAnterior, prazoAtual) ->
+                            botaoSelecionarNode.setDisable(prazoAtual == null)
+                    );
+
+            dialog.setResultConverter(buttonType -> {
+                if (buttonType == botaoSelecionar) {
+                    return tableViewPrazos.getSelectionModel().getSelectedItem();
+                }
+
+                return null;
+            });
+
+        } else {
+            ButtonType botaoFechar = new ButtonType(
+                    "Fechar",
+                    ButtonBar.ButtonData.CANCEL_CLOSE
+            );
+
+            dialog.getDialogPane().getButtonTypes().add(botaoFechar);
+            dialog.setResultConverter(buttonType -> null);
+        }
+
+        return dialog.showAndWait();
+    }
+
+    /**
+     * Finaliza uma venda a prazo usando cliente selecionado e prazo escolhido no Dialog.
+     *
+     * As validações de cliente, prazo máximo, limite, estoque e persistência
+     * continuam no VendaService.
+     */
+    private void finalizarVendaAPrazo() {
+
+        if (clienteSelecionado == null) {
+            throw new IllegalArgumentException("Selecione um cliente para a venda a prazo.");
+        }
+
+        if (clienteSelecionado.getIdCliente() == null || clienteSelecionado.getIdCliente() <= 0) {
+            throw new IllegalArgumentException("Cliente selecionado inválido.");
+        }
+
+        Optional<PrazoPagamento> prazoSelecionadoOptional = abrirDialogSelecaoPrazoPagamento();
+
+        if (prazoSelecionadoOptional.isEmpty()) {
+            return;
+        }
+
+        PrazoPagamento prazoSelecionado = prazoSelecionadoOptional.get();
+
+        if (prazoSelecionado.getIdPrazo() == null || prazoSelecionado.getIdPrazo() <= 0) {
+            throw new IllegalArgumentException("Prazo de pagamento selecionado inválido.");
+        }
+
+        ResultadoFinalizacaoVenda resultado = vendaService.finalizarVenda(
+                vendaAtual,
+                TipoVenda.A_PRAZO,
+                FormaPagamento.A_PRAZO,
+                null,
+                clienteSelecionado.getIdCliente(),
+                prazoSelecionado.getIdPrazo(),
+                obterUsuarioIdAtual()
+        );
+
+        exibirResultadoFinalizacaoAPrazo(resultado);
+        limparTelaAposFinalizacao();
+    }
+
+    /**
      * Evento do botão Finalizar Venda.
      *
      * Nesta fase, a venda ainda não deve ser finalizada.
@@ -1091,10 +1241,7 @@ public class RegistroVendaController {
             TipoVenda tipoVenda = obterTipoVendaSelecionado();
 
             if (tipoVenda == TipoVenda.A_PRAZO) {
-                exibirInformacao(
-                        "Finalização de Venda",
-                        "Finalização de venda a prazo será integrada nos próximos passos."
-                );
+                finalizarVendaAPrazo();
                 return;
             }
 
@@ -1163,6 +1310,51 @@ public class RegistroVendaController {
 
         exibirInformacao(
                 "Venda finalizada",
+                mensagem.toString()
+        );
+    }
+
+    /**
+     * Exibe o resultado da finalização de uma venda a prazo.
+     */
+    private void exibirResultadoFinalizacaoAPrazo(ResultadoFinalizacaoVenda resultado) {
+
+        if (resultado == null) {
+            exibirInformacao(
+                    "Venda a prazo finalizada",
+                    "Venda a prazo finalizada com sucesso."
+            );
+            return;
+        }
+
+        StringBuilder mensagem = new StringBuilder();
+
+        mensagem.append("Venda a prazo finalizada com sucesso.")
+                .append("\n\n")
+                .append("Venda: ")
+                .append(resultado.getVendaId())
+                .append("\n")
+                .append("Total: ")
+                .append(formatarMoeda(resultado.getValorTotal()))
+                .append("\n")
+                .append("Status: ")
+                .append(resultado.getStatusVenda() != null
+                        ? resultado.getStatusVenda()
+                        : "-")
+                .append("\n")
+                .append("Data de vencimento: ")
+                .append(resultado.getDataVencimento() != null
+                        ? resultado.getDataVencimento()
+                        : "-");
+
+        if (resultado.getContaReceberId() != null) {
+            mensagem.append("\n")
+                    .append("Conta a receber: ")
+                    .append(resultado.getContaReceberId());
+        }
+
+        exibirInformacao(
+                "Venda a prazo finalizada",
                 mensagem.toString()
         );
     }
@@ -1247,6 +1439,9 @@ public class RegistroVendaController {
                 termoBusca
         );
 
+        Map<Integer, BigDecimal> limitesDisponiveisPorCliente =
+                vendaService.calcularLimitesCreditoDisponiveis(clientesEncontrados);
+
         Dialog<Cliente> dialog = new Dialog<>();
         dialog.setTitle("Selecionar Cliente");
 
@@ -1260,7 +1455,7 @@ public class RegistroVendaController {
                 FXCollections.observableArrayList(clientesEncontrados)
         );
 
-        tableViewClientes.setPrefWidth(820);
+        tableViewClientes.setPrefWidth(960);
         tableViewClientes.setPrefHeight(300);
 
         Label placeholder = new Label("Nenhum cliente encontrado para esta busca.");
@@ -1307,20 +1502,43 @@ public class RegistroVendaController {
                 )
         );
 
-        TableColumn<Cliente, String> colunaLimite = new TableColumn<>("Limite");
-        colunaLimite.setPrefWidth(150);
-        colunaLimite.setCellValueFactory(cellData ->
-                new SimpleStringProperty(
-                        formatarMoeda(cellData.getValue().getLimiteCredito())
-                )
-        );
+        TableColumn<Cliente, String> colunaLimiteTotal = new TableColumn<>("Limite total");
+        colunaLimiteTotal.setPrefWidth(140);
+        colunaLimiteTotal.setCellValueFactory(cellData -> {
+            BigDecimal limiteTotal = cellData.getValue().getLimiteCredito() != null
+                    ? cellData.getValue().getLimiteCredito()
+                    : BigDecimal.ZERO;
+
+            return new SimpleStringProperty(formatarMoeda(limiteTotal));
+        });
+
+        TableColumn<Cliente, String> colunaLimiteDisponivel = new TableColumn<>("Limite disponível");
+        colunaLimiteDisponivel.setPrefWidth(160);
+        colunaLimiteDisponivel.setCellValueFactory(cellData -> {
+            Cliente cliente = cellData.getValue();
+
+            if (cliente == null || cliente.getIdCliente() == null) {
+                return new SimpleStringProperty("-");
+            }
+
+            BigDecimal limiteDisponivel = limitesDisponiveisPorCliente.get(
+                    cliente.getIdCliente()
+            );
+
+            if (limiteDisponivel == null) {
+                return new SimpleStringProperty("-");
+            }
+
+            return new SimpleStringProperty(formatarMoeda(limiteDisponivel));
+        });
 
         tableViewClientes.getColumns().addAll(
                 colunaId,
                 colunaNome,
                 colunaDocumento,
                 colunaStatus,
-                colunaLimite
+                colunaLimiteTotal,
+                colunaLimiteDisponivel
         );
 
         dialog.getDialogPane().setContent(tableViewClientes);
@@ -1393,8 +1611,16 @@ public class RegistroVendaController {
                 return;
             }
 
-            clienteSelecionado = clienteSelecionadoOptional.get();
-            atualizarAreaClienteSelecionado();
+            Cliente clienteAnterior = clienteSelecionado;
+
+            try {
+                clienteSelecionado = clienteSelecionadoOptional.get();
+                atualizarAreaClienteSelecionado();
+
+            } catch (RuntimeException e) {
+                clienteSelecionado = clienteAnterior;
+                throw e;
+            }
 
         } catch (IllegalArgumentException e) {
             exibirErro(e.getMessage());

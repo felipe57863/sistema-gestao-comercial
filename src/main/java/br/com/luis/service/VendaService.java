@@ -33,6 +33,8 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  * Camada de Serviço responsável pelas regras de negócio da venda.
@@ -524,6 +526,39 @@ public class VendaService {
                 troco,
                 movimentacaoFinanceiraId
         );
+    }
+
+    /**
+     * Calcula o limite de crédito disponível de um cliente.
+     *
+     * Fórmula:
+     * limite disponível = limite de crédito cadastrado - total pendente em contas a receber.
+     *
+     * Este método abre uma conexão própria apenas para consulta.
+     * Não inicia transação manual, não executa commit e não executa rollback.
+     *
+     * @param clienteId ID do cliente.
+     * @return limite de crédito disponível com escala monetária.
+     */
+    public BigDecimal calcularLimiteCreditoDisponivel(Integer clienteId) {
+
+        if (clienteId == null || clienteId <= 0) {
+            throw new IllegalArgumentException("Cliente inválido para calcular limite de crédito disponível.");
+        }
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+
+            Cliente cliente = clienteDAO.buscarPorIdComPrazo(conn, clienteId);
+
+            if (cliente == null) {
+                throw new IllegalArgumentException("Cliente não encontrado para calcular limite de crédito disponível.");
+            }
+
+            return calcularLimiteCreditoDisponivel(conn, cliente);
+
+        } catch (SQLException e) {
+            throw new IllegalStateException("Erro ao calcular limite de crédito disponível.", e);
+        }
     }
 
     /**
@@ -1169,6 +1204,54 @@ public class VendaService {
     }
 
     /**
+     * Calcula o limite de crédito disponível usando uma Connection externa.
+     *
+     * Fórmula:
+     * limite disponível = limite de crédito cadastrado - total pendente em contas a receber.
+     *
+     * Este método não abre conexão, não inicia transação manual,
+     * não executa commit e não executa rollback.
+     */
+    private BigDecimal calcularLimiteCreditoDisponivel(
+            Connection conn,
+            Cliente cliente
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão é obrigatória para calcular limite de crédito disponível.");
+        }
+
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente é obrigatório para calcular limite de crédito disponível.");
+        }
+
+        if (cliente.getIdCliente() == null || cliente.getIdCliente() <= 0) {
+            throw new IllegalArgumentException("Cliente inválido para calcular limite de crédito disponível.");
+        }
+
+        BigDecimal limiteCredito = cliente.getLimiteCredito() != null
+                ? cliente.getLimiteCredito()
+                : BigDecimal.ZERO;
+
+        limiteCredito = limiteCredito.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        BigDecimal totalPendente = contaReceberDAO.somarTotalPendentePorCliente(
+                conn,
+                cliente.getIdCliente()
+        );
+
+        if (totalPendente == null) {
+            totalPendente = BigDecimal.ZERO;
+        }
+
+        totalPendente = totalPendente.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        return limiteCredito
+                .subtract(totalPendente)
+                .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
      * Valida se o cliente possui limite de crédito disponível
      * para realizar a venda a prazo.
      *
@@ -1202,26 +1285,7 @@ public class VendaService {
             throw new IllegalArgumentException("Valor da venda é obrigatório para validar limite de crédito.");
         }
 
-        BigDecimal limiteCredito = cliente.getLimiteCredito() != null
-                ? cliente.getLimiteCredito()
-                : BigDecimal.ZERO;
-
-        limiteCredito = limiteCredito.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
-
-        BigDecimal totalPendente = contaReceberDAO.somarTotalPendentePorCliente(
-                conn,
-                cliente.getIdCliente()
-        );
-
-        if (totalPendente == null) {
-            totalPendente = BigDecimal.ZERO;
-        }
-
-        totalPendente = totalPendente.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
-
-        BigDecimal limiteDisponivel = limiteCredito
-                .subtract(totalPendente)
-                .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+        BigDecimal limiteDisponivel = calcularLimiteCreditoDisponivel(conn, cliente);
 
         BigDecimal valorVendaAjustado = valorVenda.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
 
@@ -1833,6 +1897,60 @@ public class VendaService {
 
         private PrazoPagamento getPrazoEfetivo() {
             return prazoEfetivo;
+        }
+    }
+
+    /**
+     * Calcula o limite de crédito disponível para uma lista de clientes.
+     *
+     * Este método abre uma única conexão para calcular todos os limites
+     * e preserva a ordem recebida na lista usando LinkedHashMap.
+     *
+     * Não inicia transação manual, não executa commit e não executa rollback.
+     *
+     * @param clientes lista de clientes que terão o limite disponível calculado.
+     * @return mapa com ID do cliente como chave e limite disponível como valor.
+     */
+    public Map<Integer, BigDecimal> calcularLimitesCreditoDisponiveis(
+            List<Cliente> clientes
+    ) {
+
+        if (clientes == null) {
+            throw new IllegalArgumentException("Lista de clientes é obrigatória para calcular limites disponíveis.");
+        }
+
+        Map<Integer, BigDecimal> limitesDisponiveis = new LinkedHashMap<>();
+
+        if (clientes.isEmpty()) {
+            return limitesDisponiveis;
+        }
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+
+            for (Cliente cliente : clientes) {
+                if (cliente == null) {
+                    throw new IllegalArgumentException("Cliente inválido para calcular limite disponível.");
+                }
+
+                if (cliente.getIdCliente() == null || cliente.getIdCliente() <= 0) {
+                    throw new IllegalArgumentException("Cliente sem ID válido para calcular limite disponível.");
+                }
+
+                BigDecimal limiteDisponivel = calcularLimiteCreditoDisponivel(
+                        conn,
+                        cliente
+                );
+
+                limitesDisponiveis.put(
+                        cliente.getIdCliente(),
+                        limiteDisponivel
+                );
+            }
+
+            return limitesDisponiveis;
+
+        } catch (SQLException e) {
+            throw new IllegalStateException("Erro ao calcular limites de crédito disponíveis.", e);
         }
     }
 
