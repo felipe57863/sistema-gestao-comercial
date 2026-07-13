@@ -3,15 +3,12 @@ package br.com.luis.model;
 /**
  * Enum que representa os status oficiais de uma conta a receber.
  *
- * Na primeira entrega da Fase 5, a ContaReceber será criada apenas
- * quando uma venda a prazo for finalizada.
- *
- * Regra inicial:
+ * Regras atuais:
  * - PENDENTE: conta ainda não recebida.
+ * - PAGA: conta recebida integralmente.
  *
- * Status como PAGA, CANCELADA, VENCIDA ou ESTORNADA não entram nesta etapa.
- * Recebimento completo de conta será tratado futuramente na UC09.
- * Estorno pertence à Fase 6.
+ * Status como CANCELADA, VENCIDA, PARCIAL ou ESTORNADA
+ * não entram nesta etapa.
  */
 public enum StatusContaReceber {
 
@@ -21,5 +18,13 @@ public enum StatusContaReceber {
      * Deve ser o status inicial de toda ContaReceber criada
      * a partir de uma venda a prazo.
      */
-    PENDENTE
+    PENDENTE,
+
+    /**
+     * Conta a receber paga integralmente.
+     *
+     * Deve ser usado quando o recebimento integral da conta
+     * for concluído com sucesso.
+     */
+    PAGA
 }

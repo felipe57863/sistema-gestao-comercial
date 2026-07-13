@@ -3,14 +3,11 @@ package br.com.luis.model;
 /**
  * Enum que representa as origens oficiais de uma movimentação financeira.
  *
- * Na primeira entrega da Fase 5, a movimentação financeira será criada
- * apenas para vendas à vista.
- *
- * Regra inicial:
+ * Regras atuais:
  * - VENDA_A_VISTA: movimentação gerada pela finalização de uma venda à vista.
+ * - RECEBIMENTO_CONTA: movimentação gerada pelo recebimento integral de uma conta a receber.
  *
- * Origens como RECEBIMENTO_CONTA, ESTORNO ou AJUSTE_MANUAL não entram nesta etapa.
- * Recebimento completo de conta será tratado futuramente na UC09.
+ * Origens como ESTORNO ou AJUSTE_MANUAL não entram nesta etapa.
  * Estorno pertence à Fase 6.
  */
 public enum OrigemMovimentacaoFinanceira {
@@ -18,8 +15,14 @@ public enum OrigemMovimentacaoFinanceira {
     /**
      * Movimentação financeira originada por venda à vista.
      *
-     * Deve ser usada inicialmente para registrar a entrada financeira
+     * Deve ser usada para registrar a entrada financeira
      * gerada no momento da finalização da venda à vista.
      */
-    VENDA_A_VISTA
+    VENDA_A_VISTA,
+
+    /**
+     * Movimentação financeira originada pelo recebimento integral
+     * de uma conta a receber.
+     */
+    RECEBIMENTO_CONTA
 }

@@ -11,6 +11,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 /**
  * DAO responsável pela persistência da entidade ContaReceber.
  *
@@ -139,6 +142,134 @@ public class ContaReceberDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao somar total pendente do cliente.", e);
+        }
+    }
+    /**
+     * Busca uma conta a receber pelo ID usando uma Connection externa.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param idConta ID da conta a receber.
+     * @return conta encontrada ou null caso não exista.
+     */
+    public ContaReceber buscarPorId(
+            Connection conn,
+            Integer idConta
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idConta == null || idConta <= 0) {
+            throw new IllegalArgumentException("ID da conta a receber inválido.");
+        }
+
+        String sql = """
+            SELECT id_conta,
+                   valor,
+                   data_vencimento,
+                   status,
+                   venda_id,
+                   cliente_id,
+                   prazo_pagamento_id,
+                   quantidade_dias_prazo,
+                   data_criacao
+            FROM ContaReceber
+            WHERE id_conta = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, idConta);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new ContaReceber(
+                            rs.getInt("id_conta"),
+                            rs.getBigDecimal("valor"),
+                            LocalDate.parse(rs.getString("data_vencimento")),
+                            StatusContaReceber.valueOf(rs.getString("status")),
+                            rs.getInt("venda_id"),
+                            rs.getInt("cliente_id"),
+                            rs.getInt("prazo_pagamento_id"),
+                            rs.getInt("quantidade_dias_prazo"),
+                            LocalDateTime.parse(rs.getString("data_criacao"))
+                    );
+                }
+            }
+
+            return null;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao buscar conta a receber por ID.", e);
+        }
+    }
+    /**
+     * Atualiza o status de uma conta a receber com proteção de estado atual.
+     *
+     * A condição statusAtual evita que uma conta já alterada seja atualizada
+     * novamente sem que a camada Service perceba.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param idConta ID da conta a receber.
+     * @param statusAtual status esperado antes da atualização.
+     * @param novoStatus novo status que será gravado.
+     * @return true se exatamente uma linha foi atualizada; false se nenhuma linha correspondeu.
+     */
+    public boolean atualizarStatus(
+            Connection conn,
+            Integer idConta,
+            StatusContaReceber statusAtual,
+            StatusContaReceber novoStatus
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idConta == null || idConta <= 0) {
+            throw new IllegalArgumentException("ID da conta a receber inválido.");
+        }
+
+        if (statusAtual == null) {
+            throw new IllegalArgumentException("Status atual da conta a receber é obrigatório.");
+        }
+
+        if (novoStatus == null) {
+            throw new IllegalArgumentException("Novo status da conta a receber é obrigatório.");
+        }
+
+        String sql = """
+            UPDATE ContaReceber
+            SET status = ?
+            WHERE id_conta = ?
+              AND status = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, novoStatus.name());
+            stmt.setInt(2, idConta);
+            stmt.setString(3, statusAtual.name());
+
+            int linhasAfetadas = stmt.executeUpdate();
+
+            return linhasAfetadas == 1;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao atualizar status da conta a receber.", e);
         }
     }
 }
