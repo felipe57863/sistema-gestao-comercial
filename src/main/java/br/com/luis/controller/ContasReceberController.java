@@ -7,6 +7,9 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -14,8 +17,11 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -361,12 +367,43 @@ public class ContasReceberController {
     }
 
     /**
-     * Ação temporária do botão Voltar.
+     * Ação do botão Voltar.
      *
-     * A navegação real será implementada em passo posterior.
+     * Retorna para a Tela Principal usando o mesmo Stage atual.
      */
     @FXML
     private void onVoltar() {
+
+        try {
+            URL fxmlLocation = getClass().getResource(
+                    "/br/com/luis/view/TelaPrincipal.fxml"
+            );
+
+            if (fxmlLocation == null) {
+                throw new IllegalStateException(
+                        "FXML não encontrado: /br/com/luis/view/TelaPrincipal.fxml"
+                );
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            Parent root = loader.load();
+
+            Stage stage = (Stage) btnVoltar.getScene().getWindow();
+
+            stage.setTitle("ERP Comercial - Tela Principal");
+            stage.setScene(new Scene(root));
+            stage.setMaximized(true);
+
+        } catch (IOException | RuntimeException e) {
+            System.err.println("[ERRO] Falha ao voltar para a Tela Principal.");
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível retornar para a Tela Principal."
+            );
+        }
     }
 
     /**
