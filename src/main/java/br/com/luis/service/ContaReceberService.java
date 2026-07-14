@@ -16,6 +16,11 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 
+import br.com.luis.viewmodel.ContaReceberListagemView;
+
+import java.time.LocalDate;
+import java.util.List;
+
 /**
  * Camada de serviço responsável pelas regras de negócio
  * relacionadas ao recebimento de contas a receber.
@@ -400,6 +405,42 @@ public class ContaReceberService {
 
         private LocalDateTime getDataHoraRecebimento() {
             return dataHoraRecebimento;
+        }
+    }
+    /**
+     * Lista as contas a receber pendentes para exibição futura na interface.
+     *
+     * Este método não inicia transação, pois realiza apenas consulta.
+     * A indicação de conta vencida é calculada fora do DAO.
+     *
+     * @return lista de contas pendentes com indicação visual de vencimento.
+     */
+    public List<ContaReceberListagemView> listarContasPendentes() {
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+
+            List<ContaReceberListagemView> contasPendentes =
+                    contaReceberDAO.listarPendentesComCliente(conn);
+
+            LocalDate dataAtual = LocalDate.now();
+
+            for (ContaReceberListagemView contaPendente : contasPendentes) {
+
+                boolean vencida =
+                        contaPendente.getDataVencimento() != null
+                                && contaPendente.getDataVencimento().isBefore(dataAtual)
+                                && contaPendente.getStatus() == StatusContaReceber.PENDENTE;
+
+                contaPendente.setVencida(vencida);
+            }
+
+            return contasPendentes;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar contas a receber pendentes.",
+                    e
+            );
         }
     }
 }
