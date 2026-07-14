@@ -14,6 +14,11 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import br.com.luis.viewmodel.ContaReceberListagemView;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * DAO responsável pela persistência da entidade ContaReceber.
  *
@@ -270,6 +275,79 @@ public class ContaReceberDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar status da conta a receber.", e);
+        }
+    }
+    /**
+     * Lista contas a receber pendentes com o nome do cliente vinculado.
+     *
+     * Este método usa uma Connection externa para permitir controle
+     * transacional pela camada Service.
+     *
+     * Importante:
+     * - não abre nova conexão;
+     * - não faz commit;
+     * - não faz rollback;
+     * - não fecha a Connection recebida;
+     * - não calcula vencimento;
+     * - não formata moeda;
+     * - não formata data.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @return lista de contas pendentes com dados básicos do cliente.
+     */
+    public List<ContaReceberListagemView> listarPendentesComCliente(
+            Connection conn
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        String sql = """
+            SELECT conta.id_conta,
+                   conta.cliente_id,
+                   cliente.nome AS nome_cliente,
+                   conta.venda_id,
+                   conta.valor,
+                   conta.data_vencimento,
+                   conta.status
+            FROM ContaReceber conta
+            INNER JOIN Cliente cliente
+                    ON cliente.id_cliente = conta.cliente_id
+            WHERE conta.status = ?
+            ORDER BY conta.data_vencimento ASC,
+                     conta.id_conta ASC
+            """;
+
+        List<ContaReceberListagemView> contasPendentes = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, StatusContaReceber.PENDENTE.name());
+
+            // rs significa ResultSet e representa o conjunto de linhas
+            // retornado pela consulta SELECT executada no banco de dados.
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    ContaReceberListagemView contaView = new ContaReceberListagemView(
+                            rs.getInt("id_conta"),
+                            rs.getInt("cliente_id"),
+                            rs.getString("nome_cliente"),
+                            rs.getInt("venda_id"),
+                            rs.getBigDecimal("valor"),
+                            LocalDate.parse(rs.getString("data_vencimento")),
+                            StatusContaReceber.valueOf(rs.getString("status")),
+                            false
+                    );
+
+                    contasPendentes.add(contaView);
+                }
+            }
+
+            return contasPendentes;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao listar contas a receber pendentes.", e);
         }
     }
 }
