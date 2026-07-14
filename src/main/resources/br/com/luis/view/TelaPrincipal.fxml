@@ -59,6 +59,12 @@
                         prefWidth="160.0"
                         text="Registro de Venda" />
 
+                <Button fx:id="btnContasReceber"
+                        onAction="#abrirContasReceber"
+                        prefHeight="45.0"
+                        prefWidth="160.0"
+                        text="Contas a Receber" />
+
                 <Button fx:id="btnSair"
                         onAction="#sair"
                         prefHeight="45.0"

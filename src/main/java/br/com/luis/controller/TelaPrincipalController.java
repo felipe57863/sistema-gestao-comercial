@@ -70,6 +70,14 @@ public class TelaPrincipalController {
     }
 
     /**
+     * Abre a tela de Contas a Receber.
+     */
+    @FXML
+    public void abrirContasReceber() {
+        abrirTela("/br/com/luis/view/ContasReceber.fxml", "Contas a Receber");
+    }
+
+    /**
      * Encerra a aplicação.
      */
     @FXML
