@@ -25,11 +25,10 @@ import java.util.Locale;
 /**
  * Controller da tela de Contas a Receber.
  *
- * Nesta etapa, o Controller configura a tabela e carrega
- * as contas pendentes usando a camada de Service.
+ * Nesta etapa, o Controller configura a tabela, carrega
+ * as contas pendentes e preenche o painel da conta selecionada.
  *
- * A seleção da conta, navegação e recebimento serão implementados
- * em passos posteriores.
+ * Navegação e recebimento serão implementados em passos posteriores.
  */
 public class ContasReceberController {
 
@@ -81,6 +80,8 @@ public class ContasReceberController {
     public void initialize() {
         btnReceberConta.setDisable(true);
         configurarTabela();
+        configurarSelecaoTabela();
+        limparPainelContaSelecionada();
         carregarContasPendentes();
     }
 
@@ -123,10 +124,6 @@ public class ContasReceberController {
      */
     private void configurarFormatacaoColunaValor() {
 
-        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(
-                new Locale("pt", "BR")
-        );
-
         colValor.setCellFactory(coluna -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal valor, boolean empty) {
@@ -137,7 +134,7 @@ public class ContasReceberController {
                     return;
                 }
 
-                setText(formatoMoeda.format(valor).replace('\u00A0', ' '));
+                setText(formatarValor(valor));
             }
         });
     }
@@ -146,8 +143,6 @@ public class ContasReceberController {
      * Configura a formatação da coluna Vencimento.
      */
     private void configurarFormatacaoColunaVencimento() {
-
-        DateTimeFormatter formatoData = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
         colVencimento.setCellFactory(coluna -> new TableCell<>() {
             @Override
@@ -159,9 +154,31 @@ public class ContasReceberController {
                     return;
                 }
 
-                setText(dataVencimento.format(formatoData));
+                setText(formatarData(dataVencimento));
             }
         });
+    }
+
+    /**
+     * Configura o listener de seleção da tabela.
+     *
+     * Quando uma conta é selecionada, preenche o painel lateral
+     * e habilita o botão Receber Conta.
+     */
+    private void configurarSelecaoTabela() {
+
+        tabelaContasPendentes
+                .getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, contaAnterior, contaAtual) -> {
+                    if (contaAtual == null) {
+                        limparPainelContaSelecionada();
+                        return;
+                    }
+
+                    preencherPainelContaSelecionada(contaAtual);
+                    btnReceberConta.setDisable(false);
+                });
     }
 
     /**
@@ -172,6 +189,9 @@ public class ContasReceberController {
     private void carregarContasPendentes() {
 
         try {
+            tabelaContasPendentes.getSelectionModel().clearSelection();
+            limparPainelContaSelecionada();
+
             List<ContaReceberListagemView> listaRetornada =
                     contaReceberService.listarContasPendentes();
 
@@ -181,10 +201,14 @@ public class ContasReceberController {
                 contasPendentes.setAll(listaRetornada);
             }
 
+            tabelaContasPendentes.getSelectionModel().clearSelection();
+            limparPainelContaSelecionada();
             atualizarContador();
 
         } catch (RuntimeException e) {
             contasPendentes.clear();
+            tabelaContasPendentes.getSelectionModel().clearSelection();
+            limparPainelContaSelecionada();
             atualizarContador();
 
             System.err.println("[ERRO] Falha ao carregar contas pendentes.");
@@ -196,6 +220,119 @@ public class ContasReceberController {
                     "Não foi possível carregar as contas pendentes."
             );
         }
+    }
+
+    /**
+     * Preenche o painel lateral com os dados da conta selecionada.
+     */
+    private void preencherPainelContaSelecionada(
+            ContaReceberListagemView contaSelecionada
+    ) {
+
+        if (contaSelecionada == null) {
+            limparPainelContaSelecionada();
+            return;
+        }
+
+        lblContaId.setText(formatarId(contaSelecionada.getContaReceberId()));
+        lblCliente.setText(formatarTexto(contaSelecionada.getNomeCliente()));
+        lblVendaId.setText(formatarId(contaSelecionada.getVendaId()));
+        lblValor.setText(formatarValor(contaSelecionada.getValor()));
+        lblVencimento.setText(formatarData(contaSelecionada.getDataVencimento()));
+        lblStatus.setText(formatarStatus(contaSelecionada.getStatus()));
+        lblSituacao.setText(formatarSituacao(contaSelecionada));
+    }
+
+    /**
+     * Limpa o painel lateral e desabilita o botão Receber Conta.
+     */
+    private void limparPainelContaSelecionada() {
+        lblContaId.setText("—");
+        lblCliente.setText("—");
+        lblVendaId.setText("—");
+        lblValor.setText("R$ 0,00");
+        lblVencimento.setText("—");
+        lblStatus.setText("—");
+        lblSituacao.setText("—");
+
+        btnReceberConta.setDisable(true);
+    }
+
+    /**
+     * Formata IDs para exibição segura.
+     */
+    private String formatarId(Integer id) {
+
+        if (id == null || id <= 0) {
+            return "—";
+        }
+
+        return id.toString();
+    }
+
+    /**
+     * Formata texto para exibição segura.
+     */
+    private String formatarTexto(String texto) {
+
+        if (texto == null || texto.isBlank()) {
+            return "—";
+        }
+
+        return texto.trim();
+    }
+
+    /**
+     * Formata valores monetários no padrão brasileiro.
+     */
+    private String formatarValor(BigDecimal valor) {
+
+        BigDecimal valorSeguro = valor != null ? valor : BigDecimal.ZERO;
+
+        NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(
+                new Locale("pt", "BR")
+        );
+
+        return formatoMoeda.format(valorSeguro).replace('\u00A0', ' ');
+    }
+
+    /**
+     * Formata datas no padrão brasileiro.
+     */
+    private String formatarData(LocalDate data) {
+
+        if (data == null) {
+            return "—";
+        }
+
+        DateTimeFormatter formatoData = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        return data.format(formatoData);
+    }
+
+    /**
+     * Formata o status da conta para exibição segura.
+     */
+    private String formatarStatus(StatusContaReceber status) {
+
+        if (status == null) {
+            return "—";
+        }
+
+        return status.name();
+    }
+
+    /**
+     * Formata a situação visual da conta selecionada.
+     */
+    private String formatarSituacao(ContaReceberListagemView contaSelecionada) {
+
+        if (contaSelecionada == null) {
+            return "—";
+        }
+
+        return contaSelecionada.isVencida()
+                ? "Vencida"
+                : "Em aberto";
     }
 
     /**
