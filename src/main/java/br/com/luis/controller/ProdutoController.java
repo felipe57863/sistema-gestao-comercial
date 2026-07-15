@@ -313,6 +313,10 @@ public class ProdutoController implements Initializable {
     @FXML
     private void onVoltar() {
 
+        if (!confirmarSaidaComAlteracoesNaoSalvas()) {
+            return;
+        }
+
         try {
             NavegacaoUtil.abrirTela(
                     btnVoltar,
@@ -326,6 +330,178 @@ public class ProdutoController implements Initializable {
 
             mostrarErroAmigavel("Não foi possível retornar para a Tela Principal.");
         }
+    }
+
+    /**
+     * Confirma a saída quando existem dados de produto ou promoção não salvos.
+     *
+     * Não altera o formulário, não salva dados e não executa navegação.
+     */
+    private boolean confirmarSaidaComAlteracoesNaoSalvas() {
+
+        if (!existemAlteracoesProdutoNaoSalvas()) {
+            return true;
+        }
+
+        Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+        alerta.setTitle("Alterações não salvas");
+        alerta.setHeaderText(null);
+        alerta.setContentText(
+                "Existem dados de produto ou promoção ainda não salvos.\n"
+                        + "Ao voltar, essas alterações serão descartadas.\n"
+                        + "Deseja realmente sair desta tela?"
+        );
+
+        ButtonType botaoSair = new ButtonType(
+                "Sair sem salvar",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        ButtonType botaoContinuar = new ButtonType(
+                "Continuar editando",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        alerta.getButtonTypes().setAll(
+                botaoSair,
+                botaoContinuar
+        );
+
+        return alerta.showAndWait().orElse(botaoContinuar) == botaoSair;
+    }
+
+    /**
+     * Verifica o formulário de acordo com o contexto de cadastro ou edição.
+     */
+    private boolean existemAlteracoesProdutoNaoSalvas() {
+        if (produtoSelecionado == null) {
+            return formularioNovoProdutoFoiAlterado();
+        }
+
+        return formularioEdicaoProdutoFoiAlterado();
+    }
+
+    /**
+     * Verifica se o formulário de um novo produto saiu do estado inicial.
+     */
+    private boolean formularioNovoProdutoFoiAlterado() {
+        return !normalizarTextoComparacao(txtDescricao.getText()).isEmpty()
+                || !normalizarTextoComparacao(txtPreco.getText()).isEmpty()
+                || valoresInteirosDiferentes(spnEstoque.getValue(), 0)
+                || valoresInteirosDiferentes(spnEstoqueMinimo.getValue(), 0)
+                || !"Ativo".equals(cbStatus.getValue())
+                || chkPromocao.isSelected();
+    }
+
+    /**
+     * Compara os dados atuais do formulário com o produto selecionado.
+     */
+    private boolean formularioEdicaoProdutoFoiAlterado() {
+        if (!normalizarTextoComparacao(txtDescricao.getText()).equals(
+                normalizarTextoComparacao(produtoSelecionado.getDescricao())
+        )) {
+            return true;
+        }
+
+        if (valorDecimalFoiAlterado(txtPreco.getText(), produtoSelecionado.getPreco())) {
+            return true;
+        }
+
+        if (valoresInteirosDiferentes(
+                spnEstoque.getValue(),
+                produtoSelecionado.getQuantidadeEstoque()
+        )) {
+            return true;
+        }
+
+        if (valoresInteirosDiferentes(
+                spnEstoqueMinimo.getValue(),
+                produtoSelecionado.getEstoqueMinimo()
+        )) {
+            return true;
+        }
+
+        if (obterProdutoAtivoSelecionado() != produtoSelecionado.isAtivo()) {
+            return true;
+        }
+
+        return promocaoFormularioFoiAlterada();
+    }
+
+    /**
+     * Compara o estado atual da promoção com a promoção carregada na seleção.
+     */
+    private boolean promocaoFormularioFoiAlterada() {
+        if (promocaoAtivaProdutoSelecionado == null) {
+            return chkPromocao.isSelected();
+        }
+
+        if (!chkPromocao.isSelected()) {
+            return true;
+        }
+
+        Promocao.TipoDesconto tipoAtual = obterTipoPromocaoParaComparacao();
+
+        if (tipoAtual != promocaoAtivaProdutoSelecionado.getTipoDesconto()) {
+            return true;
+        }
+
+        return valorDecimalFoiAlterado(
+                txtValorDesconto.getText(),
+                promocaoAtivaProdutoSelecionado.getValorDesconto()
+        );
+    }
+
+    /**
+     * Normaliza textos para comparação sem espaços externos.
+     */
+    private String normalizarTextoComparacao(String texto) {
+        return texto == null ? "" : texto.trim();
+    }
+
+    /**
+     * Compara dois valores inteiros com tratamento seguro de nulos.
+     */
+    private boolean valoresInteirosDiferentes(Integer valorAtual, Integer valorOriginal) {
+        if (valorAtual == null) {
+            return valorOriginal != null;
+        }
+
+        return !valorAtual.equals(valorOriginal);
+    }
+
+    /**
+     * Compara numericamente um valor decimal do formulário com o valor original.
+     * Campo vazio ou inválido durante a edição representa alteração.
+     */
+    private boolean valorDecimalFoiAlterado(String textoAtual, BigDecimal valorOriginal) {
+        try {
+            BigDecimal valorAtual = converterDecimal(
+                    textoAtual,
+                    "Valor obrigatório para comparação."
+            );
+
+            return valorOriginal == null
+                    || valorAtual.compareTo(valorOriginal) != 0;
+
+        } catch (NumberFormatException e) {
+            return true;
+        }
+    }
+
+    /**
+     * Obtém o tipo de promoção atualmente selecionado, sem validar o formulário.
+     */
+    private Promocao.TipoDesconto obterTipoPromocaoParaComparacao() {
+        if (rbPercentual.isSelected()) {
+            return Promocao.TipoDesconto.PERCENTUAL;
+        }
+
+        if (rbFixo.isSelected()) {
+            return Promocao.TipoDesconto.VALOR_FIXO;
+        }
+
+        return null;
     }
 
     @FXML
