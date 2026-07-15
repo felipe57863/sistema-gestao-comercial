@@ -4,6 +4,7 @@ import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.PromocaoService;
+import br.com.luis.util.NavegacaoUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,6 +14,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
@@ -54,6 +56,7 @@ public class ProdutoController implements Initializable {
     private ToggleGroup tgTipoDesconto;
 
     // Botões
+    @FXML private Button btnVoltar;
     @FXML private Button btnSalvar;
     @FXML private Button btnCancelar;
     @FXML private Button btnLimpar;
@@ -306,6 +309,24 @@ public class ProdutoController implements Initializable {
     }
 
     // AÇÕES DOS BOTÕES
+
+    @FXML
+    private void onVoltar() {
+
+        try {
+            NavegacaoUtil.abrirTela(
+                    btnVoltar,
+                    "/br/com/luis/view/TelaPrincipal.fxml",
+                    "Tela Principal"
+            );
+
+        } catch (IOException | RuntimeException e) {
+            System.err.println("[ERRO] Falha ao voltar para a Tela Principal.");
+            e.printStackTrace();
+
+            mostrarErroAmigavel("Não foi possível retornar para a Tela Principal.");
+        }
+    }
 
     @FXML
     public void acaoSalvar() {
