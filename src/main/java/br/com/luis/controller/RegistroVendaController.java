@@ -183,10 +183,15 @@ public class RegistroVendaController {
     }
 
     /**
-     * Retorna diretamente para a Tela Principal usando o mesmo Stage atual.
+     * Retorna para a Tela Principal usando o mesmo Stage atual.
+     * Solicita confirmação somente quando o carrinho possui itens.
      */
     @FXML
     private void onVoltar() {
+
+        if (!confirmarSaidaComVendaEmAndamento()) {
+            return;
+        }
 
         try {
             NavegacaoUtil.abrirTela(
@@ -201,6 +206,47 @@ public class RegistroVendaController {
 
             exibirErro("Não foi possível retornar para a Tela Principal.");
         }
+    }
+
+    /**
+     * Confirma a saída quando existe uma venda com itens no carrinho.
+     *
+     * Não altera a venda atual e não executa navegação ou regras de negócio.
+     */
+    private boolean confirmarSaidaComVendaEmAndamento() {
+
+        if (!itensCarrinhoView.isEmpty()) {
+            Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+            alerta.setTitle("Venda em andamento");
+            alerta.setHeaderText(null);
+            alerta.setContentText(
+                    "Existe uma venda ainda não finalizada.\n"
+                            + "Ao voltar, os itens do carrinho serão descartados.\n"
+                            + "Deseja realmente sair desta tela?"
+            );
+
+            ButtonType botaoSair = new ButtonType(
+                    "Sair da venda",
+                    ButtonBar.ButtonData.OK_DONE
+            );
+
+            ButtonType botaoContinuar = new ButtonType(
+                    "Continuar na venda",
+                    ButtonBar.ButtonData.CANCEL_CLOSE
+            );
+
+            alerta.getButtonTypes().setAll(
+                    botaoSair,
+                    botaoContinuar
+            );
+
+            Optional<ButtonType> resultado = alerta.showAndWait();
+
+            return resultado.isPresent()
+                    && resultado.get() == botaoSair;
+        }
+
+        return true;
     }
 
     /**
