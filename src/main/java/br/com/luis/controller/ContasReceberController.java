@@ -4,6 +4,7 @@ import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.StatusContaReceber;
 import br.com.luis.model.Usuario;
 import br.com.luis.service.ContaReceberService;
+import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.viewmodel.ContaReceberListagemView;
 import br.com.luis.viewmodel.ResultadoRecebimentoConta;
@@ -11,9 +12,6 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -27,12 +25,10 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URL;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -482,24 +478,11 @@ public class ContasReceberController {
     private void onVoltar() {
 
         try {
-            URL fxmlLocation = getClass().getResource(
-                    "/br/com/luis/view/TelaPrincipal.fxml"
+            NavegacaoUtil.abrirTela(
+                    btnVoltar,
+                    "/br/com/luis/view/TelaPrincipal.fxml",
+                    "Tela Principal"
             );
-
-            if (fxmlLocation == null) {
-                throw new IllegalStateException(
-                        "FXML não encontrado: /br/com/luis/view/TelaPrincipal.fxml"
-                );
-            }
-
-            FXMLLoader loader = new FXMLLoader(fxmlLocation);
-            Parent root = loader.load();
-
-            Stage stage = (Stage) btnVoltar.getScene().getWindow();
-
-            stage.setTitle("ERP Comercial - Tela Principal");
-            stage.setScene(new Scene(root));
-            stage.setMaximized(true);
 
         } catch (IOException | RuntimeException e) {
             System.err.println("[ERRO] Falha ao voltar para a Tela Principal.");

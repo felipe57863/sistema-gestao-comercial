@@ -1,17 +1,14 @@
 package br.com.luis.controller;
 
 import br.com.luis.model.Usuario;
+import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.net.URL;
 
 /**
  * Controller da tela temporária de navegação apresentada após o login.
@@ -99,19 +96,7 @@ public class TelaPrincipalController {
      */
     private void abrirTela(String caminhoFxml, String titulo) {
         try {
-            URL fxmlLocation = getClass().getResource(caminhoFxml);
-
-            if (fxmlLocation == null) {
-                throw new IllegalStateException("FXML não encontrado: " + caminhoFxml);
-            }
-
-            FXMLLoader loader = new FXMLLoader(fxmlLocation);
-            Parent root = loader.load();
-
-            Stage stage = (Stage) lblUsuario.getScene().getWindow();
-            stage.setTitle("ERP Comercial - " + titulo);
-            stage.setScene(new Scene(root));
-            stage.setMaximized(true);
+            NavegacaoUtil.abrirTela(lblUsuario, caminhoFxml, titulo);
 
         } catch (IOException | RuntimeException e) {
             System.err.println("[ERRO] Falha ao abrir tela: " + caminhoFxml);
