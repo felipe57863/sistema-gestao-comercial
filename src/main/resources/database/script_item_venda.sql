@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS ItemVenda (
     -- Preço unitário do produto no momento da venda.
     -- Importante para manter histórico mesmo após a alteração
     -- do preço no cadastro do produto.
-    -- No Java, este valor deverá ser tratado com BigDecimal.
+    -- No Java, este valor é tratado com BigDecimal.
     preco_unitario REAL NOT NULL,
 
     -- Desconto promocional aplicado ao item.

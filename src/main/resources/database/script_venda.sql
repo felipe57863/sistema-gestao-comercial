@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS Venda (
     -- AUTOINCREMENT garante que cada venda tenha um identificador único.
     id_venda INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    -- Data e hora em que a venda/carrinho foi criado.
+    -- Data e hora da finalização da venda, definida pelo VendaService antes da persistência.
     -- No SQLite, datas são armazenadas como TEXT em formato ISO 8601.
     data_hora TEXT NOT NULL,
 
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS Venda (
 
     -- Valor total da venda.
     -- É recalculado com base nos subtotais atuais dos itens.
-    -- No Java, este valor deverá ser tratado com BigDecimal.
+    -- No Java, este valor é tratado com BigDecimal.
     valor_total REAL NOT NULL DEFAULT 0,
 
     -- Valor do desconto global aplicado na venda.

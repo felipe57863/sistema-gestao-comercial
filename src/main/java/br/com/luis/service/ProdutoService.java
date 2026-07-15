@@ -44,8 +44,8 @@ public class ProdutoService {
     }
 
     /**
-     * Valida e envia o produto modificado para atualização no banco.
-     * Utilizado pelo botão "Editar" da interface.
+     * Valida e persiste as alterações de um produto existente.
+     * Utilizado pelo fluxo de edição e salvamento da tela de produtos.
      *
      * @implNote Exige produto com ID válido antes de permitir atualização.
      */
@@ -67,8 +67,8 @@ public class ProdutoService {
     /**
      * Realiza a exclusão lógica do produto, alterando o campo ativo para false.
      *
-     * @implNote Regra crítica do Bloco 2:
-     * produto com histórico não deve ser excluído fisicamente, apenas inativado.
+     * Em vez de excluir fisicamente o registro, inativa o produto para preservar
+     * seus vínculos e o histórico existente. Exige um produto com ID válido.
      */
     public void inativar(Produto produto) {
 

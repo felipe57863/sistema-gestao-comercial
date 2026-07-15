@@ -17,7 +17,8 @@ import java.net.URL;
  * Esta classe NÃO representa o fluxo oficial do sistema.
  *
  * Fluxo oficial:
- * Launcher -> Main -> DatabaseBuilder -> AuthService -> Login.fxml
+ * Launcher -> Main -> DatabaseBuilder -> inicialização dos prazos padrão
+ * -> inicialização do usuário administrador -> Login.fxml
  *
  * Fluxo isolado desta classe:
  * App -> DatabaseBuilder -> Produto.fxml

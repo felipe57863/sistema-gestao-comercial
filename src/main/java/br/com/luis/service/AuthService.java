@@ -13,7 +13,7 @@ public class AuthService {
     // Dependência responsável pelo acesso ao banco
     private final UsuarioDAO usuarioDAO;
 
-    // Construtor padrão (injeção simples de dependência)
+    // Construtor padrão com inicialização direta do DAO utilizado pelo Service.
     public AuthService() {
         this.usuarioDAO = new UsuarioDAO();
     }
@@ -31,15 +31,16 @@ public class AuthService {
     }
 
     /**
-     * Inicializa o usuário administrador padrão (seed do sistema).
-     * Executado na primeira inicialização do sistema.
+     * Garante a existência do usuário administrador padrão durante a preparação
+     * da aplicação.
      *
      * Regra:
-     * - Se não existir usuário "admin", ele será criado automaticamente.
-     * - Se já existir, nenhuma ação é realizada.
+     * - Consulta se o usuário "admin" já existe.
+     * - Se não existir, cria o administrador padrão automaticamente.
+     * - Se já existir, não cria outro registro.
      *
-     * @implNote Garante que o sistema tenha um usuário ADMIN criado com senha
-     * criptografada via BCrypt.
+     * @implNote A verificação torna a operação idempotente em relação à criação
+     * do administrador, cuja senha padrão é armazenada com hash BCrypt.
      */
     public void inicializarAdminBase() {
 

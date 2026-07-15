@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS ContaReceber (
     -- Chave primária da conta a receber.
     id_conta INTEGER PRIMARY KEY AUTOINCREMENT,
     -- Valor da conta gerada pela venda a prazo.
-    -- No Java, este valor deverá ser tratado com BigDecimal.
+    -- No Java, este valor é tratado com BigDecimal.
     valor REAL NOT NULL DEFAULT 0 CHECK (valor >= 0),
 
     -- Data de vencimento da conta.
@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS ContaReceber (
     status TEXT NOT NULL,
 
     -- Venda que gerou esta conta.
-    -- Uma venda a prazo gera exatamente uma conta a receber, conforme a restrição UNIQUE.
+    -- O VendaService gera a conta da venda a prazo; a restrição UNIQUE impede
+    -- vincular a mesma venda a mais de uma ContaReceber.
     venda_id INTEGER NOT NULL UNIQUE,
 
     -- Cliente devedor da conta.

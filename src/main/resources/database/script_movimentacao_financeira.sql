@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS MovimentacaoFinanceira (
     forma_pagamento TEXT NOT NULL,
 
     -- Valor da movimentação financeira.
-    -- No Java, este valor deverá ser tratado com BigDecimal.
+    -- No Java, este valor é tratado com BigDecimal.
     valor REAL NOT NULL DEFAULT 0 CHECK (valor >= 0),
 
     -- Venda vinculada à movimentação.
