@@ -10,8 +10,13 @@ import java.math.BigDecimal;
  * o desconto promocional aplicado, o desconto global aplicado
  * e o subtotal calculado.
  *
- * Nesta fase, esta classe ainda não valida estoque, não aplica promoção
- * automaticamente e não realiza baixa de estoque.
+ * É utilizada tanto no carrinho em memória quanto na persistência dos itens da
+ * venda pelo ItemVendaDAO, dentro do fluxo transacional coordenado pelo
+ * VendaService.
+ *
+ * A entidade apenas armazena os dados e executa seu cálculo interno de subtotal.
+ * Não consulta nem baixa estoque, não busca promoções e não decide se descontos
+ * podem ser aplicados; essas validações e regras pertencem ao VendaService.
  */
 public class ItemVenda {
 
@@ -58,6 +63,9 @@ public class ItemVenda {
      *
      * Fórmula:
      * subtotal = quantidade * precoUnitario - descontoPromocional - descontoGlobal
+     *
+     * O método utiliza somente os valores já armazenados no item. A definição
+     * dos descontos e as validações necessárias pertencem ao VendaService.
      *
      * @return subtotal calculado do item.
      */

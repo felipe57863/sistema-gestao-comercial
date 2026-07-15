@@ -8,9 +8,13 @@ import java.util.List;
 /**
  * Entidade que representa uma venda no sistema.
  *
- * Nesta fase, a venda ainda representa a base estrutural do motor de vendas.
- * A finalização da venda, pagamento, financeiro, baixa de estoque e estorno
- * serão implementados em fases futuras.
+ * Armazena os dados principais da venda e mantém em memória os itens associados.
+ * Pode representar tanto uma venda aberta quanto uma venda preparada pelo
+ * VendaService para persistência, à vista ou a prazo.
+ *
+ * Esta entidade não acessa banco de dados nem controla transações. As validações
+ * e regras de finalização pertencem ao VendaService, enquanto a persistência dos
+ * dados da venda é executada pelo VendaDAO no fluxo transacional.
  */
 public class Venda {
 
@@ -27,15 +31,17 @@ public class Venda {
     /**
      * Lista de itens vinculados à venda.
      *
-     * Cada item representa um produto adicionado ao carrinho/venda.
+     * Cada item representa um produto adicionado ao carrinho ou vinculado à venda
+     * preparada para persistência.
      */
     private List<ItemVenda> itens;
 
     /**
      * Construtor padrão.
      *
-     * Importante para facilitar criação manual, uso em DAOs
-     * e preenchimento gradual dos dados.
+     * Inicializa uma venda aberta com data e hora atuais, valores monetários
+     * zerados e lista de itens vazia. Permite o preenchimento gradual dos dados
+     * durante a montagem e a finalização da venda.
      */
     public Venda() {
         this.dataHora = LocalDateTime.now();
@@ -59,9 +65,9 @@ public class Venda {
     /**
      * Adiciona um item à venda e recalcula o valor total.
      *
-     * Nesta fase, este método apenas manipula a lista em memória.
-     * Validação de estoque e aplicação de promoção serão feitas
-     * posteriormente na camada Service.
+     * Manipula somente a lista mantida pela entidade. Validação de estoque,
+     * consulta e aplicação de promoção e demais regras de negócio pertencem
+     * ao VendaService.
      *
      * @param item item que será adicionado à venda.
      */
@@ -77,7 +83,8 @@ public class Venda {
     /**
      * Remove um item da venda e recalcula o valor total.
      *
-     * Nesta fase, este método apenas manipula a lista em memória.
+     * Manipula somente a lista mantida pela entidade. Não remove dados já
+     * persistidos nem executa baixa, reposição ou validação de estoque.
      *
      * @param item item que será removido da venda.
      */
@@ -93,10 +100,9 @@ public class Venda {
     /**
      * Recalcula o valor total da venda com base nos subtotais dos itens.
      *
-     * Neste momento, o cálculo considera apenas os subtotais já existentes
-     * em cada ItemVenda.
-     *
-     * A regra de desconto global será implementada somente no Passo 4.3.
+     * O total é formado exclusivamente pela soma dos subtotais atuais de cada
+     * ItemVenda. Descontos promocionais e globais já refletidos nesses subtotais
+     * não são novamente subtraídos por este método.
      *
      * @return valor total recalculado da venda.
      */
