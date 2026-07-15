@@ -9,6 +9,7 @@ import br.com.luis.model.Usuario;
 import br.com.luis.model.TipoVenda;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.PrazoPagamento;
+import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ClienteService;
 import br.com.luis.service.ProdutoService;
@@ -23,6 +24,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
@@ -39,6 +41,7 @@ import javafx.scene.input.KeyCode;
 import javafx.event.ActionEvent;
 import javafx.scene.layout.VBox;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -74,6 +77,7 @@ public class RegistroVendaController {
     private Venda vendaAtual;
     private Cliente clienteSelecionado;
 
+    @FXML private Button btnVoltar;
     @FXML private Label lblUsuarioLogado;
     @FXML private Label lblDataHora;
 
@@ -175,6 +179,27 @@ public class RegistroVendaController {
         if (lblDataHora != null) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
             lblDataHora.setText(LocalDateTime.now().format(formatter));
+        }
+    }
+
+    /**
+     * Retorna diretamente para a Tela Principal usando o mesmo Stage atual.
+     */
+    @FXML
+    private void onVoltar() {
+
+        try {
+            NavegacaoUtil.abrirTela(
+                    btnVoltar,
+                    "/br/com/luis/view/TelaPrincipal.fxml",
+                    "Tela Principal"
+            );
+
+        } catch (IOException | RuntimeException e) {
+            System.err.println("[ERRO] Falha ao voltar para a Tela Principal.");
+            e.printStackTrace();
+
+            exibirErro("Não foi possível retornar para a Tela Principal.");
         }
     }
 

@@ -39,6 +39,8 @@
                     <Insets bottom="0" left="24" right="24" top="0" />
                 </padding>
 
+                <Button fx:id="btnVoltar" onAction="#onVoltar" prefWidth="90.0" text="Voltar" />
+
                 <Label fx:id="lblTituloTela" text="Registro de Venda">
                     <font>
                         <Font size="20" />
