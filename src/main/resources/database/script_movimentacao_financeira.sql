@@ -8,18 +8,14 @@ CREATE TABLE IF NOT EXISTS MovimentacaoFinanceira (
     -- No SQLite: TEXT em formato ISO 8601.
     data_hora TEXT NOT NULL,
 
-    -- Tipo da movimentação.
-    -- Primeira entrega: ENTRADA.
-    -- Não usar CHECK restritivo aqui para não dificultar fases futuras.
+    -- Tipo da movimentação: ENTRADA nos fluxos financeiros atuais.
+    -- A validação dos valores oficiais ocorre no Java, sem CHECK restritivo no banco.
     tipo TEXT NOT NULL,
 
-    -- Origem da movimentação.
-    -- Primeira entrega: VENDA_A_VISTA.
-    -- Futuramente poderá receber outras origens, como recebimento de conta.
+    -- Origem da movimentação: VENDA_A_VISTA ou RECEBIMENTO_CONTA.
     origem TEXT NOT NULL,
 
-    -- Forma de pagamento usada na movimentação.
-    -- Primeira entrega: DINHEIRO, PIX ou CARTAO.
+    -- Forma de pagamento usada na movimentação: DINHEIRO, PIX ou CARTAO.
     forma_pagamento TEXT NOT NULL,
 
     -- Valor da movimentação financeira.
@@ -30,8 +26,7 @@ CREATE TABLE IF NOT EXISTS MovimentacaoFinanceira (
     venda_id INTEGER NOT NULL,
 
     -- Conta a receber vinculada.
-    -- Na venda à vista, fica NULL.
-    -- Futuramente poderá ser usado no recebimento de conta.
+    -- Na venda à vista, fica NULL; no recebimento integral, identifica a conta recebida.
     conta_receber_id INTEGER,
 
     -- Usuário responsável pelo lançamento.

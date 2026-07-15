@@ -8,28 +8,24 @@ CREATE TABLE IF NOT EXISTS Venda (
     -- No SQLite, datas são armazenadas como TEXT em formato ISO 8601.
     data_hora TEXT NOT NULL,
 
-    -- Tipo da venda.
-    -- AVISTA ou APRAZO.
-    -- Na Fase 4 ainda pode ser nulo, pois a finalização não será implementada agora.
+    -- Tipo da venda: A_VISTA ou A_PRAZO.
+    -- É preenchido pelo Service antes da persistência da venda finalizada.
     tipo_venda TEXT,
 
-    -- Forma de pagamento da venda.
-    -- DINHEIRO, PIX, CARTAO.
-    -- Na Fase 4 ainda pode ser nulo, pois pagamento não será implementado agora.
+    -- Forma de pagamento: DINHEIRO, PIX ou CARTAO nas vendas à vista;
+    -- A_PRAZO nas vendas que geram conta a receber.
     forma_pagamento TEXT,
 
     -- Valor total da venda.
-    -- Começa com 0 e será recalculado conforme os itens forem adicionados.
+    -- É recalculado com base nos subtotais atuais dos itens.
     -- No Java, este valor deverá ser tratado com BigDecimal.
     valor_total REAL NOT NULL DEFAULT 0,
 
     -- Valor do desconto global aplicado na venda.
-    -- A regra de desconto global será implementada somente no Passo 4.3.
+    -- É calculado e distribuído entre os itens elegíveis pelo VendaService.
     valor_desconto_global REAL NOT NULL DEFAULT 0,
 
-    -- Status da venda.
-    -- Exemplo: ABERTA, FINALIZADA, CANCELADA, ESTORNADA.
-    -- Na Fase 4, o status inicial esperado será ABERTA.
+    -- Status da venda finalizada: PAGA para venda à vista ou PENDENTE para venda a prazo.
     status TEXT NOT NULL,
 
     -- Usuário responsável pela venda.

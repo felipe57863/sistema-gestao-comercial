@@ -12,13 +12,12 @@ CREATE TABLE IF NOT EXISTS ContaReceber (
     -- No SQLite: TEXT em formato ISO 8601.
     data_vencimento TEXT NOT NULL,
 
-    -- Status da conta.
-    -- Primeira entrega: PENDENTE.
-    -- Não usar CHECK restritivo aqui para não dificultar fases futuras.
+    -- Status da conta: PENDENTE na geração e PAGA após o recebimento integral.
+    -- A validação dos valores oficiais ocorre no Java, sem CHECK restritivo no banco.
     status TEXT NOT NULL,
 
     -- Venda que gerou esta conta.
-    -- Nesta primeira entrega, uma venda a prazo gera exatamente uma conta a receber.
+    -- Uma venda a prazo gera exatamente uma conta a receber, conforme a restrição UNIQUE.
     venda_id INTEGER NOT NULL UNIQUE,
 
     -- Cliente devedor da conta.
@@ -30,7 +29,7 @@ CREATE TABLE IF NOT EXISTS ContaReceber (
     prazo_pagamento_id INTEGER NOT NULL,
 
     -- Cópia histórica da quantidade de dias do prazo efetivo.
-    -- Evita perda de histórico caso o cadastro do prazo seja alterado no futuro.
+    -- Evita perda de histórico caso o cadastro do prazo seja alterado.
     quantidade_dias_prazo INTEGER NOT NULL CHECK (quantidade_dias_prazo > 0),
 
     -- Data e hora de criação da conta.
