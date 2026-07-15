@@ -25,7 +25,17 @@
             </left>
 
             <right>
-                <Label fx:id="lblUsuario" text="Usuário logado" textFill="#555555" />
+                <HBox alignment="CENTER_RIGHT" spacing="8.0">
+                    <Label fx:id="lblUsuario"
+                           text="Usuário não identificado"
+                           textFill="#555555" />
+
+                    <Label text="|" textFill="#777777" />
+
+                    <Label fx:id="lblDataHora"
+                           text="--/--/---- --:--:--"
+                           textFill="#555555" />
+                </HBox>
             </right>
         </BorderPane>
     </top>

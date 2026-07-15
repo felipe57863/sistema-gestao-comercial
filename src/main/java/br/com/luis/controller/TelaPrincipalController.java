@@ -1,8 +1,7 @@
 package br.com.luis.controller;
 
-import br.com.luis.model.Usuario;
+import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
-import br.com.luis.util.SessaoUsuario;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
@@ -26,21 +25,17 @@ import java.io.IOException;
 public class TelaPrincipalController {
 
     @FXML private Label lblUsuario;
+    @FXML private Label lblDataHora;
 
     /**
-     * Inicializa a identificação visual com o usuário armazenado na SessaoUsuario.
-     * Se não houver usuário na sessão, exibe a identificação alternativa prevista
-     * pela própria tela.
+     * Inicializa a identificação visual do usuário e o relógio do cabeçalho.
      */
     @FXML
     public void initialize() {
-        Usuario usuarioLogado = SessaoUsuario.getInstance().getUsuarioLogado();
-
-        if (usuarioLogado != null) {
-            lblUsuario.setText("Usuário: " + usuarioLogado.getNome());
-        } else {
-            lblUsuario.setText("Usuário não identificado");
-        }
+        CabecalhoUtil.configurarUsuarioEDataHora(
+                lblUsuario,
+                lblDataHora
+        );
     }
 
     /**
