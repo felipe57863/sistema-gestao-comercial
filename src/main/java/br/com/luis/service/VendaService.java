@@ -37,11 +37,12 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 
 /**
- * Camada de Serviço responsável pelas regras de negócio da venda.
+ * Camada de serviço responsável pelas regras de negócio da venda.
  *
- * Nesta fase, o serviço trabalha apenas com o carrinho em memória.
- * A persistência completa da venda, finalização, baixa de estoque e financeiro
- * serão tratados em etapas futuras.
+ * Gerencia o carrinho em memória, promoções, desconto global e cálculos da venda.
+ * Também finaliza vendas à vista e a prazo em uma única transação, persistindo
+ * a venda e seus itens, baixando o estoque e gerando a movimentação financeira
+ * ou a conta a receber correspondente ao tipo da venda.
  */
 public class VendaService {
 
@@ -80,9 +81,9 @@ public class VendaService {
      * valida o estoque com base na quantidade total acumulada e recalcula
      * subtotal e total.
      *
-     * Importante:
-     * nesta fase, o estoque NÃO é baixado. Apenas validamos se existe estoque
-     * suficiente para permitir a inclusão no carrinho.
+     * Esta operação atua somente sobre o carrinho em memória. O estoque é
+     * consultado para validação, mas sua baixa ocorre apenas na finalização
+     * persistida da venda.
      *
      * Sempre que o carrinho é alterado, o desconto global anterior é limpo,
      * pois a base elegível do desconto pode mudar.
@@ -143,6 +144,8 @@ public class VendaService {
      * Sempre que a quantidade é alterada, o desconto global anterior é limpo,
      * pois a base elegível do desconto pode mudar.
      *
+     * Esta operação altera somente o carrinho em memória e não baixa estoque.
+     *
      * @implNote Implementa a RN01 - Não permitir venda sem estoque.
      * @implNote Implementa a RN02 - Aplicação automática de promoção.
      * @implNote Apoia a RN03/RN04 - Recalcular desconto global quando o carrinho muda.
@@ -197,6 +200,8 @@ public class VendaService {
      * Antes de aplicar um novo desconto global, qualquer desconto global anterior
      * é removido para evitar acúmulo indevido.
      *
+     * Esta operação calcula e distribui o desconto somente no carrinho em memória.
+     *
      * @implNote Implementa a RN03/RN04 - Desconto global aplicado apenas sobre itens sem promoção.
      *
      * @param venda venda em memória que receberá o desconto global.
@@ -248,6 +253,7 @@ public class VendaService {
      *
      * Após remover o item, qualquer desconto global aplicado anteriormente
      * é limpo, pois a base elegível do desconto pode ter sido alterada.
+     * Esta operação não persiste alterações nem movimenta estoque.
      *
      * @implNote Apoia a RN03/RN04 - Recalcular desconto global quando o carrinho muda.
      *
@@ -283,6 +289,7 @@ public class VendaService {
      *
      * Também remove qualquer desconto global aplicado e recalcula o total
      * da venda para o estado inicial.
+     * Esta operação atua somente sobre o carrinho em memória.
      *
      * @implNote Apoia a RN03/RN04 - Limpeza do carrinho e do desconto global.
      *
@@ -303,11 +310,16 @@ public class VendaService {
     }
 
     /**
-     * Finaliza uma venda, persistindo os dados principais, itens,
-     * baixa de estoque e financeiro.
+     * Finaliza uma venda à vista ou a prazo em uma única transação.
      *
-     * Este método ainda não possui implementação real.
-     * A lógica transacional será adicionada nos próximos passos da Fase 5.
+     * Após as validações básicas, abre e fecha a Connection, desabilita o
+     * autoCommit durante o fluxo e delega a finalização específica usando a
+     * mesma conexão. Persiste a venda e seus itens, revalida e baixa o estoque
+     * e gera uma MovimentacaoFinanceira para venda à vista ou uma ContaReceber
+     * para venda a prazo.
+     *
+     * Executa commit quando todas as operações são concluídas. Em caso de erro,
+     * executa rollback, restaura o estado anterior do autoCommit e propaga a falha.
      *
      * @param venda venda em memória que será finalizada.
      * @param tipoVenda tipo da venda: A_VISTA ou A_PRAZO.
@@ -402,10 +414,11 @@ public class VendaService {
     /**
      * Valida os dados específicos de uma venda à vista.
      *
-     * Esta validação ainda não persiste venda, não baixa estoque
-     * e não gera movimentação financeira.
+     * Valida o tipo e as formas de pagamento permitidas. Para pagamento em
+     * dinheiro, exige valor recebido suficiente para cobrir o total da venda.
      *
-     * @implNote Apoia a preparação da finalização da venda à vista na Fase 5.
+     * Atua apenas sobre os dados em memória antes da abertura da Connection.
+     * Não persiste dados, não baixa estoque e não gera movimentação financeira.
      */
     private void validarDadosVendaAVista(
             Venda venda,
@@ -448,10 +461,8 @@ public class VendaService {
      * Para PIX ou CARTAO:
      * o troco é zero.
      *
-     * Este valor ainda não é retornado de verdade, pois a finalização
-     * real será implementada nos próximos passos.
-     *
-     * @implNote O troco não será persistido no banco.
+     * O valor calculado compõe o ResultadoFinalizacaoVenda, mas não é persistido.
+     * Este método apenas calcula dados em memória e não acessa o banco de dados.
      */
     private BigDecimal calcularTrocoVendaAVista(
             Venda venda,
@@ -471,14 +482,14 @@ public class VendaService {
     /**
      * Finaliza uma venda à vista usando uma Connection externa.
      *
-     * Este método não abre conexão, não executa commit e não executa rollback.
-     * Ele apenas orquestra as operações da venda à vista dentro de uma transação
-     * que será controlada externamente.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Ele orquestra as operações da venda à vista usando a
+     * mesma transação controlada por finalizarVenda(...).
      *
      * Ordem do fluxo:
      * Venda -> ItensVenda -> Baixa de estoque -> MovimentacaoFinanceira -> Resultado.
      *
-     * @implNote Apoia a futura finalização transacional da venda à vista na Fase 5.
+     * Ao final, retorna os identificadores persistidos e o troco calculado.
      */
     private ResultadoFinalizacaoVenda finalizarVendaAVistaTransacional(
             Connection conn,
@@ -564,10 +575,12 @@ public class VendaService {
     /**
      * Valida os dados específicos de uma venda a prazo.
      *
-     * Esta validação ainda não consulta cliente no banco, não valida limite
-     * de crédito e não gera conta a receber.
+     * Valida a combinação entre tipo e forma de pagamento e exige os IDs do
+     * cliente e do prazo de pagamento.
      *
-     * @implNote Apoia a preparação da finalização da venda a prazo na Fase 5.
+     * Atua apenas sobre os argumentos em memória antes da abertura da Connection.
+     * As validações de cliente, prazo e limite de crédito ocorrem posteriormente
+     * dentro da transação de finalização. Este método não gera conta a receber.
      */
     private void validarDadosVendaAPrazo(
             TipoVenda tipoVenda,
@@ -596,14 +609,14 @@ public class VendaService {
     /**
      * Finaliza uma venda a prazo usando uma Connection externa.
      *
-     * Este método não abre conexão, não executa commit e não executa rollback.
-     * Ele apenas orquestra as operações da venda a prazo dentro de uma transação
-     * que será controlada externamente.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Ele orquestra as operações da venda a prazo usando a
+     * mesma transação controlada por finalizarVenda(...).
      *
      * Ordem do fluxo:
      * Validações transacionais -> Venda -> ItensVenda -> Baixa de estoque -> ContaReceber -> Resultado.
      *
-     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     * Ao final, retorna os identificadores persistidos e a data de vencimento.
      */
     private ResultadoFinalizacaoVenda finalizarVendaAPrazoTransacional(
             Connection conn,
@@ -658,9 +671,8 @@ public class VendaService {
      * Se o rollback falhar e existir um erro original, a falha do rollback
      * será adicionada como erro suprimido no erro original.
      *
-     * Este método não abre conexão e não controla transação sozinho.
-     *
-     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     * Este método não abre nem fecha a Connection e não executa commit. Ele é
+     * chamado pelo controle transacional de finalizarVenda(...) após uma falha.
      */
     private void executarRollbackSeguro(
             Connection conn,
@@ -689,9 +701,9 @@ public class VendaService {
      * Se a restauração falhar e existir um erro original, a falha da restauração
      * será adicionada como erro suprimido no erro original.
      *
-     * Este método não abre conexão e não controla transação sozinho.
-     *
-     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. É chamado ao final do controle transacional para devolver
+     * a Connection ao estado de autoCommit encontrado antes da finalização.
      */
     private void restaurarAutoCommitSeguro(
             Connection conn,
@@ -718,10 +730,9 @@ public class VendaService {
     /**
      * Prepara os dados finais de uma venda à vista.
      *
-     * Este método apenas ajusta o objeto Venda em memória.
-     * Ainda não persiste a venda no banco de dados.
-     *
-     * @implNote Apoia a preparação da finalização da venda à vista na Fase 5.
+     * Ajusta data, tipo, forma de pagamento, status, usuário e cliente no objeto
+     * Venda em memória. Não abre Connection nem persiste dados; a persistência
+     * ocorre em seguida, na mesma transação da finalização.
      */
     private void prepararDadosVendaAVista(
             Venda venda,
@@ -741,10 +752,9 @@ public class VendaService {
     /**
      * Prepara os dados finais de uma venda a prazo.
      *
-     * Este método apenas ajusta o objeto Venda em memória.
-     * Ainda não persiste a venda no banco de dados.
-     *
-     * @implNote Apoia a preparação da finalização da venda a prazo na Fase 5.
+     * Ajusta data, tipo, forma de pagamento, status, usuário e cliente no objeto
+     * Venda em memória. Não abre Connection nem persiste dados; a persistência
+     * ocorre em seguida, na mesma transação da finalização.
      */
     private void prepararDadosVendaAPrazo(
             Venda venda,
@@ -763,11 +773,10 @@ public class VendaService {
     /**
      * Monta uma movimentação financeira para venda à vista.
      *
-     * Este método apenas cria e preenche o objeto em memória.
-     * Ainda não insere a movimentação no banco de dados.
-     *
-     * @implNote Apoia a futura geração de MovimentacaoFinanceira
-     * para venda à vista na Fase 5.
+     * Valida os dados recebidos e cria a entrada financeira vinculada à venda,
+     * preenchendo origem, forma de pagamento, valor, usuário e data em memória.
+     * Não abre Connection nem persiste dados; a movimentação é inserida em
+     * seguida, na mesma transação da finalização à vista.
      */
     private MovimentacaoFinanceira montarMovimentacaoFinanceiraVendaAVista(
             Integer vendaId,
@@ -812,11 +821,10 @@ public class VendaService {
     /**
      * Monta uma conta a receber para venda a prazo.
      *
-     * Este método apenas cria e preenche o objeto em memória.
-     * Ainda não insere a conta a receber no banco de dados.
-     *
-     * @implNote Apoia a futura geração de ContaReceber
-     * para venda a prazo na Fase 5.
+     * Valida os dados recebidos e cria a conta pendente vinculada à venda e ao
+     * cliente, calculando o vencimento conforme a quantidade de dias do prazo.
+     * Não abre Connection nem persiste dados; a conta é inserida em seguida,
+     * na mesma transação da finalização a prazo.
      */
     private ContaReceber montarContaReceberVendaAPrazo(
             Integer vendaId,
@@ -862,10 +870,8 @@ public class VendaService {
     /**
      * Monta o resultado da finalização de uma venda à vista.
      *
-     * Este método apenas cria o objeto de retorno em memória.
-     * Ainda não é chamado pelo finalizarVenda(...).
-     *
-     * @implNote Apoia o futuro retorno da finalização da venda à vista na Fase 5.
+     * Após validar os dados, cria em memória o retorno da finalização com os IDs
+     * persistidos, o total e o troco. Não abre Connection nem persiste dados.
      */
     private ResultadoFinalizacaoVenda montarResultadoFinalizacaoVendaAVista(
             Integer vendaId,
@@ -911,10 +917,9 @@ public class VendaService {
     /**
      * Monta o resultado da finalização de uma venda a prazo.
      *
-     * Este método apenas cria o objeto de retorno em memória.
-     * Ainda não é chamado pelo finalizarVenda(...).
-     *
-     * @implNote Apoia o futuro retorno da finalização da venda a prazo na Fase 5.
+     * Após validar os dados, cria em memória o retorno da finalização com os IDs
+     * persistidos, o total e a data de vencimento. Não abre Connection nem
+     * persiste dados.
      */
     private ResultadoFinalizacaoVenda montarResultadoFinalizacaoVendaAPrazo(
             Integer vendaId,
@@ -955,14 +960,14 @@ public class VendaService {
     /**
      * Revalida e baixa o estoque dos itens da venda dentro de uma transação.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Usa a conexão externa e participa da mesma transação
+     * da finalização da venda.
      *
      * A validação definitiva de produto ativo e estoque suficiente é feita pelo
      * ProdutoDAO.baixarEstoque(...), usando UPDATE seguro no banco de dados.
      *
-     * @implNote Apoia a RN01 - Não permitir venda sem estoque.
-     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     * @implNote Implementa a RN01 - Não permitir venda sem estoque.
      */
     private void revalidarEBaixarEstoqueItens(Connection conn, Venda venda) {
 
@@ -1002,10 +1007,9 @@ public class VendaService {
     /**
      * Persiste a venda dentro de uma transação.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
-     *
-     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Usa a conexão externa e participa da mesma transação
+     * da finalização da venda.
      */
     private Integer persistirVenda(Connection conn, Venda venda) {
 
@@ -1029,10 +1033,9 @@ public class VendaService {
     /**
      * Persiste a movimentação financeira dentro de uma transação.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
-     *
-     * @implNote Apoia a futura finalização transacional da venda à vista na Fase 5.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Usa a conexão externa e participa da mesma transação
+     * da finalização à vista.
      */
     private Integer persistirMovimentacaoFinanceira(
             Connection conn,
@@ -1059,10 +1062,9 @@ public class VendaService {
     /**
      * Persiste a conta a receber dentro de uma transação.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
-     *
-     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Usa a conexão externa e participa da mesma transação
+     * da finalização a prazo.
      */
     private Integer persistirContaReceber(
             Connection conn,
@@ -1089,12 +1091,13 @@ public class VendaService {
     /**
      * Busca e valida o cliente da venda a prazo dentro de uma transação.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Consulta o cliente com a conexão externa e participa
+     * da mesma transação da finalização a prazo.
      *
      * A busca já carrega o prazo máximo vinculado ao cliente.
      *
-     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     * Também rejeita clientes inexistentes ou inativos.
      */
     private Cliente buscarEValidarClienteVendaAPrazo(
             Connection conn,
@@ -1125,10 +1128,9 @@ public class VendaService {
     /**
      * Busca e valida o prazo efetivo da venda a prazo dentro de uma transação.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
-     *
-     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Consulta o prazo com a conexão externa e participa da
+     * mesma transação da finalização a prazo.
      */
     private PrazoPagamento buscarEValidarPrazoEfetivoVendaAPrazo(
             Connection conn,
@@ -1164,10 +1166,9 @@ public class VendaService {
      * Valida se o prazo efetivo escolhido na venda a prazo está dentro
      * do prazo máximo autorizado para o cliente.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas compara os objetos já carregados.
-     *
-     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     * Este método não abre nem fecha Connection, não executa commit nem rollback
+     * e não acessa o banco. Apenas compara os objetos já carregados durante a
+     * mesma transação da finalização a prazo.
      */
     private void validarPrazoEfetivoDentroDoLimiteDoCliente(
             Cliente cliente,
@@ -1209,8 +1210,10 @@ public class VendaService {
      * Fórmula:
      * limite disponível = limite de crédito cadastrado - total pendente em contas a receber.
      *
-     * Este método não abre conexão, não inicia transação manual,
-     * não executa commit e não executa rollback.
+     * Este método não abre nem fecha a Connection, não inicia transação manual,
+     * não executa commit e não executa rollback. Quando chamado na finalização a
+     * prazo, sua consulta participa da mesma transação; também pode reutilizar a
+     * conexão de uma consulta externa de limites.
      */
     private BigDecimal calcularLimiteCreditoDisponivel(
             Connection conn,
@@ -1258,10 +1261,9 @@ public class VendaService {
      * Este método considera:
      * limite disponível = limite de crédito do cliente - total pendente em contas a receber.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
-     *
-     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Consulta o total pendente pela conexão externa e participa
+     * da mesma transação da finalização a prazo.
      */
     private void validarLimiteCreditoDisponivelVendaAPrazo(
             Connection conn,
@@ -1300,10 +1302,9 @@ public class VendaService {
      * Este método agrupa as validações de cliente, prazo efetivo,
      * prazo máximo autorizado e limite de crédito.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
-     *
-     * @implNote Apoia a futura finalização transacional da venda a prazo na Fase 5.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Coordena as consultas e validações usando a mesma conexão
+     * e a mesma transação da finalização a prazo.
      */
     private DadosValidadosVendaAPrazo validarDadosTransacionaisVendaAPrazo(
             Connection conn,
@@ -1329,12 +1330,13 @@ public class VendaService {
     /**
      * Persiste os itens da venda dentro de uma transação.
      *
-     * Este método não abre transação, não executa commit e não executa rollback.
-     * Ele apenas usa a Connection externa recebida.
+     * Este método não abre nem fecha a Connection, não executa commit e não
+     * executa rollback. Usa a conexão externa e participa da mesma transação
+     * da finalização da venda.
      *
      * Antes de inserir cada item, o ID da venda é vinculado ao ItemVenda.
      *
-     * @implNote Apoia a futura finalização transacional da venda na Fase 5.
+     * Cada item é validado e vinculado ao ID da venda antes da persistência.
      */
     private void persistirItensVenda(
             Connection conn,
@@ -1370,12 +1372,11 @@ public class VendaService {
     /**
      * Valida os dados básicos comuns para qualquer tipo de finalização de venda.
      *
-     * Esta validação ainda não executa regras específicas de venda à vista
-     * ou venda a prazo.
+     * Valida a venda em memória, seus itens, usuário, tipo, forma de pagamento
+     * e total. As regras específicas de venda à vista ou a prazo são executadas
+     * separadamente após esta validação comum.
      *
-     * Também não abre transação e não acessa o banco de dados.
-     *
-     * @implNote Apoia a preparação da finalização da venda na Fase 5.
+     * Não abre Connection, não inicia transação e não acessa o banco de dados.
      */
     private void validarDadosBasicosFinalizacao(
             Venda venda,
@@ -1416,8 +1417,9 @@ public class VendaService {
     /**
      * Valida os dados mínimos de um item antes da finalização.
      *
-     * Esta validação não revalida estoque no banco.
-     * A revalidação de estoque será feita futuramente dentro da transação.
+     * Esta validação atua somente sobre os dados do item em memória e não abre
+     * Connection. A revalidação e a baixa de estoque são executadas posteriormente
+     * dentro da mesma transação da finalização.
      */
     private void validarItemParaFinalizacao(ItemVenda item) {
 
@@ -1696,8 +1698,8 @@ public class VendaService {
     /**
      * Busca no carrinho um item que já represente o produto informado.
      *
-     * @implNote Apoia a regra do carrinho da Fase 4.2:
-     * produtos repetidos devem ter suas quantidades somadas.
+     * Atua somente sobre o carrinho em memória e permite que produtos repetidos
+     * tenham suas quantidades somadas.
      */
     private ItemVenda buscarItemPorProduto(Venda venda, Integer idProduto) {
 
@@ -1904,7 +1906,8 @@ public class VendaService {
      * Calcula o limite de crédito disponível para uma lista de clientes.
      *
      * Este método abre uma única conexão para calcular todos os limites
-     * e preserva a ordem recebida na lista usando LinkedHashMap.
+     * e a fecha automaticamente ao final. Preserva a ordem recebida na lista
+     * usando LinkedHashMap.
      *
      * Não inicia transação manual, não executa commit e não executa rollback.
      *
