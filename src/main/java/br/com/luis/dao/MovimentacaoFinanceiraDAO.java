@@ -12,26 +12,30 @@ import java.sql.Types;
 /**
  * DAO responsável pela persistência da entidade MovimentacaoFinanceira.
  *
- * Esta classe não contém regra de negócio.
- * Sua responsabilidade é apenas inserir e consultar dados
- * relacionados à tabela MovimentacaoFinanceira.
+ * Insere movimentações preparadas pela camada Service, incluindo entradas de
+ * vendas à vista e de recebimentos integrais de contas a receber.
  *
- * Regra importante:
- * MovimentacaoFinanceira é imutável.
- * Portanto, este DAO não deve possuir métodos de update ou delete.
+ * Não decide tipo, origem, forma de pagamento ou valor da movimentação e não
+ * contém regras de negócio. Essas definições e o controle transacional pertencem
+ * ao VendaService ou ao ContaReceberService, conforme o fluxo.
+ *
+ * Este DAO disponibiliza somente a inserção de movimentações e não implementa
+ * operações de atualização ou exclusão.
  */
 public class MovimentacaoFinanceiraDAO {
 
     /**
      * Insere uma movimentação financeira usando uma Connection externa.
      *
-     * Este método foi preparado para participar da mesma transação
-     * da finalização da venda.
+     * Participa da transação coordenada pelo Service que originou a movimentação,
+     * seja a finalização de uma venda à vista ou o recebimento integral de uma
+     * conta. Encerra o PreparedStatement e o ResultSet que cria, mas respeita a
+     * propriedade da Connection recebida.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.

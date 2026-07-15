@@ -12,18 +12,17 @@ import java.sql.Statement;
 /**
  * DAO responsável pela persistência da entidade ItemVenda.
  *
- * Esta classe não contém regra de negócio.
- * Sua responsabilidade é apenas inserir, consultar ou atualizar dados
- * relacionados à tabela ItemVenda.
+ * Insere os itens já preparados e vinculados à venda pelo VendaService. Não
+ * calcula estoque, promoção, descontos ou total e não contém regras de negócio.
  */
 public class ItemVendaDAO {
 
     /**
      * Insere um item de venda no banco de dados.
      *
-     * Este método persiste apenas um item individual.
-     * A lógica de salvar uma venda completa com vários itens será tratada
-     * posteriormente pela camada Service, com controle transacional.
+     * Abre e fecha sua própria Connection e usa try-with-resources para encerrar
+     * o PreparedStatement e o ResultSet. Persiste um item individual com os
+     * valores e vínculos recebidos já definidos.
      *
      * @param itemVenda item de venda que será persistido.
      * @return ID gerado pelo banco para o item inserido.
@@ -70,13 +69,14 @@ public class ItemVendaDAO {
     /**
      * Insere um item de venda usando uma Connection externa.
      *
-     * Este método foi preparado para participar da mesma transação
-     * da finalização da venda.
+     * Participa da mesma transação usada para persistir a Venda, coordenada pelo
+     * VendaService. Encerra o PreparedStatement e o ResultSet que cria, mas
+     * respeita a propriedade da Connection recebida.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.

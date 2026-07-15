@@ -22,22 +22,27 @@ import java.util.List;
 /**
  * DAO responsável pela persistência da entidade ContaReceber.
  *
- * Esta classe não contém regra de negócio.
- * Sua responsabilidade é apenas inserir e consultar dados
- * relacionados à tabela ContaReceber.
+ * Insere contas a receber, consulta contas e valores pendentes, atualiza o status
+ * com proteção do estado esperado e lista pendências com dados do cliente.
+ * Participa tanto da geração da conta em vendas a prazo quanto das operações de
+ * consulta e atualização usadas no recebimento integral.
+ *
+ * Não contém regras de limite de crédito ou de recebimento. Essas decisões e o
+ * controle transacional pertencem ao VendaService e ao ContaReceberService.
  */
 public class ContaReceberDAO {
 
     /**
      * Insere uma conta a receber usando uma Connection externa.
      *
-     * Este método foi preparado para participar da mesma transação
-     * da finalização da venda.
+     * Participa da transação de finalização da venda a prazo coordenada pelo
+     * VendaService. Encerra o PreparedStatement e o ResultSet que cria, mas
+     * respeita a propriedade da Connection recebida.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.
@@ -96,13 +101,14 @@ public class ContaReceberDAO {
     /**
      * Soma o total pendente de contas a receber de um cliente.
      *
-     * Regra da Fase 5:
-     * o limite disponível deve considerar somente contas com status PENDENTE.
+     * A consulta soma somente contas com status PENDENTE. O VendaService utiliza
+     * esse valor no cálculo do limite disponível; o DAO não calcula nem valida
+     * o limite de crédito.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.
@@ -152,10 +158,14 @@ public class ContaReceberDAO {
     /**
      * Busca uma conta a receber pelo ID usando uma Connection externa.
      *
+     * É utilizada pelo ContaReceberService no fluxo transacional de recebimento
+     * integral. O DAO apenas consulta e mapeia os dados; as validações sobre o
+     * estado da conta pertencem ao Service.
+     *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.
@@ -219,12 +229,13 @@ public class ContaReceberDAO {
      * Atualiza o status de uma conta a receber com proteção de estado atual.
      *
      * A condição statusAtual evita que uma conta já alterada seja atualizada
-     * novamente sem que a camada Service perceba.
+     * novamente sem que a camada Service perceba. A decisão de permitir o
+     * recebimento e escolher o novo status pertence ao ContaReceberService.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.
@@ -280,13 +291,13 @@ public class ContaReceberDAO {
     /**
      * Lista contas a receber pendentes com o nome do cliente vinculado.
      *
-     * Este método usa uma Connection externa para permitir controle
-     * transacional pela camada Service.
+     * Usa uma Connection externa fornecida pelo ContaReceberService. Encerra os
+     * recursos JDBC que cria, mas respeita a propriedade da conexão recebida.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida;
      * - não calcula vencimento;
      * - não formata moeda;
