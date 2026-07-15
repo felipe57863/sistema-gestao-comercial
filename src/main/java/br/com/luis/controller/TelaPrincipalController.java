@@ -14,20 +14,25 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * Controller da tela principal temporária.
+ * Controller da tela principal e ponto central de navegação após o login.
  *
- * Esta tela existe apenas para permitir a navegação e os testes
- * enquanto o dashboard oficial ainda não foi implementado.
+ * Exibe o usuário mantido na SessaoUsuario e permite acessar os módulos de
+ * Clientes, Produtos, Registro de Venda e Contas a Receber. Cada navegação
+ * reutiliza o Stage atual, substitui sua Scene, atualiza o título e mantém a
+ * janela maximizada.
  *
- * Não contém regras de negócio.
- * Não implementa venda, financeiro, relatórios ou dashboard real.
+ * Não contém regras de negócio e delega as funcionalidades aos Controllers e
+ * Services de cada módulo. A tela ainda não constitui um dashboard gerencial
+ * completo.
  */
 public class TelaPrincipalController {
 
     @FXML private Label lblUsuario;
 
     /**
-     * Inicialização da tela.
+     * Inicializa a identificação visual com o usuário armazenado na SessaoUsuario.
+     * Se não houver usuário na sessão, exibe a identificação alternativa prevista
+     * pela própria tela.
      */
     @FXML
     public void initialize() {
@@ -41,7 +46,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Abre a tela de cadastro de clientes.
+     * Abre a tela funcional de cadastro de clientes no mesmo Stage.
      */
     @FXML
     public void abrirClientes() {
@@ -49,7 +54,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Abre a tela de cadastro de produtos.
+     * Abre a tela funcional de cadastro de produtos no mesmo Stage.
      */
     @FXML
     public void abrirProdutos() {
@@ -59,10 +64,8 @@ public class TelaPrincipalController {
     /**
      * Abre a tela de registro de venda.
      *
-     * Esta navegação é temporária para testes da Fase 4.
-     * A tela de venda representa apenas o carrinho em memória.
-     *
-     * Não finaliza venda, não baixa estoque e não executa financeiro.
+     * A tela de destino mantém o carrinho e realiza os fluxos de venda à vista
+     * e a prazo, delegando suas regras de negócio e persistência aos Services.
      */
     @FXML
     public void abrirVendas() {
@@ -70,7 +73,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Abre a tela de Contas a Receber.
+     * Abre a tela funcional de Contas a Receber no mesmo Stage.
      */
     @FXML
     public void abrirContasReceber() {
@@ -78,7 +81,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Encerra a aplicação.
+     * Encerra a aplicação fechando o Stage atual.
      */
     @FXML
     public void sair() {
@@ -87,7 +90,11 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Carrega uma tela FXML e substitui a cena atual.
+     * Carrega uma tela FXML e substitui a Scene do Stage atual.
+     *
+     * Atualiza o título, mantém a janela maximizada e apresenta um Alert quando
+     * o recurso não pode ser localizado ou carregado. Este método cuida apenas
+     * da navegação e não executa regras de negócio dos módulos abertos.
      */
     private void abrirTela(String caminhoFxml, String titulo) {
         try {

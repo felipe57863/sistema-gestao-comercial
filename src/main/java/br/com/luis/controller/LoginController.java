@@ -19,7 +19,11 @@ import java.net.URL;
 
 /**
  * Controller da Tela de Login.
- * Responsável apenas por interação com a UI.
+ *
+ * Captura login e senha da interface, delega a autenticação ao AuthService e,
+ * após o sucesso, armazena o Usuario autenticado na SessaoUsuario e abre a tela
+ * principal. Não contém a regra interna de autenticação nem acessa DAO diretamente.
+ * Também controla o feedback visual e o estado do botão durante a tentativa.
  */
 public class LoginController {
 
@@ -30,18 +34,24 @@ public class LoginController {
     private AuthService authService;
 
     /**
-     * Inicialização da tela.
+     * Inicializa o AuthService e posiciona o foco no campo de login.
      */
     @FXML
     public void initialize() {
         this.authService = new AuthService();
 
-        // UX: foco inicial no campo login
+        // Posiciona o foco inicial no campo de login.
         txtLogin.requestFocus();
     }
 
     /**
-     * Ação do botão "Entrar".
+     * Processa a ação do botão "Entrar".
+     *
+     * Lê as credenciais da interface, evita múltiplos cliques durante o fluxo e
+     * delega a autenticação ao AuthService. Quando autenticado, mantém o usuário
+     * na SessaoUsuario, exibe a confirmação e abre a tela principal no mesmo Stage.
+     * Em caso de erro, limpa a senha e apresenta a mensagem recebida; ao final,
+     * reabilita o botão de entrada.
      */
     @FXML
     public void fazerLogin(ActionEvent event) {
@@ -50,26 +60,26 @@ public class LoginController {
         String senha = txtSenha.getText();
 
         try {
-            // Evita múltiplos cliques
+            // Evita múltiplos cliques durante a tentativa de autenticação.
             btnEntrar.setDisable(true);
 
-            // Autenticação via Service
+            // Delega a autenticação ao AuthService.
             Usuario usuarioAutenticado = authService.autenticar(login, senha);
 
-            // Armazena na sessão
+            // Armazena o usuário autenticado na sessão da aplicação.
             SessaoUsuario.getInstance().setUsuarioLogado(usuarioAutenticado);
 
-            // Feedback ao usuário
+            // Apresenta o feedback visual de autenticação bem-sucedida.
             mostrarAlerta(Alert.AlertType.INFORMATION,
                     "Sucesso",
                     "Bem-vindo(a), " + usuarioAutenticado.getNome() + "!");
 
-            // Redireciona para a tela principal temporária da Fase 3
+            // Redireciona para a tela principal do sistema.
             abrirTelaPrincipalTemporaria();
 
         } catch (RuntimeException e) {
 
-            // Limpa senha por segurança
+            // Limpa a senha após falha na autenticação ou na abertura da tela.
             txtSenha.clear();
 
             mostrarAlerta(Alert.AlertType.ERROR,
@@ -82,7 +92,11 @@ public class LoginController {
     }
 
     /**
-     * Abre a tela principal temporária usada para navegação da Fase 3.
+     * Abre a tela principal do sistema após a autenticação.
+     *
+     * Apesar do nome histórico do método, este é o fluxo real de entrada no
+     * sistema. Carrega TelaPrincipal.fxml, reutiliza o Stage da tela de login,
+     * substitui a Scene, atualiza o título e mantém a janela maximizada.
      */
     private void abrirTelaPrincipalTemporaria() {
 
