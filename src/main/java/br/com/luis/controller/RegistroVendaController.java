@@ -51,15 +51,14 @@ import java.util.Map;
 /**
  * Controller da tela Registro de Venda.
  *
- * Nesta fase, a tela representa apenas o carrinho em memória.
+ * Mantém a venda atual e seu carrinho em memória enquanto o usuário interage
+ * com a tela. Coordena a busca e a seleção de produtos, clientes e prazos,
+ * recebe os dados visuais de desconto e pagamento e apresenta os resultados.
  *
- * Não implementa:
- * - finalização da venda;
- * - pagamento;
- * - venda a prazo;
- * - baixa de estoque;
- * - persistência completa da venda;
- * - financeiro.
+ * A finalização à vista ou a prazo é delegada ao VendaService, responsável
+ * pelas validações de negócio, persistência, baixa de estoque e geração da
+ * movimentação financeira ou da conta a receber. O Controller não acessa DAO
+ * diretamente e limpa a tela somente após a finalização bem-sucedida.
  */
 public class RegistroVendaController {
 
@@ -136,8 +135,8 @@ public class RegistroVendaController {
     /**
      * Inicializa uma nova venda em memória.
      *
-     * @implNote Nesta fase, usa usuário temporário apenas para manter a venda em memória.
-     * A ligação definitiva com SessaoUsuario será ajustada em etapa futura.
+     * Vincula a nova venda ao ID obtido da SessaoUsuario. Se não houver usuário
+     * válido na sessão, utiliza USUARIO_TEMPORARIO_ID como fallback.
      */
     private void inicializarVenda() {
         this.vendaAtual = new Venda(obterUsuarioIdAtual());
@@ -146,8 +145,9 @@ public class RegistroVendaController {
     /**
      * Obtém o ID do usuário atualmente logado.
      *
-     * Enquanto a integração completa da sessão não é finalizada,
-     * mantém USUARIO_TEMPORARIO_ID apenas como fallback de segurança.
+     * Consulta a SessaoUsuario e retorna o ID válido do usuário logado.
+     * Quando a sessão não possui usuário ou ID válido, retorna
+     * USUARIO_TEMPORARIO_ID como fallback.
      */
     private Integer obterUsuarioIdAtual() {
 
@@ -499,7 +499,7 @@ public class RegistroVendaController {
     /**
      * Evento do botão Adicionar Produto.
      *
-     * Nesta versão, o campo txtBuscaProduto aceita:
+     * O campo txtBuscaProduto aceita:
      * - apenas números: trata como ID do produto;
      * - texto: busca produtos por descrição e abre uma caixa de seleção.
      *
@@ -614,7 +614,8 @@ public class RegistroVendaController {
      * O Controller apenas identifica o item selecionado, chama o VendaService
      * e atualiza a interface.
      *
-     * Não salva venda, não baixa estoque e não executa financeiro.
+     * A remoção atua somente sobre a venda atual ainda não finalizada. Não
+     * persiste alterações, não baixa estoque e não executa operações financeiras.
      */
     @FXML
     private void onRemoverProduto() {
@@ -654,7 +655,8 @@ public class RegistroVendaController {
      * O Controller apenas solicita a limpeza ao VendaService
      * e atualiza a interface.
      *
-     * Não salva venda, não baixa estoque e não executa financeiro.
+     * A limpeza atua somente sobre a venda atual ainda não finalizada. Não
+     * persiste alterações, não baixa estoque e não executa operações financeiras.
      */
     @FXML
     private void onLimparVenda() {
@@ -720,8 +722,8 @@ public class RegistroVendaController {
      * O Controller apenas identifica o tipo de desconto, lê o valor informado,
      * chama o VendaService e atualiza a interface.
      *
-     * Não calcula desconto global, não salva venda, não baixa estoque
-     * e não executa financeiro.
+     * O cálculo e a distribuição do desconto pertencem ao VendaService e afetam
+     * somente a venda atual em memória até que ela seja finalizada.
      */
     @FXML
     private void onAplicarDesconto() {
@@ -815,12 +817,11 @@ public class RegistroVendaController {
     /**
      * Evento do botão Cancelar Venda.
      *
-     * Nesta fase, a venda ainda não é persistida no banco.
-     * Portanto, cancelar significa descartar a venda em memória atual
-     * e retornar a tela ao estado inicial.
+     * Descarta a venda atual ainda não finalizada e retorna a tela ao estado
+     * inicial, criando uma nova venda em memória.
      *
-     * Não salva venda, não baixa estoque, não gera financeiro
-     * e não executa estorno.
+     * Não persiste a venda descartada, não baixa estoque, não gera financeiro
+     * e não representa estorno de uma venda já persistida.
      */
     @FXML
     private void onCancelarVenda() {
@@ -884,8 +885,7 @@ public class RegistroVendaController {
 
     /**
      * Limpa a seleção do tipo de venda.
-     *
-     * Nesta fase, o tipo de venda é apenas visual/preparatório.
+     * Esta operação altera somente o estado visual dos RadioButtons.
      */
     private void limparSelecaoTipoVenda() {
 
@@ -900,7 +900,8 @@ public class RegistroVendaController {
     /**
      * Limpa a área visual de cliente.
      *
-     * Nesta fase, cliente ainda não possui regra completa de venda a prazo.
+     * Remove o cliente selecionado e restaura os campos de busca, nome, status
+     * e limite disponível ao estado inicial.
      */
     private void limparAreaCliente() {
 
@@ -914,6 +915,9 @@ public class RegistroVendaController {
 
     /**
      * Atualiza a área visual de cliente com base no cliente selecionado.
+     *
+     * Solicita ao VendaService o cálculo do limite de crédito disponível e apenas
+     * formata e exibe os dados. O Controller não calcula o limite nem acessa DAO.
      */
     private void atualizarAreaClienteSelecionado() {
 
@@ -944,8 +948,14 @@ public class RegistroVendaController {
     /**
      * Solicita os dados de pagamento para uma venda à vista.
      *
-     * Este Dialog é temporário para a Fase 5 e não altera o FXML.
-     * Se o usuário cancelar ou fechar a janela, retorna Optional.empty().
+     * O Dialog permite selecionar DINHEIRO, PIX ou CARTAO. Para DINHEIRO, exibe
+     * o campo de valor recebido e valida visualmente seu preenchimento, formato
+     * e valor positivo. As validações de negócio, inclusive a suficiência do
+     * valor recebido, permanecem no VendaService.
+     *
+     * Se o usuário cancelar ou fechar a janela, retorna Optional.empty() e a
+     * venda atual permanece inalterada. O troco é calculado pelo VendaService,
+     * apresentado após o sucesso e não é persistido no banco de dados.
      */
     private Optional<DadosPagamentoAVista> solicitarDadosPagamentoAVista() {
 
@@ -1083,8 +1093,10 @@ public class RegistroVendaController {
     /**
      * Abre um Dialog para seleção do prazo efetivo da venda a prazo.
      *
-     * Este método apenas retorna o prazo escolhido.
-     * Ele não altera estado da tela e não aplica regra de negócio.
+     * Lista os prazos ativos obtidos pelo PrazoPagamentoService e permite a
+     * seleção visual de um deles. Apenas retorna o prazo escolhido e não altera
+     * o estado da tela. As validações definitivas do prazo pertencem ao VendaService.
+     * Se o Dialog for cancelado ou fechado, retorna Optional.empty().
      */
     private Optional<PrazoPagamento> abrirDialogSelecaoPrazoPagamento() {
 
@@ -1186,8 +1198,13 @@ public class RegistroVendaController {
     /**
      * Finaliza uma venda a prazo usando cliente selecionado e prazo escolhido no Dialog.
      *
-     * As validações de cliente, prazo máximo, limite, estoque e persistência
-     * continuam no VendaService.
+     * O Controller verifica a presença dos IDs selecionados e delega ao
+     * VendaService as validações de cliente, prazo máximo, limite e estoque,
+     * além da persistência da venda, itens e conta a receber.
+     *
+     * Se a seleção do prazo for cancelada, mantém a venda atual. Após sucesso,
+     * apresenta o resultado e limpa a tela; erros são propagados ao evento de
+     * finalização, que exibe a mensagem sem descartar o carrinho.
      */
     private void finalizarVendaAPrazo() {
 
@@ -1228,11 +1245,15 @@ public class RegistroVendaController {
     /**
      * Evento do botão Finalizar Venda.
      *
-     * Nesta fase, a venda ainda não deve ser finalizada.
-     * Este botão existe apenas para indicar o fluxo futuro da Fase 5.
+     * Identifica o tipo selecionado e executa o fluxo real de finalização.
+     * Para venda à vista, solicita a forma de pagamento e o valor recebido
+     * quando necessário. Para venda a prazo, utiliza o cliente selecionado e
+     * solicita o prazo efetivo.
      *
-     * Não salva venda, não baixa estoque, não abre pagamento,
-     * não gera financeiro e não persiste dados no banco.
+     * Em ambos os fluxos, chama VendaService.finalizarVenda(...), responsável
+     * pelas validações de negócio e pela persistência transacional. A tela é
+     * limpa somente após sucesso. Cancelamentos de Dialog e erros preservam a
+     * venda e o carrinho atuais para correção ou nova tentativa.
      */
     @FXML
     private void onFinalizarVenda() {
@@ -1277,6 +1298,9 @@ public class RegistroVendaController {
 
     /**
      * Exibe o resultado da finalização de uma venda à vista.
+     *
+     * Apresenta ID, total, forma de pagamento e, quando positivo, o troco
+     * calculado pelo VendaService. O troco exibido não é persistido no banco.
      */
     private void exibirResultadoFinalizacaoAVista(ResultadoFinalizacaoVenda resultado) {
 
@@ -1316,6 +1340,9 @@ public class RegistroVendaController {
 
     /**
      * Exibe o resultado da finalização de uma venda a prazo.
+     *
+     * Apresenta ID, total, status, vencimento e, quando disponível, o ID da
+     * conta a receber gerada pelo VendaService.
      */
     private void exibirResultadoFinalizacaoAPrazo(ResultadoFinalizacaoVenda resultado) {
 
@@ -1363,7 +1390,8 @@ public class RegistroVendaController {
      * Limpa a tela após uma venda ser finalizada com sucesso.
      *
      * Este método só deve ser chamado depois que o VendaService finalizar
-     * a venda sem erro.
+     * a venda sem erro. Cria uma nova venda em memória e restaura carrinho,
+     * campos, seleções e área do cliente. Não é chamado quando ocorre erro.
      */
     private void limparTelaAposFinalizacao() {
 
@@ -1426,8 +1454,12 @@ public class RegistroVendaController {
     /**
      * Abre um Dialog para seleção real de cliente.
      *
-     * Este método apenas retorna o cliente escolhido.
-     * Ele não altera clienteSelecionado e não limpa a área de cliente.
+     * Obtém os clientes pelo ClienteService, filtra nome ou documento em memória
+     * e solicita ao VendaService os limites disponíveis para exibição. O Controller
+     * não acessa DAO nem calcula limite de crédito.
+     *
+     * O método apenas retorna o cliente escolhido; não altera clienteSelecionado
+     * nem limpa a área de cliente. Cancelar ou fechar retorna Optional.empty().
      */
     private Optional<Cliente> abrirDialogSelecaoCliente(
             String termoBusca
@@ -1589,11 +1621,13 @@ public class RegistroVendaController {
     /**
      * Evento do botão Selecionar Cliente.
      *
-     * Nesta fase, a seleção real de cliente ainda não será implementada.
-     * A área de cliente permanece apenas visual/preparatória para a Fase 5.
+     * Abre o Dialog de seleção, mantém o cliente escolhido em memória e atualiza
+     * nome, status e limite de crédito disponível na tela.
      *
-     * Não busca cliente no banco, não valida limite, não valida prazo
-     * e não executa regras financeiras.
+     * A listagem é obtida pelo ClienteService e o limite disponível pelo
+     * VendaService; o Controller não acessa DAO diretamente. Cancelar o Dialog
+     * preserva a seleção anterior. Se a atualização falhar, o cliente anterior
+     * é restaurado.
      */
     @FXML
     private void onSelecionarCliente() {
@@ -1646,11 +1680,15 @@ public class RegistroVendaController {
     /**
      * Abre a caixa de seleção de produto quando a busca é feita por descrição.
      *
+     * Obtém os resultados pelo ProdutoService e limita-se a montar e controlar
+     * o Dialog; as regras de estoque e venda permanecem no VendaService.
+     *
      * Quando houver produtos encontrados, exibe uma TableView com os produtos
      * separados em colunas e permite selecionar uma linha.
      *
      * Quando não houver produtos encontrados, exibe a mensagem dentro da própria
      * área da TableView usando placeholder, sem abrir Alert separado.
+     * Cancelar ou fechar o Dialog retorna Optional.empty().
      */
     private Optional<Produto> abrirDialogSelecaoProduto(String termoBusca) {
 
