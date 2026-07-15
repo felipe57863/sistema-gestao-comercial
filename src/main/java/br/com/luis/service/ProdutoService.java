@@ -20,8 +20,7 @@ public class ProdutoService {
     /**
      * Valida regras cadastrais e cadastra um novo produto.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * garante dados mínimos válidos e define todo novo produto como ativo.
+     * @implNote Garante dados mínimos válidos e define todo novo produto como ativo.
      */
     public void cadastrar(Produto produto) {
 
@@ -48,8 +47,7 @@ public class ProdutoService {
      * Valida e envia o produto modificado para atualização no banco.
      * Utilizado pelo botão "Editar" da interface.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * exige produto com ID válido antes de permitir atualização.
+     * @implNote Exige produto com ID válido antes de permitir atualização.
      */
     public void atualizar(Produto produto) {
 
@@ -121,8 +119,8 @@ public class ProdutoService {
     /**
      * Busca um produto pelo ID informado.
      *
-     * @implNote Apoio à Fase 4 - Motor de Vendas:
-     * permite localizar um produto específico para uso no carrinho de vendas.
+     * @implNote Permite localizar e validar um produto específico para uso no
+     * carrinho de vendas.
      */
     public Produto buscarPorId(Integer idProduto) {
 
@@ -142,8 +140,8 @@ public class ProdutoService {
     /**
      * Fail-fast: validação básica e reutilizável para cadastro e atualização.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * garante que os dados mínimos do produto estejam preenchidos antes da persistência.
+     * @implNote Garante que os dados mínimos do produto estejam preenchidos
+     * antes da persistência.
      */
     private void validarProduto(Produto produto) {
 

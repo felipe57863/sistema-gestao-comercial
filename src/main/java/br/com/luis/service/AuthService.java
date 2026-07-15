@@ -38,8 +38,8 @@ public class AuthService {
      * - Se não existir usuário "admin", ele será criado automaticamente.
      * - Se já existir, nenhuma ação é realizada.
      *
-     * @implNote Seed inicial da Fase 2:
-     * garante que o sistema tenha um usuário ADMIN criado com senha criptografada via BCrypt.
+     * @implNote Garante que o sistema tenha um usuário ADMIN criado com senha
+     * criptografada via BCrypt.
      */
     public void inicializarAdminBase() {
 
@@ -51,7 +51,7 @@ public class AuthService {
 
             // Regra de segurança:
             // A senha padrão deve ser usada apenas na primeira execução.
-            // Recomenda-se exigir troca de senha posteriormente.
+            // Recomenda-se substituir a senha padrão antes do uso regular.
             String senhaSegura = gerarHash("admin123");
 
             // Criação do usuário administrador
@@ -88,8 +88,8 @@ public class AuthService {
      * @return Usuario autenticado
      * @throws RuntimeException se login/senha inválidos ou usuário inativo
      *
-     * @implNote Regra de segurança da Fase 2:
-     * autentica o usuário usando BCrypt e bloqueia acesso de usuários inativos.
+     * @implNote Autentica o usuário usando BCrypt e bloqueia o acesso de
+     * usuários inativos.
      */
     public Usuario autenticar(String login, String senhaLimpa) {
 

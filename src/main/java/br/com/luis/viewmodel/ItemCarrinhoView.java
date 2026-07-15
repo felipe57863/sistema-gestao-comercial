@@ -12,8 +12,8 @@ import br.com.luis.model.ItemVenda;
  * Responsabilidades:
  * - armazenar dados já preparados para exibição na TableView;
  * - facilitar a apresentação de informações amigáveis ao usuário;
- * - manter uma referência ao ItemVenda original para operações futuras,
- *   como remoção do item do carrinho.
+ * - manter uma referência ao ItemVenda original para edição de quantidade e
+ *   remoção do item do carrinho.
  */
 public class ItemCarrinhoView {
 

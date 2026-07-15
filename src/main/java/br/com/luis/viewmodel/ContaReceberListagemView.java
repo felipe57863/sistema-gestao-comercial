@@ -7,8 +7,8 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 
 /**
- * ViewModel usada para representar uma linha da futura TableView
- * de contas a receber pendentes.
+ * ViewModel usada para representar uma linha da TableView de contas a receber
+ * pendentes.
  *
  * Esta classe não representa uma entidade persistida no banco de dados.
  * Ela não acessa DAO, Service, SQL ou qualquer recurso de persistência.

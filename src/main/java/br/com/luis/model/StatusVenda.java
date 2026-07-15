@@ -3,15 +3,14 @@ package br.com.luis.model;
 /**
  * Enum que representa os status oficiais da venda no sistema.
  *
- * Na Fase 5, este enum será usado para padronizar o status da venda
- * após a finalização real.
+ * Padroniza o status persistido após a finalização da venda.
  *
  * Regras:
  * - PAGA: venda à vista finalizada com pagamento confirmado.
  * - PENDENTE: venda a prazo finalizada com ContaReceber pendente.
  *
- * Status como CANCELADA ou ESTORNADA não entram nesta etapa.
- * Estorno pertence à Fase 6.
+ * O enum atualmente representa apenas os estados gerados pelos fluxos de
+ * finalização à vista e a prazo.
  */
 public enum StatusVenda {
 

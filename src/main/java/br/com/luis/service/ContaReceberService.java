@@ -25,7 +25,8 @@ import java.util.List;
  * Camada de serviço responsável pelas regras de negócio
  * relacionadas ao recebimento de contas a receber.
  *
- * Nesta primeira versão, o serviço realiza somente recebimento integral.
+ * O serviço realiza o recebimento integral de contas pendentes, atualiza seu
+ * status e registra a movimentação financeira correspondente em uma transação.
  *
  * Não há:
  * - pagamento parcial;
@@ -408,7 +409,7 @@ public class ContaReceberService {
         }
     }
     /**
-     * Lista as contas a receber pendentes para exibição futura na interface.
+     * Lista as contas a receber pendentes para exibição na interface.
      *
      * Este método não inicia transação, pois realiza apenas consulta.
      * A indicação de conta vencida é calculada fora do DAO.

@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * Classe temporária para testes rápidos de telas JavaFX durante o desenvolvimento.
+ * Classe auxiliar para abrir diretamente uma tela JavaFX em testes manuais isolados.
  *
  * IMPORTANTE:
  * Esta classe NÃO representa o fluxo oficial do sistema.
@@ -19,19 +19,19 @@ import java.net.URL;
  * Fluxo oficial:
  * Launcher -> Main -> DatabaseBuilder -> AuthService -> Login.fxml
  *
- * Fluxo temporário desta classe:
+ * Fluxo isolado desta classe:
  * App -> DatabaseBuilder -> Produto.fxml
  *
  * Regras:
  * - Não deve ser chamada pelo Launcher.
  * - Não substitui a classe Main.
  * - Não deve conter regra de negócio.
- * - Pode ser removida futuramente quando a navegação oficial estiver estabilizada.
+ * - Não participa da navegação oficial da aplicação.
  */
 public class App extends Application {
 
     /**
-     * Inicialização mínima para testes diretos de telas.
+     * Inicialização mínima para testes diretos da tela de produtos.
      * Garante que as tabelas existam antes de abrir o FXML de teste.
      */
     @Override

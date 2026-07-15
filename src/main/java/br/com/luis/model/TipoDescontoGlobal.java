@@ -8,8 +8,8 @@ package br.com.luis.model;
  * - Promoção pertence a um produto específico.
  * - Desconto global pertence à venda/carrinho como um todo.
  *
- * A regra de aplicação do desconto global será implementada
- * na camada VendaService.
+ * A aplicação, validação e distribuição do desconto global são realizadas
+ * pela camada VendaService.
  */
 public enum TipoDescontoGlobal {
 

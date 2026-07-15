@@ -184,13 +184,13 @@ public class ClienteDAO {
      * Busca um cliente pelo ID com seu prazo de pagamento vinculado,
      * usando uma Connection externa.
      *
-     * Este método foi preparado para participar da mesma transação
-     * da finalização da venda a prazo.
+     * Participa da transação de finalização da venda a prazo coordenada pelo
+     * VendaService e carrega também o prazo máximo vinculado ao cliente.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.

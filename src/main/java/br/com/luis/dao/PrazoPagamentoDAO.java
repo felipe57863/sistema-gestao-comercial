@@ -184,13 +184,13 @@ public class PrazoPagamentoDAO {
     /**
      * Busca um prazo de pagamento pelo ID usando uma Connection externa.
      *
-     * Este método foi preparado para participar da mesma transação
-     * da finalização da venda a prazo.
+     * Participa da transação de finalização da venda a prazo coordenada pelo
+     * VendaService.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.

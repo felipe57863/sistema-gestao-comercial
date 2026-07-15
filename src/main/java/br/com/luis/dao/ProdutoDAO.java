@@ -266,13 +266,13 @@ public class ProdutoDAO {
     /**
      * Busca um produto pelo ID usando uma Connection externa.
      *
-     * Este método foi preparado para participar da mesma transação
-     * da finalização da venda.
+     * Participa da transação de finalização da venda para permitir a consulta
+     * consistente do produto pela camada Service.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.
@@ -315,8 +315,7 @@ public class ProdutoDAO {
     /**
      * Baixa estoque de um produto usando uma Connection externa.
      *
-     * Este método foi preparado para participar da mesma transação
-     * da finalização da venda.
+     * Participa da transação de finalização coordenada pelo VendaService.
      *
      * A baixa é feita de forma segura:
      * - somente produto ativo pode ter estoque baixado;
@@ -324,9 +323,9 @@ public class ProdutoDAO {
      * - o UPDATE só ocorre se a condição de estoque for satisfeita.
      *
      * Importante:
-     * - não abre nova conexão;
-     * - não faz commit;
-     * - não faz rollback;
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
      * - não fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.

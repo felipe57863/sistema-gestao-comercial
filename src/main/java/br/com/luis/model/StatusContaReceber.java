@@ -7,8 +7,8 @@ package br.com.luis.model;
  * - PENDENTE: conta ainda não recebida.
  * - PAGA: conta recebida integralmente.
  *
- * Status como CANCELADA, VENCIDA, PARCIAL ou ESTORNADA
- * não entram nesta etapa.
+ * O enum atualmente representa apenas os estados persistidos PENDENTE e PAGA.
+ * A indicação de vencimento é calculada para apresentação sem alterar o status.
  */
 public enum StatusContaReceber {
 

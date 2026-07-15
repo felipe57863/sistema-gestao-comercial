@@ -114,8 +114,7 @@ public class ClienteController {
 
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-        // Evita simular "Administrador".
-        // Quando a classe de sessão for auditada, este label deve receber o usuário real logado.
+        // Exibe a identificação da tela e a data/hora atuais, sem simular um usuário.
         lblUsuario.setText("Cadastro de Clientes | " + dtf.format(LocalDateTime.now()));
     }
 

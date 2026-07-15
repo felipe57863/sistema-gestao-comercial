@@ -8,15 +8,15 @@ import java.time.LocalDateTime;
 /**
  * Entidade que representa uma conta a receber gerada por uma venda a prazo.
  *
- * Na primeira entrega da Fase 5, a ContaReceber será criada somente
- * no momento da finalização de uma venda a prazo.
+ * É criada pelo VendaService durante a finalização de uma venda a prazo e pode
+ * ser carregada para o fluxo de recebimento integral do ContaReceberService.
  *
  * Regras importantes:
- * - Toda ContaReceber nasce com status PENDENTE.
+ * - Toda nova ContaReceber gerada por uma venda nasce com status PENDENTE.
  * - A data de vencimento é calculada no Service.
  * - O prazo efetivo é validado no Service.
  * - O limite de crédito é validado no Service.
- * - O recebimento completo da conta fica fora desta etapa.
+ * - O recebimento integral altera o status para PAGA e gera movimentação financeira.
  */
 public class ContaReceber {
 

@@ -17,7 +17,7 @@ public class Produto {
     private boolean ativo; // No banco: 1 (true) / 0 (false)
 
     /**
-     * Construtor vazio (necessário para frameworks e reflexão)
+     * Construtor vazio usado para criação gradual e mapeamento manual dos dados.
      */
     public Produto() {
     }

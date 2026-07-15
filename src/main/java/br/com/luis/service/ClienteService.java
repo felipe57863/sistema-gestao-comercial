@@ -20,8 +20,8 @@ public class ClienteService {
     /**
      * Valida regras cadastrais e cadastra um novo cliente.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * impede documento duplicado e garante que todo novo cliente seja criado como ATIVO.
+     * @implNote Impede documento duplicado e garante que todo novo cliente seja
+     * criado como ATIVO.
      */
     public void cadastrar(Cliente cliente) {
 
@@ -48,8 +48,8 @@ public class ClienteService {
     /**
      * Valida regras cadastrais e atualiza os dados de um cliente existente.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * exige ID para atualização e bloqueia documento duplicado em outro cliente.
+     * @implNote Exige ID para atualização e bloqueia documento duplicado em
+     * outro cliente.
      */
     public void atualizar(Cliente cliente) {
 
@@ -70,8 +70,8 @@ public class ClienteService {
     /**
      * Fail-fast: validação básica e reutilizável para cadastro e atualização.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * garante que os dados mínimos do cliente estejam preenchidos antes da persistência.
+     * @implNote Garante que os dados mínimos do cliente estejam preenchidos
+     * antes da persistência.
      */
     private void validarCliente(Cliente cliente) {
 
@@ -107,8 +107,7 @@ public class ClienteService {
     /**
      * Valida se já existe outro cliente com o mesmo documento.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * impede duplicidade lógica de documento no cadastro de clientes.
+     * @implNote Impede duplicidade lógica de documento no cadastro de clientes.
      */
     private void validarDocumentoDuplicado(String documento, Integer idAtual) {
 

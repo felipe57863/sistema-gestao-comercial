@@ -3,8 +3,8 @@ package br.com.luis.model;
 /**
  * Enum que representa os tipos oficiais de venda do sistema.
  *
- * Na Fase 5, este enum será usado para padronizar a finalização da venda,
- * evitando uso de textos soltos como "avista", "prazo" ou variações similares.
+ * Padroniza a finalização da venda, evitando o uso de textos soltos como
+ * "avista", "prazo" ou variações similares.
  *
  * Regras:
  * - A_VISTA: venda paga no momento da finalização.

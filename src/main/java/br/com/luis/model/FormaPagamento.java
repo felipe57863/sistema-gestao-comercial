@@ -3,8 +3,8 @@ package br.com.luis.model;
 /**
  * Enum que representa as formas oficiais de pagamento do sistema.
  *
- * Na Fase 5, este enum será usado para padronizar a finalização da venda,
- * evitando uso de textos soltos como "dinheiro", "cartao", "pix" ou variações similares.
+ * Padroniza a finalização da venda e o recebimento de contas, evitando o uso de
+ * textos soltos como "dinheiro", "cartao", "pix" ou variações similares.
  *
  * Regras:
  * - DINHEIRO: venda à vista com validação de valor recebido e cálculo de troco.

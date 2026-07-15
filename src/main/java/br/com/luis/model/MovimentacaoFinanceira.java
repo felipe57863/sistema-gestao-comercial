@@ -7,15 +7,14 @@ import java.time.LocalDateTime;
 /**
  * Entidade que representa uma movimentação financeira do sistema.
  *
- * Na primeira entrega da Fase 5, a MovimentacaoFinanceira será criada
- * somente quando uma venda à vista for finalizada.
+ * É criada pela camada Service na finalização de vendas à vista e no recebimento
+ * integral de contas a receber.
  *
  * Regras importantes:
- * - MovimentacaoFinanceira é imutável do ponto de vista de persistência.
- * - Deve permitir INSERT e SELECT.
- * - Não deve ter UPDATE ou DELETE no DAO.
+ * - A persistência atual registra movimentações por INSERT e não disponibiliza
+ *   UPDATE ou DELETE.
  * - Venda a prazo não gera movimentação financeira imediata.
- * - Recebimento completo de conta fica fora desta etapa.
+ * - O recebimento integral da conta gera uma entrada financeira vinculada.
  */
 public class MovimentacaoFinanceira {
 

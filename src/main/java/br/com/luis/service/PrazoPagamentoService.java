@@ -20,8 +20,8 @@ public class PrazoPagamentoService {
     /**
      * Valida e cadastra um novo prazo de pagamento.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * impede descrição duplicada e garante que todo novo prazo seja criado como ativo.
+     * @implNote Impede descrição duplicada e garante que todo novo prazo seja
+     * criado como ativo.
      */
     public void cadastrar(PrazoPagamento prazo) {
 
@@ -43,8 +43,8 @@ public class PrazoPagamentoService {
     /**
      * Valida e atualiza um prazo de pagamento existente.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * impede atualização sem ID e bloqueia descrição duplicada em outro registro.
+     * @implNote Impede atualização sem ID e bloqueia descrição duplicada em
+     * outro registro.
      */
     public void atualizar(PrazoPagamento prazo) {
 
@@ -67,8 +67,7 @@ public class PrazoPagamentoService {
     /**
      * Inativa um prazo de pagamento existente.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * evita exclusão física e mantém histórico do cadastro.
+     * @implNote Evita exclusão física e mantém o histórico do cadastro.
      */
     public void inativar(Integer idPrazo) {
 
@@ -100,8 +99,7 @@ public class PrazoPagamentoService {
     /**
      * Valida se já existe outro prazo de pagamento com a mesma descrição.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * impede duplicidade lógica de descrição no cadastro de prazos.
+     * @implNote Impede duplicidade lógica de descrição no cadastro de prazos.
      */
     private void validarDescricaoDuplicada(String descricao, Integer idAtual) {
 
@@ -120,9 +118,8 @@ public class PrazoPagamentoService {
     /**
      * Inicializa os prazos padrão do sistema.
      *
-     * @implNote Seed cadastral da Fase 3:
-     * garante que os prazos básicos estejam disponíveis para o cadastro de clientes,
-     * já que PrazoPagamento não possui tela própria de cadastro.
+     * @implNote Garante que os prazos básicos estejam disponíveis para o cadastro
+     * de clientes, já que PrazoPagamento não possui tela própria de cadastro.
      */
     public void inicializarPrazosPadrao() {
 
@@ -149,8 +146,7 @@ public class PrazoPagamentoService {
     /**
      * Verifica se já existe um prazo cadastrado com a mesma quantidade de dias.
      *
-     * @implNote Seed cadastral da Fase 3:
-     * evita duplicidade dos prazos padrão na inicialização do sistema.
+     * @implNote Evita duplicidade dos prazos padrão na inicialização do sistema.
      */
     private boolean existePrazoComQuantidadeDias(int quantidadeDias) {
 

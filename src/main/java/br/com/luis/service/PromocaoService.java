@@ -87,8 +87,8 @@ public class PromocaoService {
      * Inativa a promoção ativa de um produto.
      * Usado quando o usuário remove a promoção de um produto na tela de cadastro.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * garante que a remoção de promoção ativa seja feita pela camada Service e com transação.
+     * @implNote Garante que a remoção da promoção ativa seja coordenada pela
+     * camada Service dentro de uma transação.
      */
     public void inativarPromocaoAtivaDoProduto(Produto produto) {
 
@@ -140,7 +140,8 @@ public class PromocaoService {
 
     /**
      * Busca a promoção ativa de um produto.
-     * Método de consulta usado por telas e por futuras regras de venda.
+     * Método de consulta usado pelas telas e pela aplicação automática de
+     * promoção no carrinho de vendas.
      */
     public Promocao buscarPromocaoAtivaPorProduto(Produto produto) {
 
@@ -154,8 +155,7 @@ public class PromocaoService {
     /**
      * Valida os dados necessários para cadastrar uma promoção.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * garante tipo, valor e produto válidos antes da aplicação da RN22.
+     * @implNote Garante tipo, valor e produto válidos antes da aplicação da RN22.
      */
     private void validarPromocao(Promocao promocao) {
 
@@ -195,8 +195,7 @@ public class PromocaoService {
     /**
      * Valida se o desconto percentual está dentro do limite permitido.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * desconto percentual não pode ser maior que 100%.
+     * @implNote O desconto percentual não pode ser maior que 100%.
      */
     private void validarDescontoPercentual(BigDecimal valorDesconto) {
 
@@ -210,8 +209,7 @@ public class PromocaoService {
     /**
      * Valida se o desconto fixo não ultrapassa o preço do produto.
      *
-     * @implNote Validação cadastral da Fase 3:
-     * desconto em valor fixo não pode ser maior que o preço do produto.
+     * @implNote O desconto em valor fixo não pode ser maior que o preço do produto.
      */
     private void validarDescontoValorFixo(Promocao promocao) {
 

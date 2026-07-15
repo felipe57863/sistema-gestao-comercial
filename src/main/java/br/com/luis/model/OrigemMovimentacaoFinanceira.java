@@ -7,8 +7,8 @@ package br.com.luis.model;
  * - VENDA_A_VISTA: movimentação gerada pela finalização de uma venda à vista.
  * - RECEBIMENTO_CONTA: movimentação gerada pelo recebimento integral de uma conta a receber.
  *
- * Origens como ESTORNO ou AJUSTE_MANUAL não entram nesta etapa.
- * Estorno pertence à Fase 6.
+ * O enum atualmente representa apenas as origens usadas pelos fluxos de venda
+ * à vista e recebimento integral de conta.
  */
 public enum OrigemMovimentacaoFinanceira {
 
