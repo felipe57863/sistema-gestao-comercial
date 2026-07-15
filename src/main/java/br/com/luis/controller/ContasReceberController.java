@@ -4,6 +4,7 @@ import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.StatusContaReceber;
 import br.com.luis.model.Usuario;
 import br.com.luis.service.ContaReceberService;
+import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.viewmodel.ContaReceberListagemView;
@@ -92,6 +93,10 @@ public class ContasReceberController {
      */
     @FXML
     public void initialize() {
+        CabecalhoUtil.configurarUsuarioEDataHora(
+                lblUsuario,
+                lblDataHora
+        );
         btnReceberConta.setDisable(true);
         configurarTabela();
         configurarSelecaoTabela();

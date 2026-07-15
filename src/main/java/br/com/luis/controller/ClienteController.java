@@ -4,6 +4,7 @@ import br.com.luis.model.Cliente;
 import br.com.luis.model.PrazoPagamento;
 import br.com.luis.service.ClienteService;
 import br.com.luis.service.PrazoPagamentoService;
+import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -19,8 +20,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -34,6 +33,7 @@ public class ClienteController {
     // --- CABEÇALHO ---
     @FXML private Button btnVoltar;
     @FXML private Label lblUsuario;
+    @FXML private Label lblDataHora;
 
     // --- FORMULÁRIO ---
     @FXML private TextField txtNome;
@@ -115,11 +115,10 @@ public class ClienteController {
      * Configura o cabeçalho da tela.
      */
     private void configurarCabecalho() {
-
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-
-        // Exibe a identificação da tela e a data/hora atuais, sem simular um usuário.
-        lblUsuario.setText("Cadastro de Clientes | " + dtf.format(LocalDateTime.now()));
+        CabecalhoUtil.configurarUsuarioEDataHora(
+                lblUsuario,
+                lblDataHora
+        );
     }
 
     /**

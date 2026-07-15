@@ -4,6 +4,7 @@ import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.PromocaoService;
+import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -53,6 +54,9 @@ public class ProdutoController implements Initializable {
     @FXML private Label lblPrefixoDesconto;
     @FXML private Label lblSufixoDesconto;
 
+    @FXML private Label lblUsuario;
+    @FXML private Label lblDataHora;
+
     private ToggleGroup tgTipoDesconto;
 
     // Botões
@@ -89,6 +93,10 @@ public class ProdutoController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        CabecalhoUtil.configurarUsuarioEDataHora(
+                lblUsuario,
+                lblDataHora
+        );
         configurarComponentes();
         configurarComportamentoPromocao();
         configurarColunas();

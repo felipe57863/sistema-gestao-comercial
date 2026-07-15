@@ -44,14 +44,21 @@
                 </HBox>
             </left>
             <right>
-                <Label text="Gestão de produtos" textFill="#555555" BorderPane.alignment="CENTER">
+                <HBox alignment="CENTER_RIGHT" spacing="8.0" BorderPane.alignment="CENTER">
                     <BorderPane.margin>
                         <Insets right="20.0" />
                     </BorderPane.margin>
-                    <font>
-                        <Font size="14.0" />
-                    </font>
-                </Label>
+
+                    <Label fx:id="lblUsuario"
+                           text="Usuário não identificado"
+                           textFill="#555555" />
+
+                    <Label text="|" textFill="#777777" />
+
+                    <Label fx:id="lblDataHora"
+                           text="--/--/---- --:--:--"
+                           textFill="#555555" />
+                </HBox>
             </right>
         </BorderPane>
     </top>

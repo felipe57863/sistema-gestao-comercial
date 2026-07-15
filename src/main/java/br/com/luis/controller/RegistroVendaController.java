@@ -9,6 +9,7 @@ import br.com.luis.model.Usuario;
 import br.com.luis.model.TipoVenda;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.PrazoPagamento;
+import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ClienteService;
@@ -44,8 +45,6 @@ import javafx.scene.layout.VBox;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -172,14 +171,10 @@ public class RegistroVendaController {
      * Configura informações visuais iniciais do cabeçalho.
      */
     private void configurarCabecalho() {
-        if (lblUsuarioLogado != null) {
-            lblUsuarioLogado.setText("Usuário: Vendedor |");
-        }
-
-        if (lblDataHora != null) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-            lblDataHora.setText(LocalDateTime.now().format(formatter));
-        }
+        CabecalhoUtil.configurarUsuarioEDataHora(
+                lblUsuarioLogado,
+                lblDataHora
+        );
     }
 
     /**

@@ -49,8 +49,13 @@
 
                 <Region HBox.hgrow="ALWAYS" />
 
-                <Label fx:id="lblUsuarioLogado" text="Usuário: Vendedor |" />
-                <Label fx:id="lblDataHora" text="12/04/2024 15:45" />
+                <Label fx:id="lblUsuarioLogado"
+                       text="Usuário não identificado"
+                       textFill="#555555" />
+                <Label text="|" textFill="#777777" />
+                <Label fx:id="lblDataHora"
+                       text="--/--/---- --:--:--"
+                       textFill="#555555" />
             </HBox>
         </VBox>
     </top>
