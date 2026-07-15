@@ -22,8 +22,10 @@ import java.net.URL;
  *
  * Captura login e senha da interface, delega a autenticação ao AuthService e,
  * após o sucesso, armazena o Usuario autenticado na SessaoUsuario e abre a tela
- * principal. Não contém a regra interna de autenticação nem acessa DAO diretamente.
- * Também controla o feedback visual e o estado do botão durante a tentativa.
+ * temporária que centraliza o acesso aos módulos funcionais disponíveis enquanto
+ * o dashboard gerencial definitivo não está implementado. Não contém a regra
+ * interna de autenticação nem acessa DAO diretamente. Também controla o feedback
+ * visual e o estado do botão durante a tentativa.
  */
 public class LoginController {
 
@@ -74,7 +76,7 @@ public class LoginController {
                     "Sucesso",
                     "Bem-vindo(a), " + usuarioAutenticado.getNome() + "!");
 
-            // Redireciona para a tela principal do sistema.
+            // Redireciona para a tela temporária de navegação do sistema.
             abrirTelaPrincipalTemporaria();
 
         } catch (RuntimeException e) {
@@ -92,11 +94,12 @@ public class LoginController {
     }
 
     /**
-     * Abre a tela principal do sistema após a autenticação.
+     * Abre a tela temporária de navegação após a autenticação.
      *
-     * Apesar do nome histórico do método, este é o fluxo real de entrada no
-     * sistema. Carrega TelaPrincipal.fxml, reutiliza o Stage da tela de login,
-     * substitui a Scene, atualiza o título e mantém a janela maximizada.
+     * O nome do método corresponde ao comportamento atual: TelaPrincipal.fxml
+     * centraliza provisoriamente o acesso aos módulos funcionais enquanto o
+     * dashboard gerencial definitivo não está implementado. Reutiliza o Stage da
+     * tela de login, substitui a Scene, atualiza o título e mantém a janela maximizada.
      */
     private void abrirTelaPrincipalTemporaria() {
 

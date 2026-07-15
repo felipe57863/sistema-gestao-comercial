@@ -14,16 +14,17 @@ import java.io.IOException;
 import java.net.URL;
 
 /**
- * Controller da tela principal e ponto central de navegação após o login.
+ * Controller da tela temporária de navegação apresentada após o login.
  *
- * Exibe o usuário mantido na SessaoUsuario e permite acessar os módulos de
- * Clientes, Produtos, Registro de Venda e Contas a Receber. Cada navegação
- * reutiliza o Stage atual, substitui sua Scene, atualiza o título e mantém a
- * janela maximizada.
+ * Centraliza provisoriamente o acesso aos módulos funcionais de Clientes,
+ * Produtos, Registro de Venda e Contas a Receber enquanto o dashboard gerencial
+ * definitivo não está implementado. Exibe o usuário mantido na SessaoUsuario e,
+ * em cada navegação, reutiliza o Stage atual, substitui sua Scene, atualiza o
+ * título e mantém a janela maximizada.
  *
  * Não contém regras de negócio e delega as funcionalidades aos Controllers e
- * Services de cada módulo. A tela ainda não constitui um dashboard gerencial
- * completo.
+ * Services de cada módulo. O caráter temporário pertence somente a esta tela de
+ * acesso e não indica que os módulos abertos sejam protótipos ou simulações.
  */
 public class TelaPrincipalController {
 
