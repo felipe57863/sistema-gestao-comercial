@@ -14,6 +14,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -132,8 +133,63 @@ public class ContasReceberController {
 
         configurarFormatacaoColunaValor();
         configurarFormatacaoColunaVencimento();
+        configurarDestaqueContasVencidas();
 
         tabelaContasPendentes.setItems(contasPendentes);
+    }
+
+    /**
+     * Configura o destaque visual das contas vencidas na tabela.
+     *
+     * A regra de vencimento já vem calculada pelo Service.
+     * O Controller apenas aplica a apresentação visual.
+     */
+    private void configurarDestaqueContasVencidas() {
+
+        tabelaContasPendentes.setRowFactory(tabela -> {
+
+            TableRow<ContaReceberListagemView> linha = new TableRow<>() {
+                @Override
+                protected void updateItem(
+                        ContaReceberListagemView conta,
+                        boolean empty
+                ) {
+                    super.updateItem(conta, empty);
+                    atualizarEstiloLinha(this, conta);
+                }
+            };
+
+            linha.selectedProperty().addListener(
+                    (observable, selecaoAnterior, selecionada) ->
+                            atualizarEstiloLinha(linha, linha.getItem())
+            );
+
+            return linha;
+        });
+    }
+
+    /**
+     * Atualiza o estilo visual de uma linha da tabela.
+     *
+     * Linhas vazias, contas não vencidas e linhas selecionadas
+     * não recebem estilo inline.
+     */
+    private void atualizarEstiloLinha(
+            TableRow<ContaReceberListagemView> linha,
+            ContaReceberListagemView conta
+    ) {
+
+        if (linha.isEmpty() || conta == null || linha.isSelected()) {
+            linha.setStyle("");
+            return;
+        }
+
+        if (conta.isVencida()) {
+            linha.setStyle("-fx-background-color: #fdecec;");
+            return;
+        }
+
+        linha.setStyle("");
     }
 
     /**
