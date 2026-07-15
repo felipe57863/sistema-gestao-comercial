@@ -1,8 +1,12 @@
 package br.com.luis.controller;
 
+import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.StatusContaReceber;
+import br.com.luis.model.Usuario;
 import br.com.luis.service.ContaReceberService;
+import br.com.luis.util.SessaoUsuario;
 import br.com.luis.viewmodel.ContaReceberListagemView;
+import br.com.luis.viewmodel.ResultadoRecebimentoConta;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,29 +16,36 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Controller da tela de Contas a Receber.
  *
- * Nesta etapa, o Controller configura a tabela, carrega
- * as contas pendentes e preenche o painel da conta selecionada.
- *
- * Navegação e recebimento serão implementados em passos posteriores.
+ * O Controller configura a tabela, carrega as contas pendentes,
+ * preenche o painel da conta selecionada, controla a navegação
+ * e executa o fluxo visual de recebimento integral da conta.
  */
 public class ContasReceberController {
 
@@ -316,6 +327,22 @@ public class ContasReceberController {
     }
 
     /**
+     * Formata data e hora no padrão brasileiro.
+     */
+    private String formatarDataHora(LocalDateTime dataHora) {
+
+        if (dataHora == null) {
+            return "—";
+        }
+
+        DateTimeFormatter formatoDataHora = DateTimeFormatter.ofPattern(
+                "dd/MM/yyyy HH:mm"
+        );
+
+        return dataHora.format(formatoDataHora);
+    }
+
+    /**
      * Formata o status da conta para exibição segura.
      */
     private String formatarStatus(StatusContaReceber status) {
@@ -339,6 +366,30 @@ public class ContasReceberController {
         return contaSelecionada.isVencida()
                 ? "Vencida"
                 : "Em aberto";
+    }
+
+    /**
+     * Formata a forma de pagamento para exibição amigável.
+     */
+    private String formatarFormaPagamento(FormaPagamento formaPagamento) {
+
+        if (formaPagamento == null) {
+            return "—";
+        }
+
+        switch (formaPagamento) {
+            case DINHEIRO:
+                return "Dinheiro";
+
+            case PIX:
+                return "PIX";
+
+            case CARTAO:
+                return "Cartão";
+
+            default:
+                return "—";
+        }
     }
 
     /**
@@ -407,12 +458,269 @@ public class ContasReceberController {
     }
 
     /**
-     * Ação temporária do botão Receber Conta.
+     * Ação do botão Receber Conta.
      *
-     * O fluxo de recebimento será implementado em passo posterior.
+     * Usa a conta selecionada, solicita a forma de pagamento,
+     * confirma o recebimento integral, chama o Service e atualiza a interface.
      */
     @FXML
     private void onReceberConta() {
+
+        ContaReceberListagemView contaSelecionada =
+                tabelaContasPendentes
+                        .getSelectionModel()
+                        .getSelectedItem();
+
+        if (contaSelecionada == null) {
+            limparPainelContaSelecionada();
+
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Atenção",
+                    "Selecione uma conta para realizar o recebimento."
+            );
+
+            return;
+        }
+
+        Optional<FormaPagamento> formaPagamentoOptional = solicitarFormaPagamento();
+
+        if (formaPagamentoOptional.isEmpty()) {
+            return;
+        }
+
+        FormaPagamento formaPagamento = formaPagamentoOptional.get();
+
+        boolean recebimentoConfirmado = confirmarRecebimento(
+                contaSelecionada,
+                formaPagamento
+        );
+
+        if (!recebimentoConfirmado) {
+            return;
+        }
+
+        Integer usuarioId;
+
+        try {
+            usuarioId = obterUsuarioIdAtual();
+
+        } catch (IllegalStateException e) {
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    e.getMessage()
+            );
+
+            return;
+        }
+
+        try {
+            btnReceberConta.setDisable(true);
+            btnAtualizar.setDisable(true);
+
+            ResultadoRecebimentoConta resultado =
+                    contaReceberService.receberConta(
+                            contaSelecionada.getContaReceberId(),
+                            formaPagamento,
+                            usuarioId
+                    );
+
+            if (resultado == null) {
+                throw new RuntimeException(
+                        "Resultado do recebimento não retornado pelo Service."
+                );
+            }
+
+            mostrarResultadoRecebimento(resultado);
+            carregarContasPendentes();
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            String mensagem = e.getMessage();
+
+            if (mensagem == null || mensagem.isBlank()) {
+                mensagem = "Não foi possível receber a conta.";
+            }
+
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Não foi possível receber a conta",
+                    mensagem
+            );
+
+        } catch (RuntimeException e) {
+            System.err.println("[ERRO] Falha ao concluir recebimento da conta.");
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível concluir o recebimento da conta."
+            );
+
+        } finally {
+            btnAtualizar.setDisable(false);
+
+            btnReceberConta.setDisable(
+                    tabelaContasPendentes
+                            .getSelectionModel()
+                            .getSelectedItem() == null
+            );
+        }
+    }
+
+    /**
+     * Solicita a forma de pagamento do recebimento.
+     *
+     * Permite somente Dinheiro, PIX e Cartão.
+     */
+    private Optional<FormaPagamento> solicitarFormaPagamento() {
+
+        Dialog<FormaPagamento> dialog = new Dialog<>();
+        dialog.setTitle("Receber Conta");
+        dialog.setHeaderText("Selecione a forma de pagamento.");
+
+        ButtonType botaoConfirmar = new ButtonType(
+                "Confirmar",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        dialog.getDialogPane().getButtonTypes().addAll(
+                botaoConfirmar,
+                ButtonType.CANCEL
+        );
+
+        ComboBox<FormaPagamento> comboFormaPagamento = new ComboBox<>();
+        comboFormaPagamento.getItems().addAll(
+                FormaPagamento.DINHEIRO,
+                FormaPagamento.PIX,
+                FormaPagamento.CARTAO
+        );
+        comboFormaPagamento.setValue(FormaPagamento.DINHEIRO);
+
+        comboFormaPagamento.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(FormaPagamento formaPagamento) {
+                return formatarFormaPagamento(formaPagamento);
+            }
+
+            @Override
+            public FormaPagamento fromString(String texto) {
+                return null;
+            }
+        });
+
+        VBox conteudo = new VBox(
+                8,
+                new Label("Forma de pagamento:"),
+                comboFormaPagamento
+        );
+
+        dialog.getDialogPane().setContent(conteudo);
+
+        dialog.setResultConverter(buttonType -> {
+            if (buttonType == botaoConfirmar) {
+                return comboFormaPagamento.getValue();
+            }
+
+            return null;
+        });
+
+        return dialog.showAndWait();
+    }
+
+    /**
+     * Confirma o recebimento integral da conta selecionada.
+     */
+    private boolean confirmarRecebimento(
+            ContaReceberListagemView contaSelecionada,
+            FormaPagamento formaPagamento
+    ) {
+
+        Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+        alerta.setTitle("Confirmar Recebimento");
+        alerta.setHeaderText(null);
+
+        String mensagem = "Confirmar o recebimento integral da conta "
+                + formatarId(contaSelecionada.getContaReceberId())
+                + ",\n"
+                + "do cliente "
+                + formatarTexto(contaSelecionada.getNomeCliente())
+                + ",\n"
+                + "no valor de "
+                + formatarValor(contaSelecionada.getValor())
+                + ",\n"
+                + "por "
+                + formatarFormaPagamento(formaPagamento)
+                + "?";
+
+        alerta.setContentText(mensagem);
+
+        Optional<ButtonType> resposta = alerta.showAndWait();
+
+        return resposta.isPresent()
+                && resposta.get() == ButtonType.OK;
+    }
+
+    /**
+     * Obtém o ID real do usuário atualmente logado.
+     *
+     * Não usa usuário temporário nem fallback.
+     */
+    private Integer obterUsuarioIdAtual() {
+
+        Usuario usuarioLogado = SessaoUsuario
+                .getInstance()
+                .getUsuarioLogado();
+
+        if (usuarioLogado == null) {
+            throw new IllegalStateException(
+                    "Não foi possível identificar o usuário logado. Entre novamente no sistema."
+            );
+        }
+
+        Integer usuarioId = usuarioLogado.getIdUsuario();
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalStateException(
+                    "Não foi possível identificar o usuário logado. Entre novamente no sistema."
+            );
+        }
+
+        return usuarioId;
+    }
+
+    /**
+     * Mostra o resultado do recebimento após sucesso do Service.
+     */
+    private void mostrarResultadoRecebimento(
+            ResultadoRecebimentoConta resultado
+    ) {
+
+        StringBuilder mensagem = new StringBuilder();
+
+        mensagem.append("Recebimento realizado com sucesso.")
+                .append("\n\n")
+                .append("Conta: ")
+                .append(formatarId(resultado.getContaReceberId()))
+                .append("\n")
+                .append("Valor recebido: ")
+                .append(formatarValor(resultado.getValorRecebido()))
+                .append("\n")
+                .append("Forma de pagamento: ")
+                .append(formatarFormaPagamento(resultado.getFormaPagamento()))
+                .append("\n")
+                .append("Data e hora: ")
+                .append(formatarDataHora(resultado.getDataHoraRecebimento()))
+                .append("\n")
+                .append("Status: ")
+                .append(formatarStatus(resultado.getStatusContaReceber()));
+
+        mostrarAlerta(
+                Alert.AlertType.INFORMATION,
+                "Sucesso",
+                mensagem.toString()
+        );
     }
 
     /**
