@@ -2,11 +2,13 @@ package br.com.luis.service;
 
 import br.com.luis.dao.ContaReceberDAO;
 import br.com.luis.dao.MovimentacaoFinanceiraDAO;
+import br.com.luis.dao.VendaDAO;
 import br.com.luis.model.ContaReceber;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.MovimentacaoFinanceira;
 import br.com.luis.model.OrigemMovimentacaoFinanceira;
 import br.com.luis.model.StatusContaReceber;
+import br.com.luis.model.StatusVenda;
 import br.com.luis.model.TipoMovimentacaoFinanceira;
 import br.com.luis.util.ConnectionFactory;
 import br.com.luis.viewmodel.ResultadoRecebimentoConta;
@@ -39,10 +41,12 @@ public class ContaReceberService {
 
     private final ContaReceberDAO contaReceberDAO;
     private final MovimentacaoFinanceiraDAO movimentacaoFinanceiraDAO;
+    private final VendaDAO vendaDAO;
 
     public ContaReceberService() {
         this.contaReceberDAO = new ContaReceberDAO();
         this.movimentacaoFinanceiraDAO = new MovimentacaoFinanceiraDAO();
+        this.vendaDAO = new VendaDAO();
     }
 
     /**
@@ -125,6 +129,19 @@ public class ContaReceberService {
                 conn,
                 contaReceber
         );
+
+        boolean vendaAtualizada = vendaDAO.atualizarStatus(
+                conn,
+                contaReceber.getVendaId(),
+                StatusVenda.PENDENTE,
+                StatusVenda.PAGA
+        );
+
+        if (!vendaAtualizada) {
+            throw new IllegalStateException(
+                    "Não foi possível atualizar a venda vinculada à conta a receber."
+            );
+        }
 
         MovimentacaoFinanceira movimentacaoFinanceira = montarMovimentacaoFinanceiraRecebimento(
                 contaReceber,

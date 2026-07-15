@@ -1,6 +1,7 @@
 package br.com.luis.dao;
 
 import br.com.luis.model.Venda;
+import br.com.luis.model.StatusVenda;
 import br.com.luis.util.ConnectionFactory;
 
 import java.sql.Connection;
@@ -145,6 +146,73 @@ public class VendaDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao inserir venda no banco de dados usando conexão externa.", e);
+        }
+    }
+
+    /**
+     * Atualiza o status de uma venda somente quando o status atual persistido
+     * corresponde ao status esperado.
+     *
+     * Usa uma Connection externa e encerra apenas o PreparedStatement criado.
+     * Não executa commit, rollback nem fecha a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param vendaId identificador da venda que será atualizada.
+     * @param statusAtual status atual esperado para a venda.
+     * @param novoStatus novo status que será persistido.
+     * @return {@code true} quando exatamente uma venda for atualizada;
+     *         {@code false} quando nenhuma venda corresponder ao ID e status atual.
+     */
+    public boolean atualizarStatus(
+            Connection conn,
+            Integer vendaId,
+            StatusVenda statusAtual,
+            StatusVenda novoStatus
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda deve ser maior que zero.");
+        }
+
+        if (statusAtual == null) {
+            throw new IllegalArgumentException("Status atual não pode ser nulo.");
+        }
+
+        if (novoStatus == null) {
+            throw new IllegalArgumentException("Novo status não pode ser nulo.");
+        }
+
+        if (statusAtual == novoStatus) {
+            throw new IllegalArgumentException("Status atual e novo status devem ser diferentes.");
+        }
+
+        String sql = """
+                UPDATE Venda
+                SET status = ?
+                WHERE id_venda = ?
+                  AND status = ?
+                """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, novoStatus.name());
+            stmt.setInt(2, vendaId);
+            stmt.setString(3, statusAtual.name());
+
+            int linhasAfetadas = stmt.executeUpdate();
+
+            if (linhasAfetadas > 1) {
+                throw new IllegalStateException("Mais de uma venda foi atualizada para o mesmo ID.");
+            }
+
+            return linhasAfetadas == 1;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Erro ao atualizar o status da venda no banco de dados.", e);
         }
     }
 }
