@@ -4,6 +4,7 @@ import br.com.luis.model.Cliente;
 import br.com.luis.model.PrazoPagamento;
 import br.com.luis.service.ClienteService;
 import br.com.luis.service.PrazoPagamentoService;
+import br.com.luis.util.NavegacaoUtil;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -15,6 +16,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -29,6 +31,7 @@ import java.util.Locale;
 public class ClienteController {
 
     // --- CABEÇALHO ---
+    @FXML private Button btnVoltar;
     @FXML private Label lblUsuario;
 
     // --- FORMULÁRIO ---
@@ -116,6 +119,31 @@ public class ClienteController {
 
         // Exibe a identificação da tela e a data/hora atuais, sem simular um usuário.
         lblUsuario.setText("Cadastro de Clientes | " + dtf.format(LocalDateTime.now()));
+    }
+
+    /**
+     * Retorna diretamente para a Tela Principal usando o mesmo Stage atual.
+     */
+    @FXML
+    private void onVoltar() {
+
+        try {
+            NavegacaoUtil.abrirTela(
+                    btnVoltar,
+                    "/br/com/luis/view/TelaPrincipal.fxml",
+                    "Tela Principal"
+            );
+
+        } catch (IOException | RuntimeException e) {
+            System.err.println("[ERRO] Falha ao voltar para a Tela Principal.");
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível retornar para a Tela Principal."
+            );
+        }
     }
 
     /**

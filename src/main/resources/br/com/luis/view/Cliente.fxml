@@ -20,11 +20,14 @@
 
     <BorderPane style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-padding: 15 20 15 20;">
         <left>
-            <Label text="Cadastro de Cliente">
-                <font>
-                    <Font name="System Bold" size="20.0" />
-                </font>
-            </Label>
+            <HBox alignment="CENTER_LEFT" spacing="12.0">
+                <Button fx:id="btnVoltar" onAction="#onVoltar" prefWidth="90.0" text="Voltar" />
+                <Label text="Cadastro de Cliente">
+                    <font>
+                        <Font name="System Bold" size="20.0" />
+                    </font>
+                </Label>
+            </HBox>
         </left>
         <right>
             <Label fx:id="lblUsuario" textFill="#555555" />
