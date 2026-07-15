@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Controller da Tela de Cadastro de Clientes.
@@ -122,10 +123,15 @@ public class ClienteController {
     }
 
     /**
-     * Retorna diretamente para a Tela Principal usando o mesmo Stage atual.
+     * Retorna para a Tela Principal usando o mesmo Stage atual.
+     * Solicita confirmação somente quando existem dados não salvos.
      */
     @FXML
     private void onVoltar() {
+
+        if (!confirmarSaidaComAlteracoesNaoSalvas()) {
+            return;
+        }
 
         try {
             NavegacaoUtil.abrirTela(
@@ -144,6 +150,184 @@ public class ClienteController {
                     "Não foi possível retornar para a Tela Principal."
             );
         }
+    }
+
+    /**
+     * Confirma a saída quando o formulário possui dados ou alterações não salvas.
+     *
+     * Não altera o formulário, não salva dados e não executa navegação.
+     */
+    private boolean confirmarSaidaComAlteracoesNaoSalvas() {
+
+        if (!existemAlteracoesClienteNaoSalvas()) {
+            return true;
+        }
+
+        Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+        alerta.setTitle("Alterações não salvas");
+        alerta.setHeaderText(null);
+        alerta.setContentText(
+                "Existem dados de cliente ainda não salvos.\n"
+                        + "Ao voltar, essas alterações serão descartadas.\n"
+                        + "Deseja realmente sair desta tela?"
+        );
+
+        ButtonType botaoSair = new ButtonType(
+                "Sair sem salvar",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        ButtonType botaoContinuar = new ButtonType(
+                "Continuar editando",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        alerta.getButtonTypes().setAll(
+                botaoSair,
+                botaoContinuar
+        );
+
+        Optional<ButtonType> resultado = alerta.showAndWait();
+
+        return resultado.isPresent()
+                && resultado.get() == botaoSair;
+    }
+
+    /**
+     * Verifica o formulário de acordo com o contexto de cadastro ou edição.
+     */
+    private boolean existemAlteracoesClienteNaoSalvas() {
+        if (clienteSelecionado == null) {
+            return formularioNovoFoiAlterado();
+        }
+
+        return formularioEdicaoFoiAlterado();
+    }
+
+    /**
+     * Verifica se o formulário de um novo cliente saiu do estado inicial.
+     */
+    private boolean formularioNovoFoiAlterado() {
+        return !normalizarTextoComparacao(txtNome.getText()).isEmpty()
+                || !normalizarDocumentoComparacao(txtDocumento.getText()).isEmpty()
+                || !normalizarTextoComparacao(txtLimiteCredito.getText()).isEmpty()
+                || cbPrazoPagamento.getValue() != null
+                || !rbFisica.isSelected()
+                || !rbAtivo.isSelected();
+    }
+
+    /**
+     * Compara os valores atuais do formulário com o cliente selecionado.
+     */
+    private boolean formularioEdicaoFoiAlterado() {
+        if (!normalizarTextoComparacao(txtNome.getText()).equals(
+                normalizarTextoComparacao(clienteSelecionado.getNome())
+        )) {
+            return true;
+        }
+
+        if (!normalizarDocumentoComparacao(txtDocumento.getText()).equals(
+                normalizarDocumentoComparacao(clienteSelecionado.getDocumento())
+        )) {
+            return true;
+        }
+
+        if (obterTipoFormularioParaComparacao() != clienteSelecionado.getTipo()) {
+            return true;
+        }
+
+        if (obterStatusFormularioParaComparacao() != clienteSelecionado.getStatus()) {
+            return true;
+        }
+
+        if (limiteCreditoFoiAlterado()) {
+            return true;
+        }
+
+        return prazoPagamentoFoiAlterado();
+    }
+
+    /**
+     * Normaliza textos para comparação sem espaços externos.
+     */
+    private String normalizarTextoComparacao(String texto) {
+        return texto == null ? "" : texto.trim();
+    }
+
+    /**
+     * Normaliza documentos mantendo somente os dígitos.
+     */
+    private String normalizarDocumentoComparacao(String documento) {
+        return normalizarTextoComparacao(documento).replaceAll("[^0-9]", "");
+    }
+
+    /**
+     * Obtém o tipo atualmente representado pelos RadioButtons, sem validar o formulário.
+     */
+    private Cliente.TipoCliente obterTipoFormularioParaComparacao() {
+        if (rbFisica.isSelected()) {
+            return Cliente.TipoCliente.PF;
+        }
+
+        if (rbJuridica.isSelected()) {
+            return Cliente.TipoCliente.PJ;
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtém o status atualmente representado pelos RadioButtons, sem validar o formulário.
+     */
+    private Cliente.StatusCliente obterStatusFormularioParaComparacao() {
+        if (rbAtivo.isSelected()) {
+            return Cliente.StatusCliente.ATIVO;
+        }
+
+        if (rbBloqueado.isSelected()) {
+            return Cliente.StatusCliente.BLOQUEADO;
+        }
+
+        return null;
+    }
+
+    /**
+     * Compara numericamente o limite atual com o valor original.
+     * Campo vazio ou inválido durante a edição representa alteração.
+     */
+    private boolean limiteCreditoFoiAlterado() {
+        BigDecimal limiteOriginal = clienteSelecionado.getLimiteCredito();
+
+        try {
+            BigDecimal limiteAtual = converterLimiteCredito(txtLimiteCredito.getText());
+
+            return limiteOriginal == null
+                    || limiteAtual.compareTo(limiteOriginal) != 0;
+
+        } catch (NumberFormatException e) {
+            return true;
+        }
+    }
+
+    /**
+     * Compara o prazo selecionado e o prazo original por seus IDs.
+     */
+    private boolean prazoPagamentoFoiAlterado() {
+        Integer prazoAtualId = obterPrazoId(cbPrazoPagamento.getValue());
+        Integer prazoOriginalId = obterPrazoId(clienteSelecionado.getPrazoPagamento());
+
+        if (prazoAtualId == null) {
+            return prazoOriginalId != null;
+        }
+
+        return !prazoAtualId.equals(prazoOriginalId);
+    }
+
+    /**
+     * Obtém o ID de um prazo com tratamento seguro de valor nulo.
+     */
+    private Integer obterPrazoId(PrazoPagamento prazoPagamento) {
+        return prazoPagamento == null ? null : prazoPagamento.getIdPrazo();
     }
 
     /**
