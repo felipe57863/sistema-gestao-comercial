@@ -13,18 +13,19 @@ package br.com.luis.model;
  * finalização à vista e a prazo.
  */
 public enum StatusVenda {
-
     /**
-     * Venda paga no momento da finalização.
-     *
-     * Deve ser usada em venda do tipo A_VISTA.
+     * Venda paga no momento da finalização ou após o recebimento integral.
      */
     PAGA,
-
     /**
-     * Venda pendente de recebimento.
-     *
-     * Deve ser usada em venda do tipo A_PRAZO.
+     * Venda a prazo com pagamento integral ainda pendente.
      */
-    PENDENTE
+    PENDENTE,
+    /**
+     * Venda finalizada cujos efeitos comerciais, financeiros e de estoque
+     * foram revertidos pelo processo de estorno.
+     *
+     * É um estado terminal.
+     */
+    ESTORNADA
 }
