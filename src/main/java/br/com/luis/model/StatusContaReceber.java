@@ -6,8 +6,8 @@ package br.com.luis.model;
  * Regras atuais:
  * - PENDENTE: conta ainda não recebida.
  * - PAGA: conta recebida integralmente.
+ * - CANCELADA: conta encerrada pelo estorno total da venda vinculada.
  *
- * O enum atualmente representa apenas os estados persistidos PENDENTE e PAGA.
  * A indicação de vencimento é calculada para apresentação sem alterar o status.
  */
 public enum StatusContaReceber {
@@ -26,5 +26,12 @@ public enum StatusContaReceber {
      * Deve ser usado quando o recebimento integral da conta
      * for concluído com sucesso.
      */
-    PAGA
+    PAGA,
+
+    /**
+     * Conta a receber encerrada pelo estorno total da venda vinculada.
+     *
+     * É um estado terminal e não permite novo recebimento.
+     */
+    CANCELADA
 }

@@ -3,15 +3,25 @@ package br.com.luis.model;
 /**
  * Enum que representa os tipos oficiais de movimentação financeira.
  *
- * Atualmente representa entradas financeiras geradas por vendas à vista e por
- * recebimentos integrais de contas a receber.
+ * Regras atuais:
+ * - ENTRADA: valor recebido pelo sistema.
+ * - SAIDA: valor devolvido ou revertido pelo sistema.
  */
 public enum TipoMovimentacaoFinanceira {
 
     /**
      * Entrada financeira.
      *
-     * Usada para registrar valores de vendas à vista e recebimentos de contas.
+     * Usada para registrar valores de vendas à vista
+     * e recebimentos integrais de contas.
      */
-    ENTRADA
+    ENTRADA,
+
+    /**
+     * Saída financeira.
+     *
+     * Usada para registrar a reversão financeira decorrente
+     * do estorno total de uma venda.
+     */
+    SAIDA
 }
