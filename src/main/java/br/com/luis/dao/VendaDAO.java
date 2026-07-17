@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 
+import java.time.LocalDateTime;
+
 /**
  * DAO responsável pela persistência da entidade Venda.
  *
@@ -213,6 +215,78 @@ public class VendaDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao atualizar o status da venda no banco de dados.", e);
+        }
+    }
+    /**
+     * Busca uma venda pelo identificador usando uma Connection externa.
+     *
+     * Participa da transação controlada pela camada Service e encerra somente
+     * o PreparedStatement e o ResultSet criados pelo método.
+     *
+     * Não carrega os itens vinculados à venda.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param vendaId identificador da venda pesquisada.
+     * @return venda encontrada ou {@code null} quando não existir venda
+     *         com o identificador informado.
+     */
+    public Venda buscarPorId(Connection conn, Integer vendaId) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda deve ser maior que zero.");
+        }
+
+        String sql = """
+            SELECT
+                id_venda,
+                data_hora,
+                tipo_venda,
+                forma_pagamento,
+                valor_total,
+                valor_desconto_global,
+                status,
+                usuario_id,
+                cliente_id
+            FROM Venda
+            WHERE id_venda = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, vendaId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                if (!rs.next()) {
+                    return null;
+                }
+
+                Venda venda = new Venda();
+
+                venda.setIdVenda(rs.getInt("id_venda"));
+                venda.setDataHora(LocalDateTime.parse(rs.getString("data_hora")));
+                venda.setTipoVenda(rs.getString("tipo_venda"));
+                venda.setFormaPagamento(rs.getString("forma_pagamento"));
+                venda.setValorTotal(rs.getBigDecimal("valor_total"));
+                venda.setValorDescontoGlobal(rs.getBigDecimal("valor_desconto_global"));
+                venda.setStatus(rs.getString("status"));
+                venda.setUsuarioId(rs.getInt("usuario_id"));
+
+                int clienteId = rs.getInt("cliente_id");
+                venda.setClienteId(rs.wasNull() ? null : clienteId);
+
+                return venda;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao buscar venda por ID no banco de dados.",
+                    e
+            );
         }
     }
 }

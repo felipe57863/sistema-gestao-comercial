@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.ResultSet;
 
 /**
  * DAO da entidade Usuario.
@@ -53,6 +54,69 @@ public class UsuarioDAO {
         }
     }
 
+    /**
+     * Busca um usuário pelo identificador usando uma Connection externa.
+     *
+     * Participa da transação controlada pela camada Service e encerra somente
+     * o PreparedStatement e o ResultSet criados pelo método.
+     *
+     * O DAO apenas consulta e reconstrói o usuário. A validação de usuário ativo
+     * e perfil administrativo pertence ao Service responsável pelo estorno.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param usuarioId identificador do usuário.
+     * @return usuário encontrado ou {@code null} quando não existir.
+     */
+    public Usuario buscarPorId(
+            Connection conn,
+            Integer usuarioId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException("ID do usuário deve ser maior que zero.");
+        }
+
+        String sql = """
+            SELECT id_usuario,
+                   nome,
+                   login,
+                   senha,
+                   perfil,
+                   status
+            FROM Usuario
+            WHERE id_usuario = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, usuarioId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return new Usuario(
+                            rs.getInt("id_usuario"),
+                            rs.getString("nome"),
+                            rs.getString("login"),
+                            rs.getString("senha"),
+                            rs.getString("perfil"),
+                            rs.getString("status")
+                    );
+                }
+            }
+
+            return null;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao buscar usuário por ID no banco de dados.",
+                    e
+            );
+        }
+    }
     public Usuario buscarPorLogin(String login) {
 
         if (login == null || login.isBlank()) {

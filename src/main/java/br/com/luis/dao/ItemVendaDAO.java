@@ -9,6 +9,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * DAO responsável pela persistência da entidade ItemVenda.
  *
@@ -127,6 +130,77 @@ public class ItemVendaDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao inserir item de venda no banco de dados usando conexão externa.", e);
+        }
+    }
+    /**
+     * Lista os itens vinculados a uma venda usando uma Connection externa.
+     *
+     * Participa da transação controlada pela camada Service e encerra somente
+     * o PreparedStatement e o ResultSet criados pelo método.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param vendaId identificador da venda.
+     * @return lista dos itens vinculados à venda, vazia quando nenhum item
+     *         for encontrado.
+     */
+    public List<ItemVenda> listarPorVendaId(Connection conn, Integer vendaId) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda deve ser maior que zero.");
+        }
+
+        String sql = """
+            SELECT
+                id_item,
+                quantidade,
+                preco_unitario,
+                desconto_promocional,
+                desconto_global,
+                subtotal,
+                produto_id,
+                venda_id
+            FROM ItemVenda
+            WHERE venda_id = ?
+            ORDER BY id_item
+            """;
+
+        List<ItemVenda> itens = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, vendaId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                while (rs.next()) {
+                    ItemVenda item = new ItemVenda();
+
+                    item.setIdItem(rs.getInt("id_item"));
+                    item.setQuantidade(rs.getInt("quantidade"));
+                    item.setPrecoUnitario(rs.getBigDecimal("preco_unitario"));
+                    item.setDescontoPromocional(
+                            rs.getBigDecimal("desconto_promocional")
+                    );
+                    item.setDescontoGlobal(rs.getBigDecimal("desconto_global"));
+                    item.setSubtotal(rs.getBigDecimal("subtotal"));
+                    item.setProdutoId(rs.getInt("produto_id"));
+                    item.setVendaId(rs.getInt("venda_id"));
+
+                    itens.add(item);
+                }
+
+                return itens;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar os itens da venda no banco de dados.",
+                    e
+            );
         }
     }
 }

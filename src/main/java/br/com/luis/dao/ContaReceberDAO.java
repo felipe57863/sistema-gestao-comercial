@@ -226,6 +226,87 @@ public class ContaReceberDAO {
         }
     }
     /**
+     * Busca a conta a receber vinculada a uma venda usando uma Connection externa.
+     *
+     * Participa da transação controlada pela camada Service e encerra somente
+     * o PreparedStatement e o ResultSet criados pelo método.
+     *
+     * A relação esperada é de no máximo uma conta a receber por venda.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param vendaId identificador da venda.
+     * @return conta vinculada à venda ou {@code null} quando não existir.
+     * @throws IllegalStateException quando mais de uma conta estiver vinculada
+     *                               à mesma venda.
+     */
+    public ContaReceber buscarPorVendaId(
+            Connection conn,
+            Integer vendaId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException("ID da venda deve ser maior que zero.");
+        }
+
+        String sql = """
+            SELECT id_conta,
+                   valor,
+                   data_vencimento,
+                   status,
+                   venda_id,
+                   cliente_id,
+                   prazo_pagamento_id,
+                   quantidade_dias_prazo,
+                   data_criacao
+            FROM ContaReceber
+            WHERE venda_id = ?
+            ORDER BY id_conta
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, vendaId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                if (!rs.next()) {
+                    return null;
+                }
+
+                ContaReceber contaReceber = new ContaReceber(
+                        rs.getInt("id_conta"),
+                        rs.getBigDecimal("valor"),
+                        LocalDate.parse(rs.getString("data_vencimento")),
+                        StatusContaReceber.valueOf(rs.getString("status")),
+                        rs.getInt("venda_id"),
+                        rs.getInt("cliente_id"),
+                        rs.getInt("prazo_pagamento_id"),
+                        rs.getInt("quantidade_dias_prazo"),
+                        LocalDateTime.parse(rs.getString("data_criacao"))
+                );
+
+                if (rs.next()) {
+                    throw new IllegalStateException(
+                            "Mais de uma conta a receber está vinculada à venda de ID "
+                                    + vendaId + "."
+                    );
+                }
+
+                return contaReceber;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao buscar conta a receber pela venda.",
+                    e
+            );
+        }
+    }
+    /**
      * Atualiza o status de uma conta a receber com proteção de estado atual.
      *
      * A condição statusAtual evita que uma conta já alterada seja atualizada
