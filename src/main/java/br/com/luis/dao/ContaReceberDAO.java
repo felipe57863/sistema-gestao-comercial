@@ -363,6 +363,13 @@ public class ContaReceberDAO {
 
             int linhasAfetadas = stmt.executeUpdate();
 
+            if (linhasAfetadas > 1) {
+                throw new IllegalStateException(
+                        "Mais de uma conta a receber foi atualizada para o ID "
+                                + idConta + "."
+                );
+            }
+
             return linhasAfetadas == 1;
 
         } catch (SQLException e) {
