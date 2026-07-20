@@ -374,6 +374,81 @@ public class ProdutoDAO {
     }
 
     /**
+     * Restaura a quantidade de um produto no estoque usando uma Connection externa.
+     *
+     * Participa da transação de estorno coordenada pelo EstornoVendaService.
+     * O produto pode estar ativo ou inativo, pois o estorno deve devolver
+     * integralmente ao estoque a quantidade registrada na venda.
+     *
+     * Importante:
+     * - não abre nova Connection;
+     * - não executa commit;
+     * - não executa rollback;
+     * - não fecha a Connection recebida;
+     * - não altera o estado ativo ou inativo do produto.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param idProduto identificador do produto.
+     * @param quantidade quantidade que será devolvida ao estoque.
+     */
+    public void restaurarEstoque(
+            Connection conn,
+            Integer idProduto,
+            Integer quantidade
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idProduto == null || idProduto <= 0) {
+            throw new IllegalArgumentException(
+                    "ID do produto inválido para restauração de estoque."
+            );
+        }
+
+        if (quantidade == null || quantidade <= 0) {
+            throw new IllegalArgumentException(
+                    "Quantidade inválida para restauração de estoque."
+            );
+        }
+
+        String sql = """
+            UPDATE Produto
+            SET quantidade_estoque = quantidade_estoque + ?
+            WHERE id_produto = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, quantidade);
+            stmt.setInt(2, idProduto);
+
+            int linhasAfetadas = stmt.executeUpdate();
+
+            if (linhasAfetadas == 0) {
+                throw new IllegalStateException(
+                        "Não foi possível restaurar o estoque. Produto de ID "
+                                + idProduto + " não encontrado."
+                );
+            }
+
+            if (linhasAfetadas > 1) {
+                throw new IllegalStateException(
+                        "Mais de um produto foi atualizado para o ID "
+                                + idProduto + "."
+                );
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao restaurar estoque usando conexão externa.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Método utilitário para mapear ResultSet → Produto.
      * Evita duplicação de código e centraliza conversões.
      */
