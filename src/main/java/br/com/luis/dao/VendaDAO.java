@@ -2,6 +2,11 @@ package br.com.luis.dao;
 
 import br.com.luis.model.Venda;
 import br.com.luis.model.StatusVenda;
+import br.com.luis.model.FormaPagamento;
+import br.com.luis.model.StatusContaReceber;
+import br.com.luis.model.TipoVenda;
+import br.com.luis.viewmodel.FiltroHistoricoVenda;
+import br.com.luis.viewmodel.VendaHistoricoListagemView;
 import br.com.luis.util.ConnectionFactory;
 
 import java.sql.Connection;
@@ -12,6 +17,9 @@ import java.sql.Statement;
 import java.sql.Types;
 
 import java.time.LocalDateTime;
+import java.time.DateTimeException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * DAO responsável pela persistência da entidade Venda.
@@ -285,6 +293,430 @@ public class VendaDAO {
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Erro ao buscar venda por ID no banco de dados.",
+                    e
+            );
+        }
+    }
+    /**
+     * Lista as vendas do histórico aplicando somente os filtros informados.
+     *
+     * Usa uma única consulta consolidada para evitar N+1, mantém vendas sem
+     * cliente por meio de LEFT JOIN e retorna uma linha por venda.
+     *
+     * A quantidade de itens representa produtos distintos.
+     *
+     * Não abre ou fecha Connection, não executa commit e não executa rollback.
+     */
+    public List<VendaHistoricoListagemView>
+    listarHistoricoComFiltros(
+            Connection conn,
+            FiltroHistoricoVenda filtro
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (filtro == null) {
+            throw new IllegalArgumentException(
+                    "Filtro do histórico não pode ser nulo."
+            );
+        }
+
+        filtro.validar();
+
+        StringBuilder sql = new StringBuilder("""
+                WITH itens_resumo AS (
+                    SELECT
+                        venda_id,
+                        COUNT(DISTINCT produto_id) AS quantidade_itens
+                    FROM ItemVenda
+                    GROUP BY venda_id
+                ),
+                contas_resumo AS (
+                    SELECT
+                        venda_id,
+                        COUNT(*) AS quantidade_contas,
+                        MAX(status) AS status_conta
+                    FROM ContaReceber
+                    GROUP BY venda_id
+                ),
+                entradas_resumo AS (
+                    SELECT
+                        venda_id,
+                        COUNT(*) AS quantidade_entradas,
+                        MAX(forma_pagamento) AS forma_pagamento_entrada
+                    FROM MovimentacaoFinanceira
+                    WHERE tipo = 'ENTRADA'
+                      AND origem IN (
+                          'VENDA_A_VISTA',
+                          'RECEBIMENTO_CONTA'
+                      )
+                    GROUP BY venda_id
+                )
+                SELECT
+                    venda.id_venda,
+                    venda.data_hora,
+                    venda.tipo_venda,
+                    venda.forma_pagamento,
+                    venda.valor_total,
+                    venda.status,
+                    cliente.nome AS nome_cliente,
+                    COALESCE(
+                        itens.quantidade_itens,
+                        0
+                    ) AS quantidade_itens,
+                    COALESCE(
+                        contas.quantidade_contas,
+                        0
+                    ) AS quantidade_contas,
+                    contas.status_conta,
+                    COALESCE(
+                        entradas.quantidade_entradas,
+                        0
+                    ) AS quantidade_entradas,
+                    entradas.forma_pagamento_entrada
+                FROM Venda venda
+                LEFT JOIN Cliente cliente
+                       ON cliente.id_cliente = venda.cliente_id
+                LEFT JOIN itens_resumo itens
+                       ON itens.venda_id = venda.id_venda
+                LEFT JOIN contas_resumo contas
+                       ON contas.venda_id = venda.id_venda
+                LEFT JOIN entradas_resumo entradas
+                       ON entradas.venda_id = venda.id_venda
+                WHERE 1 = 1
+                """);
+
+        List<Object> parametros = new ArrayList<>();
+
+        if (filtro.getDataInicial() != null) {
+            sql.append("""
+                      AND venda.data_hora >= ?
+                    """);
+
+            parametros.add(
+                    filtro.getDataInicial().atStartOfDay()
+            );
+        }
+
+        if (filtro.getDataFinal() != null) {
+
+            LocalDateTime limiteSuperiorExclusivo;
+
+            try {
+                limiteSuperiorExclusivo =
+                        filtro.getDataFinal()
+                                .plusDays(1)
+                                .atStartOfDay();
+
+            } catch (DateTimeException e) {
+                throw new IllegalArgumentException(
+                        "Data final inválida para consulta.",
+                        e
+                );
+            }
+
+            sql.append("""
+                      AND venda.data_hora < ?
+                    """);
+
+            parametros.add(limiteSuperiorExclusivo);
+        }
+
+        if (filtro.getClienteOuDocumento() != null) {
+
+            String termo =
+                    filtro.getClienteOuDocumento()
+                            .trim();
+
+            String termoDocumento =
+                    termo.replaceAll("[^0-9]", "");
+
+            if (termoDocumento.isBlank()) {
+                termoDocumento = termo;
+            }
+
+            sql.append("""
+                      AND (
+                          LOWER(
+                              COALESCE(cliente.nome, '')
+                          ) LIKE ?
+                          OR COALESCE(
+                              cliente.documento,
+                              ''
+                          ) LIKE ?
+                      )
+                    """);
+
+            parametros.add(
+                    "%" + termo.toLowerCase() + "%"
+            );
+
+            parametros.add(
+                    "%" + termoDocumento + "%"
+            );
+        }
+
+        if (filtro.getVendaId() != null) {
+            sql.append("""
+                      AND venda.id_venda = ?
+                    """);
+
+            parametros.add(filtro.getVendaId());
+        }
+
+        if (filtro.getTipoVenda() != null) {
+            sql.append("""
+                      AND venda.tipo_venda = ?
+                    """);
+
+            parametros.add(
+                    filtro.getTipoVenda().name()
+            );
+        }
+
+        if (filtro.getStatusVenda() != null) {
+            sql.append("""
+                      AND venda.status = ?
+                    """);
+
+            parametros.add(
+                    filtro.getStatusVenda().name()
+            );
+        }
+
+        sql.append("""
+                ORDER BY venda.data_hora DESC,
+                         venda.id_venda DESC
+                """);
+
+        List<VendaHistoricoListagemView> vendas =
+                new ArrayList<>();
+
+        try (PreparedStatement stmt =
+                     conn.prepareStatement(sql.toString())) {
+
+            definirParametrosHistorico(
+                    stmt,
+                    parametros
+            );
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                while (rs.next()) {
+
+                    Integer vendaId =
+                            rs.getInt("id_venda");
+
+                    TipoVenda tipoVenda =
+                            converterEnumHistoricoObrigatorio(
+                                    rs.getString("tipo_venda"),
+                                    TipoVenda.class,
+                                    "tipo da venda",
+                                    vendaId
+                            );
+
+                    StatusVenda statusVenda =
+                            converterEnumHistoricoObrigatorio(
+                                    rs.getString("status"),
+                                    StatusVenda.class,
+                                    "status da venda",
+                                    vendaId
+                            );
+
+                    FormaPagamento formaPagamentoVenda =
+                            converterEnumHistoricoObrigatorio(
+                                    rs.getString(
+                                            "forma_pagamento"
+                                    ),
+                                    FormaPagamento.class,
+                                    "forma de pagamento da venda",
+                                    vendaId
+                            );
+
+                    StatusContaReceber statusContaReceber =
+                            converterEnumHistoricoOpcional(
+                                    rs.getString("status_conta"),
+                                    StatusContaReceber.class,
+                                    "status da conta a receber",
+                                    vendaId
+                            );
+
+                    FormaPagamento formaPagamentoEntrada =
+                            converterEnumHistoricoOpcional(
+                                    rs.getString(
+                                            "forma_pagamento_entrada"
+                                    ),
+                                    FormaPagamento.class,
+                                    "forma de pagamento da entrada",
+                                    vendaId
+                            );
+
+                    VendaHistoricoListagemView vendaView =
+                            new VendaHistoricoListagemView(
+                                    vendaId,
+                                    LocalDateTime.parse(
+                                            rs.getString(
+                                                    "data_hora"
+                                            )
+                                    ),
+                                    rs.getString(
+                                            "nome_cliente"
+                                    ),
+                                    tipoVenda,
+                                    statusVenda,
+                                    rs.getBigDecimal(
+                                            "valor_total"
+                                    ),
+                                    rs.getInt(
+                                            "quantidade_itens"
+                                    ),
+                                    null,
+                                    formaPagamentoVenda,
+                                    statusContaReceber,
+                                    formaPagamentoEntrada,
+                                    rs.getInt(
+                                            "quantidade_contas"
+                                    ),
+                                    rs.getInt(
+                                            "quantidade_entradas"
+                                    )
+                            );
+
+                    vendas.add(vendaView);
+                }
+            }
+
+            return vendas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar o histórico de vendas.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Preenche os parâmetros dinâmicos da consulta do histórico.
+     */
+    private void definirParametrosHistorico(
+            PreparedStatement stmt,
+            List<Object> parametros
+    ) throws SQLException {
+
+        for (int indice = 0;
+             indice < parametros.size();
+             indice++) {
+
+            Object parametro = parametros.get(indice);
+            int posicao = indice + 1;
+
+            if (parametro instanceof LocalDateTime dataHora) {
+                stmt.setString(
+                        posicao,
+                        dataHora.toString()
+                );
+                continue;
+            }
+
+            if (parametro instanceof Integer numero) {
+                stmt.setInt(
+                        posicao,
+                        numero
+                );
+                continue;
+            }
+
+            if (parametro instanceof String texto) {
+                stmt.setString(
+                        posicao,
+                        texto
+                );
+                continue;
+            }
+
+            throw new IllegalStateException(
+                    "Tipo de parâmetro não suportado na consulta "
+                            + "do histórico de vendas."
+            );
+        }
+    }
+
+    /**
+     * Converte um valor textual obrigatório retornado pelo banco.
+     *
+     * A conversão é estrita e não corrige silenciosamente valores inválidos.
+     */
+    private <E extends Enum<E>> E
+    converterEnumHistoricoObrigatorio(
+            String valor,
+            Class<E> tipoEnum,
+            String nomeCampo,
+            Integer vendaId
+    ) {
+
+        if (valor == null || valor.isBlank()) {
+            throw new IllegalStateException(
+                    "Venda " + vendaId
+                            + " possui " + nomeCampo
+                            + " não informado."
+            );
+        }
+
+        try {
+            return Enum.valueOf(
+                    tipoEnum,
+                    valor
+            );
+
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "Venda " + vendaId
+                            + " possui " + nomeCampo
+                            + " inválido: " + valor + ".",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Converte um valor textual opcional retornado pelo banco.
+     */
+    private <E extends Enum<E>> E
+    converterEnumHistoricoOpcional(
+            String valor,
+            Class<E> tipoEnum,
+            String nomeCampo,
+            Integer vendaId
+    ) {
+
+        if (valor == null) {
+            return null;
+        }
+
+        if (valor.isBlank()) {
+            throw new IllegalStateException(
+                    "Venda " + vendaId
+                            + " possui " + nomeCampo
+                            + " vazio."
+            );
+        }
+
+        try {
+            return Enum.valueOf(
+                    tipoEnum,
+                    valor
+            );
+
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "Venda " + vendaId
+                            + " possui " + nomeCampo
+                            + " inválido: " + valor + ".",
                     e
             );
         }

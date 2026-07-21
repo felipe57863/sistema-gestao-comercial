@@ -2,6 +2,7 @@ package br.com.luis.dao;
 
 import br.com.luis.model.ItemVenda;
 import br.com.luis.util.ConnectionFactory;
+import br.com.luis.viewmodel.ItemVendaHistoricoView;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -199,6 +200,94 @@ public class ItemVendaDAO {
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Erro ao listar os itens da venda no banco de dados.",
+                    e
+            );
+        }
+    }
+    /**
+     * Lista os itens históricos de uma venda juntamente com a descrição
+     * do produto.
+     *
+     * Preserva quantidade, preço unitário e subtotal persistidos em ItemVenda.
+     * Não consulta cada produto individualmente.
+     *
+     * Não abre ou fecha Connection, não executa commit e não executa rollback.
+     */
+    public List<ItemVendaHistoricoView>
+    listarDetalhesPorVendaId(
+            Connection conn,
+            Integer vendaId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (vendaId == null || vendaId <= 0) {
+            throw new IllegalArgumentException(
+                    "ID da venda deve ser maior que zero."
+            );
+        }
+
+        String sql = """
+                SELECT
+                    item.produto_id,
+                    produto.descricao AS descricao_produto,
+                    item.quantidade,
+                    item.preco_unitario,
+                    item.subtotal
+                FROM ItemVenda item
+                INNER JOIN Produto produto
+                        ON produto.id_produto = item.produto_id
+                WHERE item.venda_id = ?
+                ORDER BY item.id_item
+                """;
+
+        List<ItemVendaHistoricoView> itens =
+                new ArrayList<>();
+
+        try (PreparedStatement stmt =
+                     conn.prepareStatement(sql)) {
+
+            stmt.setInt(
+                    1,
+                    vendaId
+            );
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                while (rs.next()) {
+
+                    ItemVendaHistoricoView itemView =
+                            new ItemVendaHistoricoView(
+                                    rs.getInt(
+                                            "produto_id"
+                                    ),
+                                    rs.getString(
+                                            "descricao_produto"
+                                    ),
+                                    rs.getInt(
+                                            "quantidade"
+                                    ),
+                                    rs.getBigDecimal(
+                                            "preco_unitario"
+                                    ),
+                                    rs.getBigDecimal(
+                                            "subtotal"
+                                    )
+                            );
+
+                    itens.add(itemView);
+                }
+            }
+
+            return itens;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar os detalhes dos itens da venda.",
                     e
             );
         }
