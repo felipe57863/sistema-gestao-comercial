@@ -35,7 +35,7 @@ import java.util.List;
  * Camada de serviço responsável pelas consultas do histórico de vendas.
  *
  * Coordena os DAOs, valida inconsistências persistidas e entrega ViewModels
- * consolidados para a futura interface.
+ * consolidados para a tela de Histórico de Vendas.
  *
  * Não realiza estorno e não altera dados persistidos.
  */

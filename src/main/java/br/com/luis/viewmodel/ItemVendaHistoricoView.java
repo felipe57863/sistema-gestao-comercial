@@ -7,7 +7,7 @@ import java.math.RoundingMode;
  * Representa um item persistido pertencente ao histórico de uma venda.
  *
  * Preserva os valores históricos gravados em ItemVenda e acrescenta
- * a descrição do produto para apresentação futura.
+ * a descrição do produto para apresentação no Histórico de Vendas.
  */
 public class ItemVendaHistoricoView {
 

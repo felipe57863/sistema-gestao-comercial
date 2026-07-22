@@ -33,7 +33,8 @@ public class VendaHistoricoListagemView {
 
     /*
      * Dados auxiliares de consulta.
-     * Não representam colunas obrigatórias da futura TableView.
+     * Apoiam a montagem do resumo financeiro exibido no Histórico de Vendas e não
+     * precisam corresponder diretamente às colunas visuais da TableView.
      */
     private FormaPagamento formaPagamentoVenda;
     private StatusContaReceber statusContaReceber;
