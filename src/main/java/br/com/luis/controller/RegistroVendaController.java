@@ -64,7 +64,6 @@ import java.util.Map;
  */
 public class RegistroVendaController {
 
-    private static final int USUARIO_TEMPORARIO_ID = 1;
     private static final int QUANTIDADE_INICIAL_ITEM = 1;
 
     private final VendaService vendaService;
@@ -138,8 +137,8 @@ public class RegistroVendaController {
     /**
      * Inicializa uma nova venda em memória.
      *
-     * Vincula a nova venda ao ID obtido da SessaoUsuario. Se não houver usuário
-     * válido na sessão, utiliza USUARIO_TEMPORARIO_ID como fallback.
+     * Vincula a nova venda ao usuário válido obtido da SessaoUsuario.
+     * Uma sessão inválida interrompe a inicialização.
      */
     private void inicializarVenda() {
         this.vendaAtual = new Venda(obterUsuarioIdAtual());
@@ -148,23 +147,28 @@ public class RegistroVendaController {
     /**
      * Obtém o ID do usuário atualmente logado.
      *
-     * Consulta a SessaoUsuario e retorna o ID válido do usuário logado.
-     * Quando a sessão não possui usuário ou ID válido, retorna
-     * USUARIO_TEMPORARIO_ID como fallback.
+     * Consulta a SessaoUsuario e retorna somente um ID real e válido.
+     * Lança IllegalStateException quando a sessão ou o ID forem inválidos.
      */
     private Integer obterUsuarioIdAtual() {
 
         Usuario usuarioLogado = SessaoUsuario.getInstance().getUsuarioLogado();
 
         if (usuarioLogado == null) {
-            return USUARIO_TEMPORARIO_ID;
+            throw new IllegalStateException(
+                    "Não foi possível identificar o usuário logado. Entre novamente no sistema."
+            );
         }
 
-        if (usuarioLogado.getIdUsuario() == null || usuarioLogado.getIdUsuario() <= 0) {
-            return USUARIO_TEMPORARIO_ID;
+        Integer usuarioId = usuarioLogado.getIdUsuario();
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalStateException(
+                    "Não foi possível identificar o usuário logado. Entre novamente no sistema."
+            );
         }
 
-        return usuarioLogado.getIdUsuario();
+        return usuarioId;
     }
 
     /**
@@ -1353,7 +1357,7 @@ public class RegistroVendaController {
             exibirResultadoFinalizacaoAVista(resultado);
             limparTelaAposFinalizacao();
 
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             exibirErro(e.getMessage());
 
         } catch (Exception e) {
