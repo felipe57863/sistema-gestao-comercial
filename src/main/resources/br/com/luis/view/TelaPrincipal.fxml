@@ -8,14 +8,19 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane prefHeight="650.0" prefWidth="1000.0"
+<BorderPane prefHeight="650.0"
+            prefWidth="1000.0"
             style="-fx-background-color: #f4f6f9;"
             xmlns="http://javafx.com/javafx/17"
             xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="br.com.luis.controller.TelaPrincipalController">
 
     <top>
-        <BorderPane style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-padding: 15 20 15 20;">
+        <BorderPane style="-fx-background-color: white;
+                           -fx-border-color: #e0e0e0;
+                           -fx-border-width: 0 0 1 0;
+                           -fx-padding: 15 20 15 20;">
+
             <left>
                 <Label text="Sistema de Gestão Comercial">
                     <font>
@@ -42,15 +47,18 @@
 
     <center>
         <VBox alignment="CENTER" spacing="20.0">
+
             <Label text="Tela Principal Temporária">
                 <font>
                     <Font name="System Bold" size="24.0" />
                 </font>
             </Label>
 
-            <Label text="Navegação temporária para testes" textFill="#555555" />
+            <Label text="Navegação temporária para testes"
+                   textFill="#555555" />
 
             <HBox alignment="CENTER" spacing="20.0">
+
                 <Button fx:id="btnClientes"
                         onAction="#abrirClientes"
                         prefHeight="45.0"
@@ -75,6 +83,12 @@
                         prefWidth="160.0"
                         text="Contas a Receber" />
 
+                <Button fx:id="btnHistoricoVendas"
+                        onAction="#abrirHistoricoVendas"
+                        prefHeight="45.0"
+                        prefWidth="160.0"
+                        text="Histórico de Vendas" />
+
                 <Button fx:id="btnSair"
                         onAction="#sair"
                         prefHeight="45.0"
@@ -88,8 +102,10 @@
         <Label text="Ambiente de desenvolvimento"
                textFill="#777777"
                BorderPane.alignment="CENTER">
+
             <padding>
-                <Insets bottom="15.0" top="15.0" />
+                <Insets bottom="15.0"
+                        top="15.0" />
             </padding>
         </Label>
     </bottom>
