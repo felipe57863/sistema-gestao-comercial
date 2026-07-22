@@ -32,10 +32,12 @@ public class Main extends Application {
     }
 
     /**
-     * Método executado ANTES da interface gráfica.
-     * Ideal para tarefas pesadas como:
-     * - criação do banco
-     * - inicialização de dados (seed)
+     * Prepara a infraestrutura antes da criação da interface gráfica.
+     *
+     * Primeiro cria ou verifica a estrutura do banco por meio dos scripts SQL.
+     * Em seguida, prepara os prazos de pagamento padrão e o usuário administrativo
+     * inicial. Uma falha crítica em qualquer dessas etapas interrompe o ciclo de
+     * inicialização, pois não é seguro abrir o sistema sem os dados essenciais.
      */
     @Override
     public void init() {
@@ -63,8 +65,11 @@ public class Main extends Application {
     }
 
     /**
-     * Método principal da interface gráfica.
-     * Responsável por carregar o FXML e exibir a janela.
+     * Inicia a interface gráfica carregando o Login.fxml.
+     *
+     * Localiza e carrega o FXML, configura a janela principal e exibe a tela de
+     * autenticação. Após um login válido, a continuidade da navegação é coordenada
+     * pelo Controller responsável pela tela.
      */
     @Override
     public void start(Stage primaryStage) throws Exception {

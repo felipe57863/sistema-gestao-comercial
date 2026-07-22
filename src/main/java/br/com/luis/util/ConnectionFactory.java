@@ -7,8 +7,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Fábrica de Conexões para o SQLite.
- * Centraliza o acesso ao banco de dados do sistema.
+ * Fábrica de conexões JDBC para o banco SQLite local da aplicação.
+ *
+ * O arquivo database.db é localizado de forma relativa ao diretório de execução.
+ * Cada chamada cria uma nova Connection e ativa as chaves estrangeiras com
+ * {@code PRAGMA foreign_keys = ON}. A classe não mantém pool de conexões.
  */
 public class ConnectionFactory {
 
@@ -18,7 +21,13 @@ public class ConnectionFactory {
     private static boolean caminhoBancoExibido = false;
 
     /**
-     * Retorna uma conexão ativa com o banco SQLite.
+     * Cria e retorna uma nova conexão ativa com o banco SQLite local.
+     *
+     * A conexão é devolvida com as chaves estrangeiras habilitadas. O chamador é
+     * responsável pelo fechamento, preferencialmente com try-with-resources, e
+     * pode controlar commit, rollback e autoCommit quando delimitar uma transação.
+     *
+     * @return nova conexão JDBC com o banco database.db.
      */
     public static Connection getConnection() {
         try {

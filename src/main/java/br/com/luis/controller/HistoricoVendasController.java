@@ -948,7 +948,13 @@ public class HistoricoVendasController {
     }
 
     /**
-     * Executa o fluxo visual do estorno.
+     * Coordena o fluxo visual do estorno da venda selecionada.
+     *
+     * Valida a seleção e o estado exibido, solicita o motivo, apresenta a
+     * confirmação e valida a sessão antes de chamar o EstornoVendaService. Após o
+     * sucesso, mostra o resultado, recarrega a listagem e seleciona novamente a
+     * venda pelo identificador, preservando o contexto visual. As regras e a
+     * transação do estorno permanecem no Service.
      */
     @FXML
     private void onEstornarVenda() {

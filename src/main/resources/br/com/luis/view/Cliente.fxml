@@ -18,6 +18,7 @@
 
 <VBox prefHeight="650.0" prefWidth="1000.0" style="-fx-background-color: #f4f6f9;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.luis.controller.ClienteController">
 
+    <!-- CABEÇALHO / BARRA SUPERIOR -->
     <BorderPane style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-padding: 15 20 15 20;">
         <left>
             <HBox alignment="CENTER_LEFT" spacing="12.0">
@@ -44,11 +45,13 @@
         </right>
     </BorderPane>
 
+    <!-- CONTEÚDO PRINCIPAL -->
     <HBox spacing="20.0" VBox.vgrow="ALWAYS">
         <padding>
             <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
         </padding>
 
+        <!-- FORMULÁRIO -->
         <VBox prefWidth="450.0" spacing="15.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 20;">
 
             <Label text="Dados do Cliente">
@@ -120,6 +123,7 @@
                 </VBox>
             </VBox>
 
+            <!-- AÇÕES DO FORMULÁRIO -->
             <HBox spacing="10">
                 <Button fx:id="btnNovo" onAction="#novo" prefWidth="100" text="Novo" />
                 <Button fx:id="btnSalvar" onAction="#salvar" prefWidth="100" text="Salvar" />
@@ -128,6 +132,7 @@
             </HBox>
         </VBox>
 
+        <!-- LISTAGEM DE CLIENTES -->
         <VBox spacing="15" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 20;" HBox.hgrow="ALWAYS">
 
             <Label text="Lista de Clientes">
@@ -136,10 +141,12 @@
                 </font>
             </Label>
 
+            <!-- PESQUISA -->
             <HBox spacing="10">
                 <TextField fx:id="txtBusca" promptText="Buscar cliente por nome ou documento..." HBox.hgrow="ALWAYS" />
             </HBox>
 
+            <!-- TABELA -->
             <TableView fx:id="tabelaClientes" VBox.vgrow="ALWAYS">
                 <columns>
                     <TableColumn fx:id="colNome" prefWidth="298.0" text="Nome" />

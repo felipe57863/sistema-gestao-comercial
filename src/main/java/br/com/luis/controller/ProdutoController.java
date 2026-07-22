@@ -27,8 +27,13 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
- * Controller da Tela de Gestão de Produtos.
- * Faz a ponte entre o FXML e as regras de negócio (Service).
+ * Controller da tela JavaFX de gestão de produtos.
+ *
+ * Coordena os componentes visuais e o preenchimento do formulário, delegando as
+ * regras de produto e promoção aos respectivos Services. A coordenação entre os
+ * dois módulos ocorre na interface, mas cada operação é tratada separadamente
+ * pelo seu Service. O Controller não acessa DAOs diretamente e usa Task nas
+ * consultas da tabela para evitar o bloqueio da interface.
  */
 public class ProdutoController implements Initializable {
 
@@ -227,10 +232,21 @@ public class ProdutoController implements Initializable {
         );
     }
 
+    /**
+     * Recarrega a tabela usando o texto atualmente informado no campo de pesquisa.
+     */
     private void carregarTabela() {
         carregarTabela(txtBusca == null ? "" : txtBusca.getText());
     }
 
+    /**
+     * Consulta produtos e prepara os dados de promoção em uma Task executada fora
+     * da thread da interface. Após o sucesso, publica a lista e o mapa de promoções
+     * já formatado nos componentes JavaFX; em falha, restaura os controles e exibe
+     * uma mensagem adequada.
+     *
+     * @param termoBusca descrição usada como filtro, vazia para listar todos.
+     */
     private void carregarTabela(String termoBusca) {
 
         String termo = termoBusca == null ? "" : termoBusca.trim();
@@ -512,6 +528,12 @@ public class ProdutoController implements Initializable {
         return null;
     }
 
+    /**
+     * Lê e converte os campos visuais e delega o cadastro ou a atualização ao
+     * ProdutoService. Após a persistência do produto, trata separadamente a
+     * promoção pelo PromocaoService, recarrega a tabela e limpa o formulário.
+     * Produto e promoção não são apresentados como uma única transação.
+     */
     @FXML
     public void acaoSalvar() {
         try {
@@ -578,6 +600,14 @@ public class ProdutoController implements Initializable {
         }
     }
 
+    /**
+     * Coordena a promoção depois que o produto foi salvo.
+     *
+     * Quando a promoção está selecionada, cria uma nova versão para produto novo,
+     * ausência de promoção anterior, alteração do desconto ou mudança de preço.
+     * Quando a opção é removida durante uma edição, solicita ao PromocaoService a
+     * inativação da promoção ativa. As validações e transações permanecem no Service.
+     */
     private void tratarPromocaoAposSalvar(Produto produto, boolean estavaEditando, Promocao promocaoAnterior) {
 
         if (chkPromocao.isSelected()) {
@@ -739,6 +769,11 @@ public class ProdutoController implements Initializable {
         carregarPromocaoAtivaNoFormulario(produto);
     }
 
+    /**
+     * Consulta a promoção ativa pelo PromocaoService e prepara o formulário para
+     * apresentar seus dados. Quando não há promoção, limpa a seção; em falha,
+     * restaura o estado visual seguro e informa o usuário.
+     */
     private void carregarPromocaoAtivaNoFormulario(Produto produto) {
 
         try {

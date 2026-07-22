@@ -10,10 +10,22 @@ import java.sql.Statement;
 import java.sql.ResultSet;
 
 /**
- * DAO da entidade Usuario.
+ * DAO responsável pela persistência e consulta de usuários por JDBC.
+ *
+ * Recebe do Service o hash de senha já preparado e recupera os dados usados no
+ * fluxo de autenticação. Não verifica a senha com BCrypt, não decide se o login
+ * será aceito e não controla SessaoUsuario, componentes da interface ou navegação.
  */
 public class UsuarioDAO {
 
+    /**
+     * Persiste um usuário usando conexão própria e atualiza o objeto com o ID gerado.
+     *
+     * A senha recebida já deve estar representada pelo hash preparado na camada
+     * Service; o DAO apenas grava os valores informados.
+     *
+     * @param usuario usuário que será persistido.
+     */
     public void cadastrar(Usuario usuario) {
 
         if (usuario == null) {
@@ -117,6 +129,15 @@ public class UsuarioDAO {
             );
         }
     }
+    /**
+     * Busca um usuário pelo login normalizado usando conexão própria.
+     *
+     * Retorna os dados necessários ao Service de autenticação, mas não compara a
+     * senha, não valida a aceitação do acesso e não altera a sessão da aplicação.
+     *
+     * @param login login que será normalizado e consultado.
+     * @return usuário encontrado ou {@code null} quando não existir.
+     */
     public Usuario buscarPorLogin(String login) {
 
         if (login == null || login.isBlank()) {

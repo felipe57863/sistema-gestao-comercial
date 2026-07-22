@@ -9,13 +9,16 @@ import java.sql.Statement;
 import java.util.List;
 
 /**
- * Classe responsável por inicializar e construir as tabelas do SQLite.
+ * Responsável por criar ou verificar a estrutura de tabelas do banco SQLite.
  *
- * Esta classe executa os scripts SQL armazenados em:
- * src/main/resources/database
+ * Executa os scripts SQL armazenados em {@code src/main/resources/database} na
+ * ordem definida pela lista interna. Essa ordem respeita as dependências entre
+ * chaves estrangeiras, garantindo que as tabelas referenciadas sejam preparadas
+ * antes das tabelas dependentes.
  *
- * O objetivo é manter o DDL fora do Java e centralizar aqui apenas
- * a execução dos scripts na ordem correta.
+ * Os scripts usam criação condicional para preservar estruturas já existentes.
+ * O DDL permanece nos recursos SQL; esta classe centraliza apenas o carregamento
+ * e a execução ordenada, sem afirmar atomicidade conjunta entre todos os scripts.
  */
 public class DatabaseBuilder {
 
@@ -33,8 +36,12 @@ public class DatabaseBuilder {
     );
 
     /**
-     * Executa todos os scripts necessários para criar/verificar
-     * as tabelas básicas do sistema.
+     * Executa os scripts necessários para criar ou verificar as tabelas do sistema.
+     *
+     * A sequência da lista é obrigatória por causa das chaves estrangeiras. Cada
+     * script é carregado do classpath e executado na mesma ordem em que foi
+     * declarado, permitindo que instruções de criação condicional mantenham as
+     * tabelas existentes.
      */
     public static void buildTables() {
 

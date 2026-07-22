@@ -707,9 +707,9 @@ public class ContasReceberController {
     }
 
     /**
-     * Obtém o ID real do usuário atualmente logado.
-     *
-     * Não usa usuário temporário nem fallback.
+     * Consulta a SessaoUsuario e retorna somente o ID válido do usuário autenticado.
+     * Uma sessão ausente ou um ID inválido interrompe o recebimento com erro de
+     * estado.
      */
     private Integer obterUsuarioIdAtual() {
 

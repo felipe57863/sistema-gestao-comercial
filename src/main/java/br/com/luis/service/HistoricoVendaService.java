@@ -66,6 +66,10 @@ public class HistoricoVendaService {
 
     /**
      * Lista o histórico de vendas conforme os filtros informados.
+     *
+     * Consulta dados consolidados pelo VendaDAO, valida a coerência entre venda,
+     * conta e movimentações resumidas e monta os ViewModels apresentados na
+     * tabela. O fluxo é somente de leitura e não realiza alterações persistentes.
      */
     public List<VendaHistoricoListagemView> listarHistorico(
             FiltroHistoricoVenda filtro
@@ -100,7 +104,12 @@ public class HistoricoVendaService {
     }
 
     /**
-     * Busca todos os detalhes disponíveis de uma venda.
+     * Busca e consolida todos os detalhes disponíveis de uma venda.
+     *
+     * Carrega venda, itens, cliente quando aplicável, conta, movimentações,
+     * usuários responsáveis e eventual auditoria de estorno. Depois valida a
+     * consistência financeira entre esses registros e monta o detalhe completo
+     * exibido pela tela, sem alterar dados persistidos.
      */
     public VendaHistoricoDetalheView buscarDetalhesVenda(
             Integer vendaId
@@ -319,7 +328,10 @@ public class HistoricoVendaService {
     }
 
     /**
-     * Valida a coerência financeira necessária para a listagem.
+     * Valida a coerência financeira resumida necessária para a listagem.
+     *
+     * Garante no máximo uma conta e uma entrada original compatível antes de
+     * encaminhar a venda para a matriz específica de venda à vista ou a prazo.
      */
     private void validarEstruturaFinanceiraListagem(
             VendaHistoricoListagemView venda
@@ -381,6 +393,12 @@ public class HistoricoVendaService {
         );
     }
 
+    /**
+     * Valida o resumo financeiro de uma venda à vista.
+     *
+     * Esse cenário não admite conta a receber nem estado PENDENTE e exige uma
+     * única entrada original com a mesma forma de pagamento registrada na venda.
+     */
     private void validarListagemVendaAVista(
             VendaHistoricoListagemView venda,
             int quantidadeContas,
@@ -436,6 +454,14 @@ public class HistoricoVendaService {
         }
     }
 
+    /**
+     * Valida o resumo financeiro de uma venda a prazo.
+     *
+     * Exige uma conta vinculada: venda pendente não possui entrada imediata,
+     * venda paga possui conta PAGA e uma entrada de recebimento, e venda estornada
+     * possui conta CANCELADA, podendo manter a entrada original conforme o estado
+     * financeiro anterior ao estorno.
+     */
     private void validarListagemVendaAPrazo(
             VendaHistoricoListagemView venda,
             int quantidadeContas,
@@ -1115,7 +1141,12 @@ public class HistoricoVendaService {
     }
 
     /**
-     * Valida e identifica as movimentações original e de saída.
+     * Valida e identifica as movimentações original e de saída da venda.
+     *
+     * Classifica no máximo uma entrada original e uma saída compensatória,
+     * relaciona os registros aos identificadores gravados na auditoria quando ela
+     * existe e rejeita saídas sem auditoria correspondente. Ao final, valida a
+     * coerência dos valores e da forma de pagamento entre os lançamentos.
      */
     private DadosMovimentacoesDetalhe identificarMovimentacoes(
             List<MovimentacaoFinanceira> movimentacoes,
@@ -1379,6 +1410,12 @@ public class HistoricoVendaService {
         );
     }
 
+    /**
+     * Valida uma movimentação originada do recebimento ou de sua compensação.
+     *
+     * Exige o tipo financeiro esperado, venda a prazo e referência para a mesma
+     * conta a receber carregada no detalhe.
+     */
     private void validarMovimentacaoVinculadaAConta(
             MovimentacaoFinanceira movimentacao,
             ContaReceber contaReceber,
@@ -1432,6 +1469,13 @@ public class HistoricoVendaService {
         );
     }
 
+    /**
+     * Localiza a movimentação indicada pela auditoria e confirma sua categoria.
+     *
+     * Quando o identificador é informado, o registro deve existir entre as
+     * movimentações da venda e representar a entrada original ou a saída de
+     * estorno solicitada pelo parâmetro de contexto.
+     */
     private MovimentacaoFinanceira localizarMovimentacaoAuditada(
             List<MovimentacaoFinanceira> movimentacoes,
             Integer movimentacaoId,
@@ -1482,6 +1526,13 @@ public class HistoricoVendaService {
         return encontrada;
     }
 
+    /**
+     * Valida os valores e a forma de pagamento das movimentações financeiras.
+     *
+     * A entrada original deve corresponder ao valor da conta, quando existente,
+     * ou ao total da venda à vista. Uma saída compensatória exige entrada original
+     * e deve repetir seu valor e sua forma de pagamento.
+     */
     private void validarValoresMovimentacoes(
             Venda venda,
             ContaReceber contaReceber,
@@ -1543,7 +1594,10 @@ public class HistoricoVendaService {
     }
 
     /**
-     * Valida a combinação final entre venda, conta, auditoria e movimentos.
+     * Valida a combinação final entre venda, conta, auditoria e movimentações.
+     *
+     * Encaminha os registros para a matriz de venda à vista ou a prazo, garantindo
+     * que o detalhe represente um único cenário financeiro válido.
      */
     private void validarCenarioDetalhe(
             Venda venda,
@@ -1553,6 +1607,9 @@ public class HistoricoVendaService {
             DadosMovimentacoesDetalhe movimentacoes
     ) {
 
+        // Valida o cenário financeiro como um conjunto: status da venda, conta
+        // vinculada, movimentação original, eventual saída compensatória e
+        // auditoria devem representar o mesmo fluxo de venda, recebimento ou estorno.
         if (dadosVenda.tipoVenda() == TipoVenda.A_VISTA) {
 
             validarCenarioDetalheAVista(
@@ -1575,6 +1632,13 @@ public class HistoricoVendaService {
         );
     }
 
+    /**
+     * Valida os cenários detalhados de venda à vista.
+     *
+     * A venda paga exige a entrada original e não admite conta, auditoria ou saída.
+     * A venda estornada preserva essa entrada e exige auditoria com estado anterior
+     * PAGA e a saída compensatória correspondente.
+     */
     private void validarCenarioDetalheAVista(
             Venda venda,
             DadosVendaConvertidos dadosVenda,
@@ -1644,6 +1708,14 @@ public class HistoricoVendaService {
         );
     }
 
+    /**
+     * Valida os cenários detalhados de venda a prazo.
+     *
+     * A venda pendente exige conta PENDENTE e ausência de movimentações; a venda
+     * paga exige conta PAGA e entrada de recebimento. A venda estornada exige conta
+     * CANCELADA e auditoria, cuja situação anterior define se devem existir entrada
+     * original e saída compensatória.
+     */
     private void validarCenarioDetalheAPrazo(
             Venda venda,
             DadosVendaConvertidos dadosVenda,
@@ -1723,6 +1795,13 @@ public class HistoricoVendaService {
         );
     }
 
+    /**
+     * Valida o estado financeiro anterior registrado para uma venda a prazo estornada.
+     *
+     * Se venda e conta eram PENDENTE, não pode haver movimentação financeira. Se
+     * ambas eram PAGA, devem existir a entrada original do recebimento e a saída
+     * compensatória do estorno.
+     */
     private void validarCenarioAnteriorAuditoriaAPrazo(
             Integer vendaId,
             AuditoriaEstornoVenda auditoria,

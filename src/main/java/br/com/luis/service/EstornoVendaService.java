@@ -74,6 +74,13 @@ public class EstornoVendaService {
     /**
      * Realiza o estorno total de uma venda finalizada.
      *
+     * Abre e controla uma única Connection para revalidar o usuário, a venda, os
+     * itens, a conta e as movimentações persistidas. Dentro da mesma transação,
+     * restaura o estoque, altera a venda para ESTORNADA, trata a conta vinculada
+     * conforme o cenário, registra eventual saída compensatória e grava a
+     * auditoria. O commit ocorre somente após todas as etapas; qualquer falha
+     * provoca rollback integral e o estado anterior de autoCommit é restaurado.
+     *
      * @param vendaId identificador da venda que será estornada.
      * @param motivo motivo obrigatório do estorno.
      * @param usuarioId identificador do usuário responsável pelo estorno.
@@ -140,8 +147,10 @@ public class EstornoVendaService {
     /**
      * Executa o fluxo completo do estorno dentro da transação.
      *
-     * Este método não abre ou fecha a Connection e também não executa
-     * commit ou rollback.
+     * Usa a Connection recebida para executar as validações e alterações de venda,
+     * itens, estoque, conta, movimentações e auditoria. Não abre outra conexão,
+     * não executa commit ou rollback e não fecha a Connection; essas
+     * responsabilidades pertencem ao método público que delimita a transação.
      *
      * @return dados internos necessários para montar o resultado
      *         depois do commit.

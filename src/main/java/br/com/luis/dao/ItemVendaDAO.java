@@ -14,10 +14,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO responsável pela persistência da entidade ItemVenda.
+ * DAO responsável pela persistência e consulta dos itens vinculados às vendas.
  *
- * Insere os itens já preparados e vinculados à venda pelo VendaService. Não
- * calcula estoque, promoção, descontos ou total e não contém regras de negócio.
+ * Insere os itens preparados pelo VendaService, recupera os registros necessários
+ * ao estorno e fornece os detalhes usados pelo Histórico de Vendas. As consultas
+ * preservam quantidade, preço e subtotal gravados no momento da venda e podem
+ * trazer a descrição do produto já associada, evitando consultas individuais na
+ * montagem dos detalhes.
+ *
+ * Não calcula estoque, promoção, descontos ou total e não decide regras de
+ * estorno. Quando recebe uma Connection externa, participa da transação
+ * controlada pelo Service sem executar commit, rollback ou fechar a conexão.
  */
 public class ItemVendaDAO {
 

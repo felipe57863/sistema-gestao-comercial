@@ -25,8 +25,11 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Controller da Tela de Cadastro de Clientes.
- * Responsável por intermediar a UI e a camada de serviço.
+ * Controller da tela JavaFX de cadastro e consulta de clientes.
+ *
+ * Coordena os componentes visuais, delega as regras cadastrais ao ClienteService
+ * e consulta os prazos disponíveis por meio do PrazoPagamentoService. Não acessa
+ * DAO ou Connection diretamente e não concentra regras de negócio.
  */
 public class ClienteController {
 

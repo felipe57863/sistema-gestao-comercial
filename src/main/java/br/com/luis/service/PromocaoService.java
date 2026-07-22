@@ -10,8 +10,12 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * Camada de Serviço (Regras de Negócio) para Promoções.
- * Garante a integridade dos dados e orquestra transações complexas.
+ * Service responsável pelas regras de negócio e transações de promoções.
+ *
+ * Valida produto, tipo e valor do desconto e coordena a substituição ou a
+ * inativação da promoção ativa. Nos fluxos de alteração, controla a Connection,
+ * commit, rollback e restauração do autoCommit. O PromocaoDAO permanece limitado
+ * às operações de persistência executadas com a conexão recebida.
  */
 public class PromocaoService {
 
@@ -23,8 +27,12 @@ public class PromocaoService {
     }
 
     /**
-     * Cadastra uma nova promoção e inativa as promoções antigas ativas do mesmo produto.
-     * Operação transacional: ou tudo é concluído, ou tudo é desfeito.
+     * Valida e cadastra uma nova promoção em uma transação controlada pelo Service.
+     *
+     * Antes de abrir a conexão, valida os dados e define a nova promoção como
+     * ativa. Na mesma Connection, inativa promoções anteriores do produto e
+     * persiste o novo registro. O commit ocorre somente após as duas operações;
+     * qualquer falha provoca rollback e o autoCommit é restaurado ao final.
      *
      * @implNote Implementa a RN22 - Nova Promoção
      */
@@ -84,8 +92,12 @@ public class PromocaoService {
     }
 
     /**
-     * Inativa a promoção ativa de um produto.
-     * Usado quando o usuário remove a promoção de um produto na tela de cadastro.
+     * Inativa a promoção ativa de um produto em uma transação própria.
+     *
+     * Valida o identificador do produto, abre e controla a Connection, solicita ao
+     * DAO a inativação e confirma a alteração somente após o sucesso. Em falha,
+     * executa rollback e restaura o autoCommit ao final. O DAO não decide se a
+     * promoção deve ser inativada.
      *
      * @implNote Garante que a remoção da promoção ativa seja coordenada pela
      * camada Service dentro de uma transação.
