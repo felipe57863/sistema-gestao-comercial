@@ -52,8 +52,10 @@ public class LoginController {
      * Lê as credenciais da interface, evita múltiplos cliques durante o fluxo e
      * delega a autenticação ao AuthService. Quando autenticado, mantém o usuário
      * na SessaoUsuario, exibe a confirmação e abre a tela principal no mesmo Stage.
-     * Em caso de erro, limpa a senha e apresenta a mensagem recebida; ao final,
-     * reabilita o botão de entrada.
+     * Em falhas de autenticação ou em erros propagados durante o login, apresenta
+     * a mensagem correspondente e limpa o campo de senha. Falhas específicas ao
+     * carregar a Tela Principal são tratadas pelo método responsável pela navegação.
+     * Ao final, reabilita o botão de entrada.
      */
     @FXML
     public void fazerLogin(ActionEvent event) {

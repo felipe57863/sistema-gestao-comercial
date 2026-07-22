@@ -5,8 +5,12 @@ import br.com.luis.model.Usuario;
 import org.mindrot.jbcrypt.BCrypt;
 
 /**
- * Serviço responsável por regras de negócio de Autenticação e Segurança.
- * Atua entre a camada Controller (interface) e DAO (persistência).
+ * Service responsável pela autenticação e pela preparação do usuário
+ * administrativo inicial. Normaliza o login, consulta o usuário por meio do
+ * UsuarioDAO, verifica a senha usando o hash BCrypt e rejeita usuários inativos.
+ * Não controla componentes JavaFX, a navegação ou a SessaoUsuario; após a
+ * autenticação, cabe ao Controller registrar o usuário na sessão e decidir a
+ * navegação da aplicação.
  */
 public class AuthService {
 
@@ -60,7 +64,7 @@ public class AuthService {
                     null, // ID gerado automaticamente pelo banco
                     "Administrador do Sistema",
                     "admin",
-                    senhaSegura, // Senha já criptografada
+                    senhaSegura, // Hash BCrypt da senha já gerado
                     "ADMIN",
                     "ATIVO"
             );
@@ -128,7 +132,7 @@ public class AuthService {
             throw new RuntimeException("Usuário inativo. Contate o administrador.");
         }
 
-        // Log de auditoria
+        // Registro informativo no console para acompanhamento da autenticação.
         System.out.println("[LOG] Login realizado com sucesso: " + usuario.getLogin());
 
         return usuario;

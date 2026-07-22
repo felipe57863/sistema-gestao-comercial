@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS Usuario (
     nome TEXT NOT NULL,
     -- Login único para acesso ao sistema
     login TEXT NOT NULL UNIQUE,
-    -- Senha criptografada com BCrypt
+    -- Hash BCrypt da senha do usuário
     senha TEXT NOT NULL,
     -- Perfil do usuário: exemplo ADMIN ou VENDEDOR
     perfil TEXT NOT NULL,
