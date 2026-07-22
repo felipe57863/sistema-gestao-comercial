@@ -28,8 +28,9 @@ Entre os principais objetivos estão:
 - JavaFX
 - FXML
 - SQLite
-- JDBC
+- JDBC puro
 - Maven
+- BCrypt/jBCrypt
 - Scene Builder
 - Git e GitHub
 
@@ -37,52 +38,77 @@ Entre os principais objetivos estão:
 
 ## Arquitetura do projeto
 
-O sistema utiliza uma organização em camadas, separando responsabilidades entre interface, regras de negócio, acesso a dados e entidades do domínio.
+O sistema utiliza uma organização em camadas, separando responsabilidades entre interface, regras de negócio, acesso a dados e entidades do domínio. O fluxo principal segue a arquitetura `Controller → Service → DAO`.
 
 Estrutura principal:
 
+```text
 src/main/java/br/com/luis/
-├── controller
-├── dao
-├── model
-├── service
-├── util
-└── view
+├── controller/
+├── service/
+├── dao/
+├── model/
+├── util/
+└── viewmodel/
+
+src/main/resources/br/com/luis/view/
+└── arquivos FXML
+
+src/main/resources/database/
+└── scripts SQL
+```
 
 ### Camadas
 
-* `model`: representa as entidades do sistema;
-* `dao`: responsável pela comunicação com o banco de dados;
-* `service`: concentra regras de negócio e validações;
-* `controller`: controla a interação entre interface e sistema;
-* `view`: telas desenvolvidas com JavaFX/FXML;
-* `util`: classes auxiliares, como conexão com banco de dados.
+* `controller`: controla a interface e coordena as ações do usuário, delegando as regras aos Services;
+* `service`: concentra regras de negócio, validações, cálculos e controle transacional;
+* `dao`: realiza consultas e persistência com JDBC e `PreparedStatement`;
+* `model`: representa as entidades e os tipos do domínio;
+* `util`: reúne recursos auxiliares de conexão, banco, sessão, navegação e cabeçalho;
+* `viewmodel`: transporta dados preparados para apresentação nas telas;
+* `src/main/resources/br/com/luis/view`: contém as telas JavaFX definidas em FXML.
+
+Os valores monetários são tratados com `BigDecimal`, evitando perda de precisão em preços, descontos, totais, contas e movimentações financeiras.
+
+### Fluxo principal de inicialização
+
+```text
+Launcher
+→ Main
+→ preparação do banco e dos dados iniciais
+→ Login.fxml
+→ TelaPrincipal.fxml
+```
 
 ---
 
 ## Funcionalidades
 
-### Implementadas ou em desenvolvimento
+### Recursos implementados
 
-* Cadastro de produtos;
-* Cadastro de clientes;
-* Cadastro de prazos de pagamento;
-* Controle de promoções;
-* Validações de regras de negócio;
-* Estrutura de vendas;
-* Carrinho de vendas em memória;
-* Aplicação de promoções;
-* Cálculo de subtotal e total da venda;
-* Persistência com SQLite.
+* Autenticação e sessão de usuário;
+* Cadastro e consulta de usuários;
+* Cadastro e consulta de clientes e produtos;
+* Cadastro e consulta de prazos de pagamento e promoções;
+* Controle de estoque;
+* Carrinho de venda, alteração de quantidade e desconto global;
+* Venda à vista com pagamento em dinheiro, PIX ou cartão e cálculo de troco;
+* Venda a prazo com seleção de cliente e prazo e validação de limite de crédito;
+* Persistência transacional da venda e dos itens, com baixa de estoque na finalização;
+* Movimentação financeira para venda à vista;
+* Geração e consulta de contas a receber para vendas a prazo;
+* Recebimento integral de conta com geração da movimentação financeira correspondente;
+* Estorno total de vendas, com restauração de estoque e cancelamento da conta a receber;
+* Movimentação financeira de saída quando necessária no estorno;
+* Auditoria de estorno e bloqueio de estorno duplicado;
+* Histórico de Vendas com filtros, detalhes e estorno contextual pela própria tela.
 
-### Funcionalidades planejadas
+### Próximas evoluções
 
-* Finalização de vendas;
-* Controle financeiro;
-* Contas a receber;
+* Dashboard gerencial;
 * Relatórios;
-* Estorno de venda;
-* Controle de permissões por perfil de usuário.
+* Geração de documento ou nota de venda em PDF;
+* Refinamentos finais de interface, documentação e qualidade.
 
 ---
 
@@ -96,6 +122,9 @@ O projeto busca simular regras reais de um sistema comercial, como:
 * Aplicar promoções ativas automaticamente;
 * Separar desconto promocional de desconto global;
 * Impedir inconsistências no cálculo de valores da venda;
+* Validar limite de crédito e prazo nas vendas a prazo;
+* Manter venda, itens, estoque, contas e movimentações consistentes em transações;
+* Impedir estorno duplicado e manter sua auditoria;
 * Organizar responsabilidades entre as camadas do sistema.
 
 ---
@@ -117,9 +146,9 @@ Alguns conceitos aplicados:
 
 ## Status do projeto
 
-Projeto em desenvolvimento.
+O sistema já possui os módulos centrais de autenticação, cadastros, estoque, vendas à vista e a prazo, contas a receber, movimentações financeiras, estorno e Histórico de Vendas operacionais.
 
-Atualmente, o foco está na construção do motor de vendas, incluindo carrinho, itens da venda, promoções, descontos e cálculo de totais.
+As próximas evoluções previstas concentram-se no dashboard gerencial, relatórios, geração de documento ou nota de venda em PDF e refinamentos finais de interface, documentação e qualidade.
 
 ---
 
@@ -130,22 +159,23 @@ Atualmente, o foco está na construção do motor de vendas, incluindo carrinho,
 * Java 17 instalado;
 * Maven instalado ou configurado pela IDE;
 * IntelliJ IDEA ou outra IDE compatível;
-* SQLite;
 * Scene Builder, caso deseje editar as telas FXML.
 
 ### Passos básicos
 
 1. Clone o repositório:
 
+```bash
 git clone https://github.com/felipe57863/sistema-gestao-comercial.git
+```
 
 2. Abra o projeto em uma IDE Java, como IntelliJ IDEA.
 
 3. Aguarde o Maven baixar as dependências.
 
-4. Configure o banco SQLite conforme os scripts do projeto.
+4. Execute a classe `Launcher`, que inicia `Main`, prepara o banco e os dados iniciais e abre a tela de login.
 
-5. Execute a classe principal da aplicação.
+5. Após a autenticação, utilize a Tela Principal para acessar os módulos disponíveis.
 
 ---
 
