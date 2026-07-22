@@ -8,11 +8,13 @@ CREATE TABLE IF NOT EXISTS MovimentacaoFinanceira (
     -- No SQLite: TEXT em formato ISO 8601.
     data_hora TEXT NOT NULL,
 
-    -- Tipo da movimentação: ENTRADA nos fluxos financeiros atuais.
+    -- O tipo identifica se o lançamento representa ENTRADA ou SAIDA financeira.
     -- A validação dos valores oficiais ocorre no Java, sem CHECK restritivo no banco.
     tipo TEXT NOT NULL,
 
-    -- Origem da movimentação: VENDA_A_VISTA ou RECEBIMENTO_CONTA.
+    -- A origem identifica o fluxo que gerou o lançamento.
+    -- Valores atuais: VENDA_A_VISTA, RECEBIMENTO_CONTA,
+    -- ESTORNO_VENDA_A_VISTA ou ESTORNO_RECEBIMENTO_CONTA.
     origem TEXT NOT NULL,
 
     -- Forma de pagamento usada na movimentação: DINHEIRO, PIX ou CARTAO.
@@ -22,15 +24,19 @@ CREATE TABLE IF NOT EXISTS MovimentacaoFinanceira (
     -- No Java, este valor é tratado com BigDecimal.
     valor REAL NOT NULL DEFAULT 0 CHECK (valor >= 0),
 
-    -- Venda vinculada à movimentação.
+    -- Venda vinculada à movimentação, inclusive nos lançamentos compensatórios.
     venda_id INTEGER NOT NULL,
 
     -- Conta a receber vinculada.
-    -- Na venda à vista, fica NULL; no recebimento integral, identifica a conta recebida.
+    -- Fica NULL na venda à vista e no respectivo estorno. No recebimento integral
+    -- e em sua compensação, identifica a conta correspondente.
     conta_receber_id INTEGER,
 
     -- Usuário responsável pelo lançamento.
     usuario_id INTEGER NOT NULL,
+
+    -- O estorno preserva a movimentação original e registra uma nova SAIDA
+    -- compensatória quando necessário, mantendo a rastreabilidade financeira.
 
     -- Relacionamento com a venda.
     -- Restritivo para preservar histórico financeiro.

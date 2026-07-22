@@ -5,16 +5,19 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 /**
- * Entidade que representa uma movimentação financeira do sistema.
- *
- * É criada pela camada Service na finalização de vendas à vista e no recebimento
- * integral de contas a receber.
+ * Entidade que representa um lançamento financeiro persistido no sistema.
+ * Entradas são geradas pela finalização de vendas à vista e pelo recebimento
+ * integral de contas a receber. Quando necessário, o estorno registra uma nova
+ * movimentação de saída compensatória, preservando os lançamentos anteriores
+ * para manter a rastreabilidade e o histórico financeiro.
  *
  * Regras importantes:
  * - A persistência atual registra movimentações por INSERT e não disponibiliza
  *   UPDATE ou DELETE.
  * - Venda a prazo não gera movimentação financeira imediata.
  * - O recebimento integral da conta gera uma entrada financeira vinculada.
+ * - A definição do tipo, da origem, do valor e das referências pertence ao
+ *   Service responsável pelo fluxo; o Model apenas representa esses dados.
  */
 public class MovimentacaoFinanceira {
 

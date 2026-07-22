@@ -17,27 +17,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO responsável pela persistência da entidade MovimentacaoFinanceira.
+ * DAO responsável pela inserção e consulta de movimentações financeiras por JDBC.
  *
- * Insere movimentações preparadas pela camada Service, incluindo entradas de
- * vendas à vista e de recebimentos integrais de contas a receber.
+ * É utilizado pelos fluxos de venda à vista, recebimento integral de conta e
+ * estorno. Não implementa atualização ou exclusão de lançamentos anteriores.
  *
- * Não decide tipo, origem, forma de pagamento ou valor da movimentação e não
- * contém regras de negócio. Essas definições e o controle transacional pertencem
- * ao VendaService ou ao ContaReceberService, conforme o fluxo.
+ * Não decide tipo, origem, forma de pagamento, valor ou necessidade de
+ * compensação. Essas regras pertencem aos Services responsáveis por cada fluxo.
  *
- * Disponibiliza inserção e consultas somente leitura necessárias aos fluxos
- * financeiros. Não implementa atualização ou exclusão de movimentações.
+ * Nos métodos que recebem uma Connection externa, o Service chamador controla
+ * commit, rollback e fechamento da conexão. O DAO encerra somente os recursos
+ * JDBC que cria, como PreparedStatement e ResultSet.
  */
 public class MovimentacaoFinanceiraDAO {
 
     /**
-     * Insere uma movimentação financeira usando uma Connection externa.
+     * Insere uma nova movimentação financeira usando a Connection informada.
      *
-     * Participa da transação coordenada pelo Service que originou a movimentação,
-     * seja a finalização de uma venda à vista ou o recebimento integral de uma
-     * conta. Encerra o PreparedStatement e o ResultSet que cria, mas respeita a
-     * propriedade da Connection recebida.
+     * Participa da transação coordenada pelo Service que originou o lançamento,
+     * seja a finalização de uma venda à vista, o recebimento integral de uma conta
+     * ou uma compensação de estorno. Encerra o PreparedStatement e o ResultSet que
+     * cria, mas respeita a propriedade da Connection recebida. Lançamentos
+     * anteriores permanecem preservados.
      *
      * Importante:
      * - não abre nova Connection;
