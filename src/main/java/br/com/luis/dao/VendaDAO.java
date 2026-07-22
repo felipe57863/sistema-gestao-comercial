@@ -22,13 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO responsável pela persistência da entidade Venda.
+ * DAO responsável pela persistência e consulta de vendas por JDBC.
  *
- * Insere os dados principais da venda e retorna o identificador gerado. Os itens
+ * Insere os dados principais da venda, executa atualizações protegidas de status
+ * e fornece consultas consolidadas utilizadas pelo Histórico de Vendas, além de
+ * dados necessários aos detalhes e às validações dos fluxos existentes. Os itens
  * associados são persistidos separadamente pelo ItemVendaDAO.
  *
- * Não contém regras de finalização, estoque ou financeiro. Essas regras e a
- * coordenação transacional pertencem ao VendaService.
+ * Não controla a interface nem decide regras de finalização, recebimento ou
+ * estorno. Essas decisões pertencem aos Services responsáveis. Nos métodos que
+ * recebem uma Connection externa, o Service chamador controla commit, rollback
+ * e fechamento da conexão.
  */
 public class VendaDAO {
 
@@ -163,7 +167,13 @@ public class VendaDAO {
      * Atualiza o status de uma venda somente quando o status atual persistido
      * corresponde ao status esperado.
      *
-     * Usa uma Connection externa e encerra apenas o PreparedStatement criado.
+     * A condição combina o identificador e o status esperado, impedindo que o
+     * fluxo altere uma venda que já esteja em outro estado. O retorno permite ao
+     * Service confirmar se exatamente o registro esperado foi atualizado. A
+     * escolha do novo status pertence ao Service responsável pelo recebimento ou
+     * estorno.
+     *
+     * Usa a Connection informada e encerra apenas o PreparedStatement criado.
      * Não executa commit, rollback nem fecha a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.

@@ -20,15 +20,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DAO responsável pela persistência da entidade ContaReceber.
+ * DAO responsável pela persistência e consulta de contas a receber por JDBC.
  *
- * Insere contas a receber, consulta contas e valores pendentes, atualiza o status
- * com proteção do estado esperado e lista pendências com dados do cliente.
- * Participa tanto da geração da conta em vendas a prazo quanto das operações de
- * consulta e atualização usadas no recebimento integral.
+ * Insere as contas geradas por vendas a prazo, consulta valores pendentes usados
+ * na validação do limite de crédito e fornece dados para listagens e detalhes.
+ * Também executa atualizações protegidas de status solicitadas pelos fluxos de
+ * recebimento e estorno.
  *
- * Não contém regras de limite de crédito ou de recebimento. Essas decisões e o
- * controle transacional pertencem ao VendaService e ao ContaReceberService.
+ * Não escolhe o novo estado, não cria movimentações financeiras e não controla
+ * transações de negócio. Essas decisões pertencem aos Services responsáveis,
+ * que também controlam commit, rollback e fechamento da Connection recebida.
  */
 public class ContaReceberDAO {
 
@@ -309,9 +310,11 @@ public class ContaReceberDAO {
     /**
      * Atualiza o status de uma conta a receber com proteção de estado atual.
      *
-     * A condição statusAtual evita que uma conta já alterada seja atualizada
-     * novamente sem que a camada Service perceba. A decisão de permitir o
-     * recebimento e escolher o novo status pertence ao ContaReceberService.
+     * A condição combina o identificador e o status esperado, evitando que uma
+     * conta já alterada seja atualizada novamente sem que o Service perceba. A
+     * decisão do novo estado pertence ao Service responsável pelo fluxo, como
+     * recebimento ou estorno. O retorno permite confirmar se exatamente a conta
+     * esperada foi atualizada.
      *
      * Importante:
      * - não abre nova Connection;

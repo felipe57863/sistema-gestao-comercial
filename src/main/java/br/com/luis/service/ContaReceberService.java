@@ -24,18 +24,17 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Camada de serviço responsável pelas regras de negócio
- * relacionadas ao recebimento de contas a receber.
+ * Service responsável pelo recebimento integral de contas a receber.
  *
- * O serviço realiza o recebimento integral de contas pendentes, atualiza seu
- * status e registra a movimentação financeira correspondente em uma transação.
+ * Valida os dados de entrada, busca e revalida a conta persistida e, em uma única
+ * transação, altera a conta de PENDENTE para PAGA, atualiza a venda vinculada de
+ * PENDENTE para PAGA e registra a movimentação financeira de entrada. Qualquer
+ * falha provoca rollback integral do fluxo.
  *
- * Não há:
- * - pagamento parcial;
- * - juros;
- * - multa;
- * - desconto;
- * - estorno.
+ * O recebimento usa o valor integral persistido na conta e registra o usuário e
+ * a forma de pagamento informados. Não oferece pagamento parcial, juros, multa,
+ * desconto financeiro ou parcelamento. As regras permanecem neste Service; o
+ * Controller coordena a interface e os DAOs executam somente a persistência.
  */
 public class ContaReceberService {
 
@@ -52,8 +51,15 @@ public class ContaReceberService {
     /**
      * Recebe integralmente uma conta a receber.
      *
-     * O valor recebido sempre será o valor total da ContaReceber.
-     * Os dados financeiros do recebimento são registrados em MovimentacaoFinanceira.
+     * Valida a identificação da conta, a forma de pagamento e o usuário responsável
+     * antes de abrir a conexão. Dentro da transação, busca e revalida a conta
+     * persistida, utiliza seu valor integral, atualiza de forma protegida a conta
+     * de PENDENTE para PAGA e a venda vinculada de PENDENTE para PAGA, além de
+     * registrar a movimentação financeira de entrada correspondente.
+     *
+     * O commit ocorre somente após a conclusão de todas as etapas. Qualquer falha
+     * provoca rollback integral e a restauração do estado anterior de autoCommit.
+     * Após o commit, retorna ao Controller os dados consolidados do recebimento.
      *
      * @param contaReceberId ID da conta a receber.
      * @param formaPagamento forma de pagamento usada no recebimento.
@@ -109,7 +115,12 @@ public class ContaReceberService {
     /**
      * Executa o fluxo transacional do recebimento integral.
      *
-     * Este método não executa commit, rollback e não fecha a Connection.
+     * Revalida a conta persistida e, usando a mesma Connection, atualiza de forma
+     * protegida os status da conta e da venda antes de inserir a movimentação
+     * financeira correspondente. Assim, uma falha em qualquer etapa permite que
+     * o método público reverta todo o conjunto.
+     *
+     * Este método não executa commit, rollback nem fecha a Connection recebida.
      */
     private DadosRecebimentoConta receberContaTransacional(
             Connection conn,
