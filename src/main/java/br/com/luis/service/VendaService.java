@@ -1324,7 +1324,7 @@ public class VendaService {
 
         validarLimiteCreditoDisponivelVendaAPrazo(conn, cliente, valorVenda);
 
-        return new DadosValidadosVendaAPrazo(cliente, prazoEfetivo);
+        return new DadosValidadosVendaAPrazo(prazoEfetivo);
     }
 
     /**
@@ -1882,19 +1882,12 @@ public class VendaService {
      */
     private static class DadosValidadosVendaAPrazo {
 
-        private final Cliente cliente;
         private final PrazoPagamento prazoEfetivo;
 
         private DadosValidadosVendaAPrazo(
-                Cliente cliente,
                 PrazoPagamento prazoEfetivo
         ) {
-            this.cliente = cliente;
             this.prazoEfetivo = prazoEfetivo;
-        }
-
-        private Cliente getCliente() {
-            return cliente;
         }
 
         private PrazoPagamento getPrazoEfetivo() {
