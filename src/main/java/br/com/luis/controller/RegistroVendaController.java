@@ -1216,8 +1216,10 @@ public class RegistroVendaController {
         });
 
         tableViewPrazos.getColumns().addAll(
-                colunaDescricao,
-                colunaDias
+                List.of(
+                        colunaDescricao,
+                        colunaDias
+                )
         );
 
         dialog.getDialogPane().setContent(tableViewPrazos);
@@ -1635,12 +1637,14 @@ public class RegistroVendaController {
         });
 
         tableViewClientes.getColumns().addAll(
-                colunaId,
-                colunaNome,
-                colunaDocumento,
-                colunaStatus,
-                colunaLimiteTotal,
-                colunaLimiteDisponivel
+                List.of(
+                        colunaId,
+                        colunaNome,
+                        colunaDocumento,
+                        colunaStatus,
+                        colunaLimiteTotal,
+                        colunaLimiteDisponivel
+                )
         );
 
         dialog.getDialogPane().setContent(tableViewClientes);
@@ -1818,10 +1822,12 @@ public class RegistroVendaController {
         );
 
         tableViewProdutos.getColumns().addAll(
-                colunaId,
-                colunaDescricao,
-                colunaPreco,
-                colunaEstoque
+                List.of(
+                        colunaId,
+                        colunaDescricao,
+                        colunaPreco,
+                        colunaEstoque
+                )
         );
 
         dialog.getDialogPane().setContent(tableViewProdutos);
