@@ -6,17 +6,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Entidade que representa uma conta a receber gerada por uma venda a prazo.
- *
- * É criada pelo VendaService durante a finalização de uma venda a prazo e pode
- * ser carregada para o fluxo de recebimento integral do ContaReceberService.
+ * Entidade que representa a obrigação financeira gerada por uma venda a prazo.
+ * Permanece vinculada à venda e ao cliente correspondentes e é preservada para
+ * manter o histórico financeiro da operação.
  *
  * Regras importantes:
  * - Toda nova ContaReceber gerada por uma venda nasce com status PENDENTE.
  * - A data de vencimento é calculada no Service.
  * - O prazo efetivo é validado no Service.
  * - O limite de crédito é validado no Service.
- * - O recebimento integral altera o status para PAGA e gera movimentação financeira.
+ * - O recebimento integral, coordenado pelo ContaReceberService, altera o status
+ * para PAGA e gera a movimentação financeira correspondente.
+ * - O estorno da venda vinculada pode alterar o status para CANCELADA, conforme
+ * o cenário validado pelo EstornoVendaService, sem excluir o registro histórico.
  */
 public class ContaReceber {
 

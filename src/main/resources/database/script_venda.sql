@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS Venda (
     -- É calculado e distribuído entre os itens elegíveis pelo VendaService.
     valor_desconto_global REAL NOT NULL DEFAULT 0,
 
-    -- Status da venda finalizada: PAGA para venda à vista ou PENDENTE para venda a prazo.
+    -- Situação da venda: PAGA, PENDENTE ou ESTORNADA após estorno total.
     status TEXT NOT NULL,
 
     -- Usuário responsável pela venda.

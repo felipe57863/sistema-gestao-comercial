@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS ContaReceber (
     -- No SQLite: TEXT em formato ISO 8601.
     data_vencimento TEXT NOT NULL,
 
-    -- Status da conta: PENDENTE na geração e PAGA após o recebimento integral.
+    -- Situação da conta: PENDENTE, PAGA ou CANCELADA quando a venda vinculada é estornada.
     -- A validação dos valores oficiais ocorre no Java, sem CHECK restritivo no banco.
     status TEXT NOT NULL,
 

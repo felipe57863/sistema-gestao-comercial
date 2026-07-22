@@ -1,16 +1,13 @@
 package br.com.luis.model;
 
 /**
- * Enum que representa os status oficiais da venda no sistema.
+ * Enum que representa os status oficiais persistidos da venda no sistema.
  *
- * Padroniza o status persistido após a finalização da venda.
- *
- * Regras:
- * - PAGA: venda à vista finalizada com pagamento confirmado.
- * - PENDENTE: venda a prazo finalizada com ContaReceber pendente.
- *
- * O enum atualmente representa apenas os estados gerados pelos fluxos de
- * finalização à vista e a prazo.
+ * A finalização gera PAGA para vendas à vista ou PENDENTE para vendas a prazo.
+ * O recebimento integral da conta vinculada altera a venda pendente para PAGA,
+ * enquanto o estorno total de uma venda elegível altera seu estado para
+ * ESTORNADA. As regras que determinam essas transições pertencem aos Services;
+ * o enum apenas padroniza os estados representados pelo sistema.
  */
 public enum StatusVenda {
     /**
