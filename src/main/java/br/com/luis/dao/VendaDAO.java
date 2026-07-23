@@ -9,6 +9,8 @@ import br.com.luis.viewmodel.FiltroHistoricoVenda;
 import br.com.luis.viewmodel.VendaHistoricoListagemView;
 import br.com.luis.util.ConnectionFactory;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -307,6 +309,220 @@ public class VendaDAO {
             );
         }
     }
+    /**
+     * Conta as vendas válidas registradas no período informado.
+     *
+     * Considera somente vendas com status {@link StatusVenda#PAGA} ou
+     * {@link StatusVenda#PENDENTE}. Vendas com status
+     * {@link StatusVenda#ESTORNADA} são excluídas da contagem.
+     *
+     * O limite inicial do período é inclusivo e o limite final é exclusivo. A
+     * Connection é recebida externamente e permanece sob responsabilidade da
+     * camada chamadora. Este método não executa commit, rollback nem fecha a
+     * Connection recebida, encerrando somente o PreparedStatement e o ResultSet
+     * que cria.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param inicioInclusivo data e hora inicial inclusiva do período.
+     * @param fimExclusivo data e hora final exclusiva do período.
+     * @return quantidade de vendas válidas no período ou zero quando nenhuma
+     *         venda atender aos filtros.
+     * @throws IllegalArgumentException quando a conexão ou algum limite do
+     *                                  período for nulo, ou quando o limite final
+     *                                  não for posterior ao limite inicial.
+     * @throws IllegalStateException quando a consulta não retornar resultado ou
+     *                               quando a quantidade calculada não puder ser
+     *                               representada por um {@code int} válido.
+     * @throws RuntimeException quando ocorrer erro de acesso ao banco de dados.
+     */
+    public int contarVendasValidasNoPeriodo(
+            Connection conn,
+            LocalDateTime inicioInclusivo,
+            LocalDateTime fimExclusivo
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (inicioInclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data e hora inicial do período são obrigatórias."
+            );
+        }
+
+        if (fimExclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data e hora final do período são obrigatórias."
+            );
+        }
+
+        if (!fimExclusivo.isAfter(inicioInclusivo)) {
+            throw new IllegalArgumentException(
+                    "O limite final do período deve ser posterior ao limite inicial."
+            );
+        }
+
+        String sql = """
+                SELECT COUNT(*) AS quantidade_vendas
+                FROM Venda
+                WHERE data_hora >= ?
+                  AND data_hora < ?
+                  AND status IN (?, ?)
+                """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, inicioInclusivo.toString());
+            stmt.setString(2, fimExclusivo.toString());
+            stmt.setString(3, StatusVenda.PAGA.name());
+            stmt.setString(4, StatusVenda.PENDENTE.name());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                if (!rs.next()) {
+                    throw new IllegalStateException(
+                            "A consulta de quantidade de vendas não retornou resultado."
+                    );
+                }
+
+                long quantidade =
+                        rs.getLong("quantidade_vendas");
+
+                if (quantidade < 0) {
+                    throw new IllegalStateException(
+                            "A quantidade de vendas calculada para o período é inválida."
+                    );
+                }
+
+                if (quantidade > Integer.MAX_VALUE) {
+                    throw new IllegalStateException(
+                            "A quantidade de vendas calculada para o período excede o limite suportado."
+                    );
+                }
+
+                return (int) quantidade;
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao contar vendas válidas no período.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Soma o valor total das vendas válidas registradas no período informado.
+     *
+     * Considera somente vendas com status {@link StatusVenda#PAGA} ou
+     * {@link StatusVenda#PENDENTE}. Vendas com status
+     * {@link StatusVenda#ESTORNADA} são excluídas da soma.
+     *
+     * O limite inicial do período é inclusivo e o limite final é exclusivo. A
+     * Connection é recebida externamente e permanece sob responsabilidade da
+     * camada chamadora. Este método não executa commit, rollback nem fecha a
+     * Connection recebida, encerrando somente o PreparedStatement e o ResultSet
+     * que cria.
+     *
+     * O retorno usa escala 2 e arredondamento {@link RoundingMode#HALF_UP}. O DAO
+     * devolve somente o valor numérico consolidado, sem formatação visual ou
+     * conversão para texto ou moeda.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param inicioInclusivo data e hora inicial inclusiva do período.
+     * @param fimExclusivo data e hora final exclusiva do período.
+     * @return valor total das vendas válidas no período, normalizado para escala
+     *         2, ou zero quando nenhuma venda atender aos filtros.
+     * @throws IllegalArgumentException quando a conexão ou algum limite do
+     *                                  período for nulo, ou quando o limite final
+     *                                  não for posterior ao limite inicial.
+     * @throws IllegalStateException quando a consulta não retornar resultado ou
+     *                               quando o valor total calculado for negativo.
+     * @throws RuntimeException quando ocorrer erro de acesso ao banco de dados.
+     */
+    public BigDecimal somarValorVendasValidasNoPeriodo(
+            Connection conn,
+            LocalDateTime inicioInclusivo,
+            LocalDateTime fimExclusivo
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (inicioInclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data e hora inicial do período são obrigatórias."
+            );
+        }
+
+        if (fimExclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data e hora final do período são obrigatórias."
+            );
+        }
+
+        if (!fimExclusivo.isAfter(inicioInclusivo)) {
+            throw new IllegalArgumentException(
+                    "O limite final do período deve ser posterior ao limite inicial."
+            );
+        }
+
+        String sql = """
+                SELECT COALESCE(SUM(valor_total), 0) AS valor_total_vendido
+                FROM Venda
+                WHERE data_hora >= ?
+                  AND data_hora < ?
+                  AND status IN (?, ?)
+                """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, inicioInclusivo.toString());
+            stmt.setString(2, fimExclusivo.toString());
+            stmt.setString(3, StatusVenda.PAGA.name());
+            stmt.setString(4, StatusVenda.PENDENTE.name());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                if (!rs.next()) {
+                    throw new IllegalStateException(
+                            "A consulta do valor total vendido não retornou resultado."
+                    );
+                }
+
+                BigDecimal valorTotalVendido =
+                        rs.getBigDecimal("valor_total_vendido");
+
+                if (valorTotalVendido == null) {
+                    valorTotalVendido = BigDecimal.ZERO;
+                }
+
+                if (valorTotalVendido.signum() < 0) {
+                    throw new IllegalStateException(
+                            "O valor total vendido calculado para o período é inválido."
+                    );
+                }
+
+                return valorTotalVendido.setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                );
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao somar o valor das vendas válidas no período.",
+                    e
+            );
+        }
+    }
+
     /**
      * Lista as vendas do histórico aplicando somente os filtros informados.
      *
