@@ -28,8 +28,11 @@ import java.util.List;
  *
  * Insere os dados principais da venda, executa atualizações protegidas de status
  * e fornece consultas consolidadas utilizadas pelo Histórico de Vendas, além de
- * dados necessários aos detalhes e às validações dos fluxos existentes. Os itens
- * associados são persistidos separadamente pelo ItemVendaDAO.
+ * consultas agregadas executadas diretamente no banco para o dashboard, como a
+ * contagem de vendas válidas e a soma do valor total dessas vendas em um período.
+ * Também fornece dados necessários aos detalhes e às validações dos fluxos
+ * existentes. Os itens associados são persistidos separadamente pelo
+ * ItemVendaDAO.
  *
  * Não controla a interface nem decide regras de finalização, recebimento ou
  * estorno. Essas decisões pertencem aos Services responsáveis. Nos métodos que

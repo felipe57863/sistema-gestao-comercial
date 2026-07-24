@@ -101,14 +101,17 @@ Launcher
 * Estorno total de vendas, com restauração de estoque e cancelamento da conta a receber;
 * Movimentação financeira de saída quando necessária no estorno;
 * Auditoria de estorno e bloqueio de estorno duplicado;
-* Histórico de Vendas com filtros, detalhes e estorno contextual pela própria tela.
+* Histórico de Vendas com filtros, detalhes e estorno contextual pela própria tela;
+* Dashboard gerencial na Tela Principal com vendas válidas e valor total vendido no período, recebido líquido no período, posição atual das contas pendentes e vencidas e quantidade de produtos com estoque baixo;
+* Períodos Hoje, Últimos 7 dias, Mês atual e Mês anterior no dashboard, com carregamento assíncrono e atualização manual;
+* Logout funcional com encerramento da sessão e retorno ao Login no mesmo Stage.
 
 ### Próximas evoluções
 
-* Dashboard gerencial;
 * Relatórios;
 * Geração de documento ou nota de venda em PDF;
-* Refinamentos finais de interface, documentação e qualidade.
+* Refinamentos finais de interface;
+* Documentação e qualidade.
 
 ---
 
@@ -146,9 +149,9 @@ Alguns conceitos aplicados:
 
 ## Status do projeto
 
-O sistema já possui os módulos centrais de autenticação, cadastros, estoque, vendas à vista e a prazo, contas a receber, movimentações financeiras, estorno e Histórico de Vendas operacionais.
+O sistema já possui os módulos centrais de autenticação, cadastros, estoque, vendas à vista e a prazo, contas a receber, movimentação financeira, estorno, Histórico de Vendas, dashboard gerencial e logout funcional operacionais.
 
-As próximas evoluções previstas concentram-se no dashboard gerencial, relatórios, geração de documento ou nota de venda em PDF e refinamentos finais de interface, documentação e qualidade.
+As próximas evoluções previstas concentram-se em relatórios, geração de documento ou nota de venda em PDF, refinamentos finais de interface, documentação e qualidade.
 
 ---
 

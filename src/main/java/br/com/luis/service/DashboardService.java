@@ -61,8 +61,8 @@ public class DashboardService {
     /**
      * Períodos fixos disponíveis para o dashboard.
      *
-     * Cada opção possui uma descrição simples destinada à futura apresentação
-     * no seletor da Tela Principal. O enum não representa intervalos
+     * Cada opção possui a descrição apresentada no seletor de período da Tela
+     * Principal. O enum não representa intervalos
      * personalizados; o cálculo efetivo das datas permanece sob responsabilidade
      * do {@link DashboardService}.
      */
