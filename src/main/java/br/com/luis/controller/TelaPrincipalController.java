@@ -1,36 +1,94 @@
 package br.com.luis.controller;
 
+import br.com.luis.service.DashboardService;
+import br.com.luis.service.DashboardService.PeriodoDashboard;
 import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
+import br.com.luis.viewmodel.DashboardResumoView;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
- * Controller da tela temporária de navegação apresentada após o login.
+ * Controller da Tela Principal apresentada após o login.
  *
- * Centraliza provisoriamente o acesso aos módulos funcionais de Clientes,
- * Produtos, Registro de Venda, Contas a Receber e Histórico de Vendas
- * enquanto o dashboard gerencial definitivo não está implementado.
+ * Coordena a exibição dos indicadores do dashboard, a seleção do período,
+ * o carregamento assíncrono dos dados e a navegação para os módulos funcionais
+ * do sistema.
  *
- * Exibe o usuário mantido na sessão e, em cada navegação, reutiliza o Stage
- * atual, substitui sua Scene, atualiza o título e mantém a janela maximizada.
+ * O carregamento do dashboard é executado fora do JavaFX Application Thread
+ * por meio de uma única Task. O Controller mantém somente a Task considerada
+ * atual, invalida carregamentos anteriores e impede que uma Task antiga altere
+ * a interface depois de uma atualização mais recente ou da saída da tela.
  *
- * Não contém regras de negócio e delega as funcionalidades aos Controllers
- * e Services de cada módulo. O caráter temporário pertence somente a esta
- * tela de acesso e não indica que os módulos abertos sejam protótipos
- * ou simulações.
+ * Os últimos dados válidos permanecem visíveis durante novas consultas e
+ * também quando ocorre uma falha. O Controller não executa SQL nem contém
+ * regras de negócio, delegando a consolidação dos indicadores ao
+ * {@link DashboardService}.
  */
 public class TelaPrincipalController {
+
+    private static final DateTimeFormatter FORMATADOR_DATA =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private final DashboardService dashboardService;
+    private final NumberFormat formatadorMoeda;
+
+    private Task<DashboardResumoView> tarefaDashboardAtual;
 
     @FXML private Label lblUsuario;
     @FXML private Label lblDataHora;
 
+    @FXML private ComboBox<PeriodoDashboard> cmbPeriodoDashboard;
+    @FXML private Button btnAtualizarDashboard;
+    @FXML private ProgressIndicator progressoDashboard;
+
+    @FXML private Label lblQuantidadeVendas;
+    @FXML private Label lblValorTotalVendido;
+    @FXML private Label lblPeriodoConsultado;
+    @FXML private Label lblValorRecebidoLiquido;
+
+    @FXML private Label lblQuantidadeContasPendentes;
+    @FXML private Label lblValorTotalPendente;
+    @FXML private Label lblQuantidadeContasVencidas;
+    @FXML private Label lblValorTotalVencido;
+
+    @FXML private Label lblQuantidadeProdutosEstoqueBaixo;
+
     /**
-     * Inicializa a identificação visual do usuário e o relógio do cabeçalho.
+     * Cria o Controller com uma única instância do serviço responsável pelo
+     * dashboard e configura o formatador monetário brasileiro.
+     *
+     * O construtor público sem argumentos mantém a instanciação compatível
+     * com o FXMLLoader.
+     */
+    public TelaPrincipalController() {
+        this.dashboardService = new DashboardService();
+
+        this.formatadorMoeda =
+                NumberFormat.getCurrencyInstance(
+                        Locale.forLanguageTag("pt-BR")
+                );
+    }
+
+    /**
+     * Inicializa o cabeçalho, as opções fixas de período, a ação de atualização
+     * e o primeiro carregamento do dashboard.
+     *
+     * A alteração isolada da seleção do ComboBox não executa uma consulta.
+     * O carregamento posterior ocorre somente pelo botão Atualizar.
      */
     @FXML
     public void initialize() {
@@ -38,6 +96,465 @@ public class TelaPrincipalController {
                 lblUsuario,
                 lblDataHora
         );
+
+        cmbPeriodoDashboard
+                .getItems()
+                .setAll(PeriodoDashboard.values());
+
+        cmbPeriodoDashboard
+                .getSelectionModel()
+                .select(PeriodoDashboard.MES_ATUAL);
+
+        btnAtualizarDashboard.setOnAction(
+                event -> iniciarCarregamentoDashboard()
+        );
+
+        configurarEstadoCarregamentoDashboard(false);
+
+        iniciarCarregamentoDashboard();
+    }
+
+    /**
+     * Inicia o carregamento completo dos indicadores para o período atualmente
+     * selecionado.
+     *
+     * Uma seleção inválida não interrompe uma Task que já esteja em execução.
+     * Depois da validação do período, qualquer carregamento anterior é
+     * invalidado antes da criação da nova Task.
+     */
+    private void iniciarCarregamentoDashboard() {
+        PeriodoDashboard periodoSelecionado =
+                cmbPeriodoDashboard.getValue();
+
+        if (periodoSelecionado == null) {
+            if (tarefaDashboardAtual == null) {
+                configurarEstadoCarregamentoDashboard(false);
+            }
+
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Atenção",
+                    "Selecione um período para atualizar o dashboard."
+            );
+
+            return;
+        }
+
+        cancelarCarregamentoDashboard();
+
+        Task<DashboardResumoView> novaTarefa =
+                criarTarefaDashboard(periodoSelecionado);
+
+        tarefaDashboardAtual = novaTarefa;
+
+        configurarHandlersDashboard(novaTarefa);
+        configurarEstadoCarregamentoDashboard(true);
+
+        Thread thread = new Thread(
+                novaTarefa,
+                "dashboard-carregamento"
+        );
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Cria a Task responsável por solicitar uma única fotografia completa
+     * dos indicadores ao DashboardService.
+     *
+     * Nenhum componente JavaFX ou formatador visual é acessado durante
+     * a execução em segundo plano.
+     *
+     * @param periodoSelecionado período que será aplicado pelo serviço.
+     * @return Task preparada para carregar o resumo do dashboard.
+     */
+    private Task<DashboardResumoView> criarTarefaDashboard(
+            PeriodoDashboard periodoSelecionado
+    ) {
+
+        return new Task<>() {
+
+            @Override
+            protected DashboardResumoView call() {
+                return dashboardService.carregarResumo(
+                        periodoSelecionado
+                );
+            }
+        };
+    }
+
+    /**
+     * Configura os handlers da Task usando proteção por identidade.
+     *
+     * Cada handler somente pode modificar a interface quando sua Task ainda
+     * for exatamente a instância armazenada em tarefaDashboardAtual.
+     *
+     * @param tarefa Task cujos eventos serão tratados.
+     */
+    private void configurarHandlersDashboard(
+            Task<DashboardResumoView> tarefa
+    ) {
+
+        tarefa.setOnSucceeded(event -> {
+            if (tarefaDashboardAtual != tarefa) {
+                return;
+            }
+
+            DashboardResumoView resumo =
+                    tarefa.getValue();
+
+            if (resumo == null) {
+                tratarFalhaCarregamentoDashboard(
+                        tarefa,
+                        new IllegalStateException(
+                                "O carregamento do dashboard "
+                                        + "não retornou um resumo."
+                        )
+                );
+
+                return;
+            }
+
+            try {
+                atualizarIndicadoresDashboard(resumo);
+
+            } catch (RuntimeException e) {
+                tratarFalhaCarregamentoDashboard(
+                        tarefa,
+                        e
+                );
+
+                return;
+            }
+
+            finalizarCarregamentoDashboard(tarefa);
+        });
+
+        tarefa.setOnFailed(event -> {
+            if (tarefaDashboardAtual != tarefa) {
+                return;
+            }
+
+            tratarFalhaCarregamentoDashboard(
+                    tarefa,
+                    tarefa.getException()
+            );
+        });
+
+        tarefa.setOnCancelled(event -> {
+            if (tarefaDashboardAtual != tarefa) {
+                return;
+            }
+
+            finalizarCarregamentoDashboard(tarefa);
+        });
+    }
+
+    /**
+     * Define o estado visual dos controles durante ou após um carregamento.
+     *
+     * Os valores já apresentados nos cartões não são alterados.
+     *
+     * @param carregando true para indicar consulta em andamento; false para
+     *                   restaurar os controles.
+     */
+    private void configurarEstadoCarregamentoDashboard(
+            boolean carregando
+    ) {
+
+        cmbPeriodoDashboard.setDisable(carregando);
+        btnAtualizarDashboard.setDisable(carregando);
+
+        progressoDashboard.setVisible(carregando);
+        progressoDashboard.setManaged(carregando);
+    }
+
+    /**
+     * Finaliza visualmente uma Task somente quando ela ainda for a Task atual.
+     *
+     * @param tarefa Task que solicitou a finalização.
+     */
+    private void finalizarCarregamentoDashboard(
+            Task<DashboardResumoView> tarefa
+    ) {
+
+        if (tarefaDashboardAtual != tarefa) {
+            return;
+        }
+
+        tarefaDashboardAtual = null;
+
+        configurarEstadoCarregamentoDashboard(false);
+    }
+
+    /**
+     * Cancela e invalida o carregamento atual sem apagar os indicadores e sem
+     * apresentar alerta.
+     *
+     * A referência é limpa antes do cancelamento para impedir que os handlers
+     * da Task antiga alterem posteriormente a interface.
+     */
+    private void cancelarCarregamentoDashboard() {
+        Task<DashboardResumoView> tarefaAnterior =
+                tarefaDashboardAtual;
+
+        tarefaDashboardAtual = null;
+
+        if (tarefaAnterior != null
+                && !tarefaAnterior.isDone()) {
+
+            tarefaAnterior.cancel(true);
+        }
+
+        configurarEstadoCarregamentoDashboard(false);
+    }
+
+    /**
+     * Trata uma falha pertencente à Task atual.
+     *
+     * Os valores já exibidos permanecem intactos. A causa técnica é registrada
+     * somente no console, enquanto o usuário recebe uma mensagem amigável.
+     *
+     * @param tarefa Task que apresentou a falha.
+     * @param causa causa original ou null quando não foi informada.
+     */
+    private void tratarFalhaCarregamentoDashboard(
+            Task<DashboardResumoView> tarefa,
+            Throwable causa
+    ) {
+
+        if (tarefaDashboardAtual != tarefa) {
+            return;
+        }
+
+        Throwable causaEfetiva =
+                causa != null
+                        ? causa
+                        : new IllegalStateException(
+                        "A falha do carregamento do dashboard "
+                                + "não informou uma causa."
+                );
+
+        System.err.println(
+                "[ERRO] Falha ao carregar os indicadores "
+                        + "do dashboard."
+        );
+
+        causaEfetiva.printStackTrace();
+
+        finalizarCarregamentoDashboard(tarefa);
+
+        mostrarAlerta(
+                Alert.AlertType.ERROR,
+                "Erro",
+                "Não foi possível atualizar os indicadores "
+                        + "do dashboard.\n"
+                        + "Os dados já exibidos foram mantidos."
+        );
+    }
+
+    /**
+     * Prepara todos os textos da fotografia recebida e somente depois os aplica
+     * aos componentes visuais.
+     *
+     * Este método não consulta banco, não recalcula indicadores e não modifica
+     * o DashboardResumoView.
+     *
+     * @param resumo fotografia completa dos indicadores.
+     */
+    private void atualizarIndicadoresDashboard(
+            DashboardResumoView resumo
+    ) {
+
+        if (resumo == null) {
+            throw new IllegalArgumentException(
+                    "O resumo do dashboard não pode ser nulo."
+            );
+        }
+
+        String textoQuantidadeVendas =
+                formatarQuantidadeVendas(
+                        resumo.getQuantidadeVendas()
+                );
+
+        String textoValorTotalVendido =
+                formatarMoeda(
+                        resumo.getValorTotalVendido()
+                );
+
+        String textoPeriodoConsultado =
+                formatarPeriodoConsultado(
+                        resumo.getDataInicial(),
+                        resumo.getDataFinal()
+                );
+
+        String textoValorRecebidoLiquido =
+                formatarMoeda(
+                        resumo.getValorRecebidoLiquido()
+                );
+
+        String textoQuantidadeContasPendentes =
+                formatarQuantidadeContas(
+                        resumo.getQuantidadeContasPendentes()
+                );
+
+        String textoValorTotalPendente =
+                formatarMoeda(
+                        resumo.getValorTotalPendente()
+                );
+
+        String textoQuantidadeContasVencidas =
+                formatarQuantidadeContas(
+                        resumo.getQuantidadeContasVencidas()
+                );
+
+        String textoValorTotalVencido =
+                formatarMoeda(
+                        resumo.getValorTotalVencido()
+                );
+
+        String textoQuantidadeProdutosEstoqueBaixo =
+                formatarQuantidadeProdutos(
+                        resumo.getQuantidadeProdutosEstoqueBaixo()
+                );
+
+        lblQuantidadeVendas.setText(
+                textoQuantidadeVendas
+        );
+
+        lblValorTotalVendido.setText(
+                textoValorTotalVendido
+        );
+
+        lblPeriodoConsultado.setText(
+                textoPeriodoConsultado
+        );
+
+        lblValorRecebidoLiquido.setText(
+                textoValorRecebidoLiquido
+        );
+
+        lblQuantidadeContasPendentes.setText(
+                textoQuantidadeContasPendentes
+        );
+
+        lblValorTotalPendente.setText(
+                textoValorTotalPendente
+        );
+
+        lblQuantidadeContasVencidas.setText(
+                textoQuantidadeContasVencidas
+        );
+
+        lblValorTotalVencido.setText(
+                textoValorTotalVencido
+        );
+
+        lblQuantidadeProdutosEstoqueBaixo.setText(
+                textoQuantidadeProdutosEstoqueBaixo
+        );
+    }
+
+    /**
+     * Formata um valor monetário usando o padrão brasileiro.
+     *
+     * O método é chamado somente no JavaFX Application Thread.
+     *
+     * @param valor valor monetário que será apresentado.
+     * @return valor formatado em moeda brasileira.
+     */
+    private String formatarMoeda(
+            BigDecimal valor
+    ) {
+
+        if (valor == null) {
+            throw new IllegalArgumentException(
+                    "O valor monetário não pode ser nulo."
+            );
+        }
+
+        return formatadorMoeda.format(valor);
+    }
+
+    /**
+     * Formata as datas inclusivas efetivamente devolvidas pelo resumo.
+     *
+     * @param dataInicial data inicial inclusiva.
+     * @param dataFinal data final inclusiva.
+     * @return texto do período apresentado no cartão de vendas.
+     */
+    private String formatarPeriodoConsultado(
+            LocalDate dataInicial,
+            LocalDate dataFinal
+    ) {
+
+        if (dataInicial == null) {
+            throw new IllegalArgumentException(
+                    "A data inicial do dashboard não pode ser nula."
+            );
+        }
+
+        if (dataFinal == null) {
+            throw new IllegalArgumentException(
+                    "A data final do dashboard não pode ser nula."
+            );
+        }
+
+        String dataInicialFormatada =
+                dataInicial.format(FORMATADOR_DATA);
+
+        if (dataInicial.equals(dataFinal)) {
+            return "Período: "
+                    + dataInicialFormatada;
+        }
+
+        String dataFinalFormatada =
+                dataFinal.format(FORMATADOR_DATA);
+
+        return "Período: "
+                + dataInicialFormatada
+                + " a "
+                + dataFinalFormatada;
+    }
+
+    /**
+     * Formata a quantidade de vendas com singular ou plural.
+     */
+    private String formatarQuantidadeVendas(
+            int quantidade
+    ) {
+
+        return quantidade
+                + (quantidade == 1
+                ? " venda"
+                : " vendas");
+    }
+
+    /**
+     * Formata a quantidade de contas com singular ou plural.
+     */
+    private String formatarQuantidadeContas(
+            int quantidade
+    ) {
+
+        return quantidade
+                + (quantidade == 1
+                ? " conta"
+                : " contas");
+    }
+
+    /**
+     * Formata a quantidade de produtos com singular ou plural.
+     */
+    private String formatarQuantidadeProdutos(
+            int quantidade
+    ) {
+
+        return quantidade
+                + (quantidade == 1
+                ? " produto"
+                : " produtos");
     }
 
     /**
@@ -101,9 +618,14 @@ public class TelaPrincipalController {
 
     /**
      * Encerra a aplicação fechando o Stage atual.
+     *
+     * Qualquer carregamento pendente do dashboard é invalidado antes
+     * do fechamento da janela.
      */
     @FXML
     public void sair() {
+        cancelarCarregamentoDashboard();
+
         Stage stage =
                 (Stage) lblUsuario
                         .getScene()
@@ -115,8 +637,9 @@ public class TelaPrincipalController {
     /**
      * Carrega uma tela FXML e substitui a Scene do Stage atual.
      *
-     * Atualiza o título, mantém a janela maximizada e apresenta um Alert
-     * quando o recurso não pode ser localizado ou carregado.
+     * Antes da troca, invalida qualquer carregamento pendente do dashboard.
+     * Depois, atualiza o título, mantém a janela maximizada e apresenta um
+     * Alert quando o recurso não pode ser localizado ou carregado.
      *
      * Este método cuida apenas da navegação e não executa regras de negócio
      * dos módulos abertos.
@@ -125,6 +648,8 @@ public class TelaPrincipalController {
             String caminhoFxml,
             String titulo
     ) {
+
+        cancelarCarregamentoDashboard();
 
         try {
             NavegacaoUtil.abrirTela(
