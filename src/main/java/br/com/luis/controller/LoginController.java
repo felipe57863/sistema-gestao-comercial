@@ -21,11 +21,11 @@ import java.net.URL;
  * Controller da Tela de Login.
  *
  * Captura login e senha da interface, delega a autenticação ao AuthService e,
- * após o sucesso, armazena o Usuario autenticado na SessaoUsuario e abre a tela
- * temporária que centraliza o acesso aos módulos funcionais disponíveis enquanto
- * o dashboard gerencial definitivo não está implementado. Não contém a regra
- * interna de autenticação nem acessa DAO diretamente. Também controla o feedback
- * visual e o estado do botão durante a tentativa.
+ * após o sucesso, armazena o Usuario autenticado na SessaoUsuario e abre a
+ * Tela Principal com o dashboard e os módulos funcionais do sistema.
+ *
+ * Não contém a regra interna de autenticação nem acessa DAO diretamente.
+ * Também controla o feedback visual e o estado do botão durante a tentativa.
  */
 public class LoginController {
 
@@ -51,10 +51,14 @@ public class LoginController {
      *
      * Lê as credenciais da interface, evita múltiplos cliques durante o fluxo e
      * delega a autenticação ao AuthService. Quando autenticado, mantém o usuário
-     * na SessaoUsuario, exibe a confirmação e abre a tela principal no mesmo Stage.
-     * Em falhas de autenticação ou em erros propagados durante o login, apresenta
-     * a mensagem correspondente e limpa o campo de senha. Falhas específicas ao
-     * carregar a Tela Principal são tratadas pelo método responsável pela navegação.
+     * na SessaoUsuario, exibe a confirmação e abre a Tela Principal no mesmo
+     * Stage.
+     *
+     * Em falhas de autenticação ou em erros propagados durante o login,
+     * apresenta a mensagem correspondente e limpa o campo de senha. Falhas
+     * específicas ao carregar a Tela Principal são tratadas pelo método
+     * responsável pela navegação.
+     *
      * Ao final, reabilita o botão de entrada.
      */
     @FXML
@@ -68,27 +72,36 @@ public class LoginController {
             btnEntrar.setDisable(true);
 
             // Delega a autenticação ao AuthService.
-            Usuario usuarioAutenticado = authService.autenticar(login, senha);
+            Usuario usuarioAutenticado =
+                    authService.autenticar(login, senha);
 
             // Armazena o usuário autenticado na sessão da aplicação.
-            SessaoUsuario.getInstance().setUsuarioLogado(usuarioAutenticado);
+            SessaoUsuario
+                    .getInstance()
+                    .setUsuarioLogado(usuarioAutenticado);
 
             // Apresenta o feedback visual de autenticação bem-sucedida.
-            mostrarAlerta(Alert.AlertType.INFORMATION,
+            mostrarAlerta(
+                    Alert.AlertType.INFORMATION,
                     "Sucesso",
-                    "Bem-vindo(a), " + usuarioAutenticado.getNome() + "!");
+                    "Bem-vindo(a), "
+                            + usuarioAutenticado.getNome()
+                            + "!"
+            );
 
-            // Redireciona para a tela temporária de navegação do sistema.
-            abrirTelaPrincipalTemporaria();
+            // Redireciona para a Tela Principal do sistema.
+            abrirTelaPrincipal();
 
         } catch (RuntimeException e) {
 
             // Limpa a senha após falha na autenticação ou na abertura da tela.
             txtSenha.clear();
 
-            mostrarAlerta(Alert.AlertType.ERROR,
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
                     "Erro de Acesso",
-                    e.getMessage());
+                    e.getMessage()
+            );
 
         } finally {
             btnEntrar.setDisable(false);
@@ -96,44 +109,65 @@ public class LoginController {
     }
 
     /**
-     * Abre a tela temporária de navegação após a autenticação.
+     * Abre a Tela Principal após a autenticação.
      *
-     * O nome do método corresponde ao comportamento atual: TelaPrincipal.fxml
-     * centraliza provisoriamente o acesso aos módulos funcionais enquanto o
-     * dashboard gerencial definitivo não está implementado. Reutiliza o Stage da
-     * tela de login, substitui a Scene, atualiza o título e mantém a janela maximizada.
+     * Reutiliza o Stage da tela de Login, substitui a Scene, atualiza o título
+     * e mantém a janela maximizada para exibir o dashboard e os módulos
+     * funcionais.
      */
-    private void abrirTelaPrincipalTemporaria() {
+    private void abrirTelaPrincipal() {
 
         try {
-            URL fxmlLocation = getClass().getResource("/br/com/luis/view/TelaPrincipal.fxml");
+            URL fxmlLocation =
+                    getClass().getResource(
+                            "/br/com/luis/view/TelaPrincipal.fxml"
+                    );
 
             if (fxmlLocation == null) {
-                throw new IllegalStateException("TelaPrincipal.fxml não encontrado.");
+                throw new IllegalStateException(
+                        "TelaPrincipal.fxml não encontrado."
+                );
             }
 
-            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            FXMLLoader loader =
+                    new FXMLLoader(fxmlLocation);
+
             Parent root = loader.load();
 
-            Stage stage = (Stage) btnEntrar.getScene().getWindow();
+            Stage stage =
+                    (Stage) btnEntrar
+                            .getScene()
+                            .getWindow();
+
             stage.setTitle("ERP Comercial - Tela Principal");
             stage.setScene(new Scene(root));
             stage.setMaximized(true);
 
         } catch (IOException | RuntimeException e) {
-            System.err.println("[ERRO] Falha ao abrir TelaPrincipal.fxml.");
+            System.err.println(
+                    "[ERRO] Falha ao abrir TelaPrincipal.fxml."
+            );
+
             e.printStackTrace();
 
-            mostrarAlerta(Alert.AlertType.ERROR,
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
                     "Erro",
-                    "Login realizado, mas não foi possível abrir a tela principal.");
+                    "Login realizado, mas não foi possível "
+                            + "abrir a tela principal."
+            );
         }
     }
 
     /**
      * Exibe alertas padronizados.
      */
-    private void mostrarAlerta(Alert.AlertType tipo, String titulo, String mensagem) {
+    private void mostrarAlerta(
+            Alert.AlertType tipo,
+            String titulo,
+            String mensagem
+    ) {
+
         Alert alerta = new Alert(tipo);
         alerta.setTitle(titulo);
         alerta.setHeaderText(null);

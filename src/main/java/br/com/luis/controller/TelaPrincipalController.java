@@ -4,18 +4,24 @@ import br.com.luis.service.DashboardService;
 import br.com.luis.service.DashboardService.PeriodoDashboard;
 import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
+import br.com.luis.util.SessaoUsuario;
 import br.com.luis.viewmodel.DashboardResumoView;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URL;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -25,8 +31,8 @@ import java.util.Locale;
  * Controller da Tela Principal apresentada após o login.
  *
  * Coordena a exibição dos indicadores do dashboard, a seleção do período,
- * o carregamento assíncrono dos dados e a navegação para os módulos funcionais
- * do sistema.
+ * o carregamento assíncrono dos dados, a navegação para os módulos funcionais
+ * e o encerramento seguro da sessão.
  *
  * O carregamento do dashboard é executado fora do JavaFX Application Thread
  * por meio de uma única Task. O Controller mantém somente a Task considerada
@@ -34,9 +40,11 @@ import java.util.Locale;
  * a interface depois de uma atualização mais recente ou da saída da tela.
  *
  * Os últimos dados válidos permanecem visíveis durante novas consultas e
- * também quando ocorre uma falha. O Controller não executa SQL nem contém
- * regras de negócio, delegando a consolidação dos indicadores ao
- * {@link DashboardService}.
+ * também quando ocorre uma falha. O logout cancela o carregamento atual,
+ * encerra a SessaoUsuario e retorna ao Login reutilizando o mesmo Stage.
+ *
+ * O Controller não executa SQL nem contém regras de negócio, delegando
+ * a consolidação dos indicadores ao {@link DashboardService}.
  */
 public class TelaPrincipalController {
 
@@ -617,21 +625,211 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Encerra a aplicação fechando o Stage atual.
+     * Cancela qualquer carregamento pendente do dashboard, encerra a sessão
+     * atual e retorna à tela de Login reutilizando o mesmo Stage.
      *
-     * Qualquer carregamento pendente do dashboard é invalidado antes
-     * do fechamento da janela.
+     * A aplicação permanece aberta no fluxo normal. O Login é preparado antes
+     * do encerramento da sessão para evitar que uma falha de carregamento deixe
+     * a Tela Principal ativa sem um usuário autenticado.
      */
     @FXML
     public void sair() {
         cancelarCarregamentoDashboard();
+        retornarParaLogin();
+    }
 
-        Stage stage =
-                (Stage) lblUsuario
-                        .getScene()
-                        .getWindow();
+    /**
+     * Prepara completamente a tela de Login antes de encerrar a sessão atual.
+     *
+     * Falhas ocorridas durante a localização ou o carregamento do FXML mantêm
+     * a sessão e a Tela Principal. Depois que a sessão é encerrada, qualquer
+     * falha ao aplicar o Login provoca o fechamento do Stage por segurança.
+     */
+    private void retornarParaLogin() {
+        Scene cenaLogin;
+        Stage stage;
 
-        stage.close();
+        try {
+            URL fxmlLocation =
+                    getClass().getResource(
+                            "/br/com/luis/view/Login.fxml"
+                    );
+
+            if (fxmlLocation == null) {
+                throw new IllegalStateException(
+                        "Login.fxml não encontrado."
+                );
+            }
+
+            FXMLLoader loader =
+                    new FXMLLoader(fxmlLocation);
+
+            Parent root = loader.load();
+
+            cenaLogin = new Scene(root);
+            stage = obterStageAtual();
+
+        } catch (IOException | RuntimeException e) {
+            System.err.println(
+                    "[ERRO] Falha ao preparar a tela de Login. "
+                            + "A sessão atual foi mantida."
+            );
+
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível retornar à tela de Login.\n"
+                            + "A sessão atual foi mantida."
+            );
+
+            return;
+        }
+
+        SessaoUsuario sessaoUsuario =
+                SessaoUsuario.getInstance();
+
+        try {
+            sessaoUsuario.fazerLogout();
+
+            if (sessaoUsuario.isUsuarioLogado()) {
+                throw new IllegalStateException(
+                        "A sessão permaneceu ativa após a solicitação "
+                                + "de logout."
+                );
+            }
+
+        } catch (RuntimeException e) {
+            System.err.println(
+                    "[ERRO] Falha ao encerrar a sessão do usuário."
+            );
+
+            e.printStackTrace();
+
+            if (sessaoUsuario.isUsuarioLogado()) {
+                mostrarAlerta(
+                        Alert.AlertType.ERROR,
+                        "Erro",
+                        "Não foi possível encerrar a sessão atual.\n"
+                                + "A Tela Principal foi mantida."
+                );
+
+                return;
+            }
+
+            tratarFalhaAposLogout(stage, e);
+            return;
+        }
+
+        try {
+            stage.setMaximized(false);
+            stage.setScene(cenaLogin);
+            stage.setTitle("ERP Comercial - Login");
+            stage.sizeToScene();
+            stage.centerOnScreen();
+
+        } catch (RuntimeException e) {
+            tratarFalhaAposLogout(stage, e);
+        }
+    }
+
+    /**
+     * Obtém o Stage associado à Tela Principal com validações defensivas sobre
+     * o Label de origem, a Scene e a Window atuais.
+     *
+     * @return Stage atualmente utilizado pela aplicação.
+     * @throws IllegalStateException quando a estrutura visual atual não permite
+     *                               localizar um Stage válido.
+     */
+    private Stage obterStageAtual() {
+        if (lblUsuario == null) {
+            throw new IllegalStateException(
+                    "O componente de referência da Tela Principal "
+                            + "não está disponível."
+            );
+        }
+
+        Scene sceneAtual =
+                lblUsuario.getScene();
+
+        if (sceneAtual == null) {
+            throw new IllegalStateException(
+                    "A Scene atual da Tela Principal "
+                            + "não está disponível."
+            );
+        }
+
+        Window windowAtual =
+                sceneAtual.getWindow();
+
+        if (windowAtual == null) {
+            throw new IllegalStateException(
+                    "A Window atual da Tela Principal "
+                            + "não está disponível."
+            );
+        }
+
+        if (!(windowAtual instanceof Stage stage)) {
+            throw new IllegalStateException(
+                    "A Window atual da Tela Principal "
+                            + "não é um Stage válido."
+            );
+        }
+
+        return stage;
+    }
+
+    /**
+     * Trata uma falha ocorrida depois que a sessão já foi encerrada.
+     *
+     * Como não é seguro manter a Tela Principal funcional sem usuário
+     * autenticado, tenta apresentar uma mensagem amigável e fecha o Stage.
+     *
+     * @param stage Stage atual da aplicação.
+     * @param causa falha ocorrida após o encerramento da sessão.
+     */
+    private void tratarFalhaAposLogout(
+            Stage stage,
+            RuntimeException causa
+    ) {
+
+        System.err.println(
+                "[ERRO] Falha ao concluir o retorno ao Login "
+                        + "após o encerramento da sessão."
+        );
+
+        causa.printStackTrace();
+
+        try {
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "A sessão foi encerrada, mas não foi possível "
+                            + "abrir a tela de Login.\n"
+                            + "A aplicação será fechada por segurança."
+            );
+
+        } catch (RuntimeException e) {
+            System.err.println(
+                    "[ERRO] Também não foi possível apresentar "
+                            + "o alerta de falha do logout."
+            );
+
+            e.printStackTrace();
+        }
+
+        try {
+            stage.close();
+
+        } catch (RuntimeException e) {
+            System.err.println(
+                    "[ERRO] Não foi possível fechar a janela "
+                            + "após a falha do logout."
+            );
+
+            e.printStackTrace();
+        }
     }
 
     /**
