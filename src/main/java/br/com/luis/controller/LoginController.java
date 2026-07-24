@@ -51,13 +51,13 @@ public class LoginController {
      *
      * Lê as credenciais da interface, evita múltiplos cliques durante o fluxo e
      * delega a autenticação ao AuthService. Quando autenticado, mantém o usuário
-     * na SessaoUsuario, exibe a confirmação e abre a Tela Principal no mesmo
-     * Stage.
+     * na SessaoUsuario, prepara a Tela Principal e exibe a confirmação ainda no
+     * Login. Após o usuário fechar o alerta, substitui a Scene no mesmo Stage.
      *
      * Em falhas de autenticação ou em erros propagados durante o login,
-     * apresenta a mensagem correspondente e limpa o campo de senha. Falhas
-     * específicas ao carregar a Tela Principal são tratadas pelo método
-     * responsável pela navegação.
+     * apresenta a mensagem correspondente e limpa o campo de senha. Se a Tela
+     * Principal não puder ser aberta após a autenticação, encerra a sessão
+     * recém-criada, mantém o Login disponível e permite uma nova tentativa.
      *
      * Ao final, reabilita o botão de entrada.
      */
@@ -80,17 +80,28 @@ public class LoginController {
                     .getInstance()
                     .setUsuarioLogado(usuarioAutenticado);
 
-            // Apresenta o feedback visual de autenticação bem-sucedida.
-            mostrarAlerta(
-                    Alert.AlertType.INFORMATION,
-                    "Sucesso",
-                    "Bem-vindo(a), "
-                            + usuarioAutenticado.getNome()
-                            + "!"
-            );
-
             // Redireciona para a Tela Principal do sistema.
-            abrirTelaPrincipal();
+            if (!abrirTelaPrincipal(usuarioAutenticado.getNome())) {
+                SessaoUsuario.getInstance().fazerLogout();
+
+                if (SessaoUsuario.getInstance().isUsuarioLogado()) {
+                    throw new IllegalStateException(
+                            "Não foi possível encerrar a sessão após "
+                                    + "a falha de navegação."
+                    );
+                }
+
+                txtSenha.clear();
+
+                mostrarAlerta(
+                        Alert.AlertType.ERROR,
+                        "Erro",
+                        "Login realizado, mas não foi possível "
+                                + "abrir a tela principal."
+                );
+
+                return;
+            }
 
         } catch (RuntimeException e) {
 
@@ -111,11 +122,17 @@ public class LoginController {
     /**
      * Abre a Tela Principal após a autenticação.
      *
-     * Reutiliza o Stage da tela de Login, substitui a Scene, atualiza o título
-     * e mantém a janela maximizada para exibir o dashboard e os módulos
-     * funcionais.
+     * Prepara a Tela Principal e valida o Stage atual antes da confirmação
+     * visual. Exibe o alerta de boas-vindas enquanto o Login permanece visível
+     * e, somente após o usuário fechá-lo, substitui a Scene, atualiza o título e
+     * maximiza a janela. Se a preparação falhar, informa o chamador para que a
+     * sessão recém-criada seja encerrada e uma nova tentativa possa ser feita.
+     *
+     * @param nomeUsuario nome exibido na mensagem de boas-vindas
+     * @return {@code true} quando a Tela Principal foi aberta; {@code false}
+     * caso contrário
      */
-    private void abrirTelaPrincipal() {
+    private boolean abrirTelaPrincipal(String nomeUsuario) {
 
         try {
             URL fxmlLocation =
@@ -134,14 +151,30 @@ public class LoginController {
 
             Parent root = loader.load();
 
-            Stage stage =
-                    (Stage) btnEntrar
-                            .getScene()
-                            .getWindow();
+            Scene cenaPrincipal = new Scene(root);
+
+            Scene cenaLogin = btnEntrar.getScene();
+
+            if (cenaLogin == null
+                    || !(cenaLogin.getWindow() instanceof Stage stage)) {
+                throw new IllegalStateException(
+                        "Stage atual da tela de Login não encontrado."
+                );
+            }
+
+            mostrarAlerta(
+                    Alert.AlertType.INFORMATION,
+                    "Sucesso",
+                    "Bem-vindo(a), "
+                            + nomeUsuario
+                            + "!"
+            );
 
             stage.setTitle("ERP Comercial - Tela Principal");
-            stage.setScene(new Scene(root));
+            stage.setScene(cenaPrincipal);
             stage.setMaximized(true);
+
+            return true;
 
         } catch (IOException | RuntimeException e) {
             System.err.println(
@@ -150,12 +183,7 @@ public class LoginController {
 
             e.printStackTrace();
 
-            mostrarAlerta(
-                    Alert.AlertType.ERROR,
-                    "Erro",
-                    "Login realizado, mas não foi possível "
-                            + "abrir a tela principal."
-            );
+            return false;
         }
     }
 
