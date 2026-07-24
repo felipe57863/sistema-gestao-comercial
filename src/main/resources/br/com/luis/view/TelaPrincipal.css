@@ -1,0 +1,245 @@
+.tela-principal {
+    -fx-background-color: #eef2f6;
+    -fx-font-family: "Segoe UI", "System";
+}
+
+.menu-lateral {
+    -fx-background-color: #263342;
+    -fx-padding: 24 16 18 16;
+    -fx-spacing: 8;
+}
+
+.menu-titulo {
+    -fx-text-fill: #f4f7fb;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 12 18 12;
+}
+
+.botao-menu {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-text-fill: #edf2f7;
+    -fx-font-size: 15px;
+    -fx-alignment: center-left;
+    -fx-padding: 0 16 0 16;
+    -fx-cursor: hand;
+}
+
+.botao-menu:hover {
+    -fx-background-color: #33465a;
+}
+
+.botao-menu:focused {
+    -fx-border-color: #90a9c2;
+}
+
+.botao-menu:disabled {
+    -fx-opacity: 0.55;
+}
+
+.botao-menu-destaque {
+    -fx-background-color: #f4f7fb;
+    -fx-text-fill: #253444;
+    -fx-font-weight: bold;
+}
+
+.botao-menu-destaque:hover {
+    -fx-background-color: #e5edf5;
+}
+
+.botao-sair {
+    -fx-background-color: #202b38;
+    -fx-text-fill: #f4f7fb;
+}
+
+.botao-sair:hover {
+    -fx-background-color: #35485c;
+}
+
+.area-principal {
+    -fx-background-color: #eef2f6;
+}
+
+.cabecalho-principal {
+    -fx-background-color: #ffffff;
+    -fx-border-color: transparent transparent #dce3ea transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 17 28 17 28;
+}
+
+.titulo-sistema {
+    -fx-text-fill: #273444;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.identificacao-cabecalho {
+    -fx-alignment: center-right;
+}
+
+.texto-cabecalho {
+    -fx-text-fill: #526171;
+    -fx-font-size: 13px;
+}
+
+.separador-cabecalho {
+    -fx-text-fill: #a6b1bc;
+    -fx-font-size: 13px;
+}
+
+.conteudo-dashboard {
+    -fx-background-color: #eef2f6;
+    -fx-padding: 26 30 30 30;
+}
+
+.barra-dashboard {
+    -fx-min-height: 42;
+}
+
+.titulo-dashboard {
+    -fx-text-fill: #263342;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.rotulo-periodo {
+    -fx-text-fill: #526171;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.combo-periodo {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 7;
+    -fx-border-color: #cbd5df;
+    -fx-border-radius: 7;
+    -fx-border-width: 1;
+    -fx-font-size: 13px;
+}
+
+.combo-periodo:focused {
+    -fx-border-color: #5e7f9f;
+}
+
+.combo-periodo:disabled {
+    -fx-opacity: 0.72;
+}
+
+.botao-atualizar {
+    -fx-background-color: #345f86;
+    -fx-background-radius: 7;
+    -fx-border-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 18 8 18;
+    -fx-cursor: hand;
+}
+
+.botao-atualizar:hover {
+    -fx-background-color: #2b5275;
+}
+
+.botao-atualizar:focused {
+    -fx-border-color: #9bb4ca;
+    -fx-border-radius: 7;
+    -fx-border-width: 1;
+}
+
+.botao-atualizar:disabled {
+    -fx-opacity: 0.55;
+}
+
+.area-carregamento {
+    -fx-alignment: center;
+}
+
+.indicador-carregamento {
+    -fx-progress-color: #345f86;
+}
+
+.grade-cartoes {
+    -fx-alignment: top-left;
+}
+
+.cartao-dashboard {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 10;
+    -fx-border-color: #dce3ea;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 22 24 22 24;
+    -fx-effect: dropshadow(gaussian, rgba(38, 51, 66, 0.08), 12, 0.16, 0, 3);
+}
+
+.cartao-principal {
+    -fx-border-color: #4d789f #dce3ea #dce3ea #dce3ea;
+    -fx-border-width: 4 1 1 1;
+}
+
+.cartao-titulo {
+    -fx-text-fill: #344253;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.cartao-valor {
+    -fx-text-fill: #263342;
+    -fx-font-size: 27px;
+    -fx-font-weight: bold;
+}
+
+.cartao-valor-principal {
+    -fx-font-size: 33px;
+}
+
+.cartao-informacao {
+    -fx-text-fill: #46576a;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.cartao-texto-secundario {
+    -fx-text-fill: #6c7987;
+    -fx-font-size: 13px;
+}
+
+.grade-contas {
+    -fx-padding: 4 0 0 0;
+}
+
+.cabecalho-conta {
+    -fx-text-fill: #8995a2;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.rotulo-conta {
+    -fx-text-fill: #526171;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.rotulo-pendente {
+    -fx-text-fill: #526171;
+}
+
+.rotulo-vencido {
+    -fx-text-fill: #9a4141;
+}
+
+.quantidade-conta,
+.valor-conta {
+    -fx-text-fill: #344253;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.quantidade-conta-vencida,
+.valor-conta-vencida {
+    -fx-text-fill: #8f3e3e;
+}
