@@ -5,6 +5,8 @@ import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.OrigemMovimentacaoFinanceira;
 import br.com.luis.model.TipoMovimentacaoFinanceira;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -180,6 +182,121 @@ public class MovimentacaoFinanceiraDAO {
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Erro ao listar movimentações financeiras da venda.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Calcula o valor financeiro líquido recebido no período informado.
+     *
+     * Soma as entradas originadas por vendas à vista e recebimentos de contas
+     * e subtrai as saídas compensatórias originadas pelos respectivos estornos.
+     * O período utiliza a data da movimentação financeira, com início inclusivo
+     * e limite final exclusivo.
+     *
+     * O resultado pode ser positivo, zero ou negativo. Quando não houver
+     * movimentações consideradas, retorna {@code 0.00}. O valor é normalizado
+     * para escala 2 com arredondamento {@link RoundingMode#HALF_UP}, sem aplicar
+     * qualquer formatação visual ou monetária.
+     *
+     * Usa a Connection recebida externamente e encerra somente o
+     * PreparedStatement e o ResultSet criados pelo método. Não executa commit,
+     * rollback nem fecha a Connection informada.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param inicioInclusivo data e hora inicial inclusiva do período.
+     * @param fimExclusivo data e hora final exclusiva do período.
+     * @return valor financeiro líquido do período, normalizado para escala 2.
+     * @throws IllegalArgumentException quando a conexão ou algum limite do
+     *                                  período for nulo, ou quando o limite final
+     *                                  não for posterior ao limite inicial.
+     * @throws IllegalStateException quando a consulta não retornar resultado.
+     * @throws RuntimeException quando ocorrer erro de acesso ao banco de dados.
+     */
+    public BigDecimal calcularValorRecebidoLiquidoNoPeriodo(
+            Connection conn,
+            LocalDateTime inicioInclusivo,
+            LocalDateTime fimExclusivo
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (inicioInclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data e hora inicial do período são obrigatórias."
+            );
+        }
+
+        if (fimExclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data e hora final do período são obrigatórias."
+            );
+        }
+
+        if (!fimExclusivo.isAfter(inicioInclusivo)) {
+            throw new IllegalArgumentException(
+                    "O limite final do período deve ser posterior ao limite inicial."
+            );
+        }
+
+        String sql = """
+                SELECT COALESCE(
+                           SUM(
+                               CASE
+                                   WHEN tipo = ?
+                                    AND origem IN (?, ?)
+                                       THEN valor
+                                   WHEN tipo = ?
+                                    AND origem IN (?, ?)
+                                       THEN -valor
+                                   ELSE 0
+                               END
+                           ),
+                           0
+                       ) AS valor_recebido_liquido
+                FROM MovimentacaoFinanceira
+                WHERE data_hora >= ?
+                  AND data_hora < ?
+                """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, TipoMovimentacaoFinanceira.ENTRADA.name());
+            stmt.setString(2, OrigemMovimentacaoFinanceira.VENDA_A_VISTA.name());
+            stmt.setString(3, OrigemMovimentacaoFinanceira.RECEBIMENTO_CONTA.name());
+            stmt.setString(4, TipoMovimentacaoFinanceira.SAIDA.name());
+            stmt.setString(5, OrigemMovimentacaoFinanceira.ESTORNO_VENDA_A_VISTA.name());
+            stmt.setString(6, OrigemMovimentacaoFinanceira.ESTORNO_RECEBIMENTO_CONTA.name());
+            stmt.setString(7, inicioInclusivo.toString());
+            stmt.setString(8, fimExclusivo.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                if (!rs.next()) {
+                    throw new IllegalStateException(
+                            "A consulta do valor financeiro líquido não retornou resultado."
+                    );
+                }
+
+                BigDecimal valorRecebidoLiquido =
+                        rs.getBigDecimal("valor_recebido_liquido");
+
+                if (valorRecebidoLiquido == null) {
+                    valorRecebidoLiquido = BigDecimal.ZERO;
+                }
+
+                return valorRecebidoLiquido.setScale(
+                        2,
+                        RoundingMode.HALF_UP
+                );
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao calcular o valor financeiro líquido no período.",
                     e
             );
         }
