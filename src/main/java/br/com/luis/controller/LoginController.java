@@ -2,6 +2,7 @@ package br.com.luis.controller;
 
 import br.com.luis.model.Usuario;
 import br.com.luis.service.AuthService;
+import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -171,8 +172,7 @@ public class LoginController {
             );
 
             stage.setTitle("ERP Comercial - Tela Principal");
-            stage.setScene(cenaPrincipal);
-            stage.setMaximized(true);
+            NavegacaoUtil.configurarTelaFuncional(stage, cenaPrincipal);
 
             return true;
 
