@@ -303,17 +303,6 @@
                             </columnResizePolicy>
                         </TableView>
 
-                        <!-- PAGINATION MOCK -->
-                        <HBox alignment="CENTER" spacing="10.0">
-                            <children>
-                                <Button text="&lt;" />
-                                <Button style="-fx-background-color: #555555; -fx-text-fill: white;" text="1" />
-                                <Button text="2" />
-                                <Button text="3" />
-                                <Button text="&gt;" />
-                            </children>
-                        </HBox>
-
                         <Label fx:id="lblTotalProdutos"
                                alignment="CENTER"
                                maxWidth="1.7976931348623157E308"
