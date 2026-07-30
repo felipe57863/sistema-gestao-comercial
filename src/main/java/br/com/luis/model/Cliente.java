@@ -35,6 +35,8 @@ public class Cliente {
     private Integer idCliente;
     private String nome;
     private String documento;
+    private String telefone;
+    private String email;
     private TipoCliente tipo;
     private BigDecimal limiteCredito;
     private StatusCliente status;
@@ -49,9 +51,20 @@ public class Cliente {
      */
     public Cliente(Integer idCliente, String nome, String documento, TipoCliente tipo,
                    BigDecimal limiteCredito, StatusCliente status, PrazoPagamento prazoPagamento) {
+        this(idCliente, nome, documento, null, null, tipo, limiteCredito, status, prazoPagamento);
+    }
+
+    /**
+     * Construtor completo com telefone e e-mail opcionais.
+     */
+    public Cliente(Integer idCliente, String nome, String documento, String telefone, String email,
+                   TipoCliente tipo, BigDecimal limiteCredito, StatusCliente status,
+                   PrazoPagamento prazoPagamento) {
         setIdCliente(idCliente);
         setNome(nome);
         setDocumento(documento);
+        setTelefone(telefone);
+        setEmail(email);
         setTipo(tipo);
         setLimiteCredito(limiteCredito);
         setStatus(status);
@@ -103,6 +116,44 @@ public class Cliente {
         }
 
         this.documento = documentoLimpo;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void setTelefone(String telefone) {
+        if (telefone == null || telefone.isBlank()) {
+            this.telefone = null;
+            return;
+        }
+
+        String telefoneLimpo = telefone.replaceAll("[^0-9]", "");
+
+        if (telefoneLimpo.length() != 10 && telefoneLimpo.length() != 11) {
+            throw new IllegalArgumentException("Telefone deve conter exatamente 10 ou 11 dígitos.");
+        }
+
+        this.telefone = telefoneLimpo;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        if (email == null || email.isBlank()) {
+            this.email = null;
+            return;
+        }
+
+        String emailNormalizado = email.trim();
+
+        if (!emailNormalizado.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException("E-mail deve possuir um formato válido.");
+        }
+
+        this.email = emailNormalizado;
     }
 
     public TipoCliente getTipo() {

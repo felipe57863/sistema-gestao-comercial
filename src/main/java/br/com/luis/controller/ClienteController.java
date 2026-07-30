@@ -41,6 +41,8 @@ public class ClienteController {
     // --- FORMULÁRIO ---
     @FXML private TextField txtNome;
     @FXML private TextField txtDocumento;
+    @FXML private TextField txtTelefone;
+    @FXML private TextField txtEmail;
     @FXML private TextField txtLimiteCredito;
 
     @FXML private RadioButton rbFisica;
@@ -212,6 +214,8 @@ public class ClienteController {
     private boolean formularioNovoFoiAlterado() {
         return !normalizarTextoComparacao(txtNome.getText()).isEmpty()
                 || !normalizarDocumentoComparacao(txtDocumento.getText()).isEmpty()
+                || !normalizarTextoComparacao(txtTelefone.getText()).isEmpty()
+                || !normalizarTextoComparacao(txtEmail.getText()).isEmpty()
                 || !normalizarTextoComparacao(txtLimiteCredito.getText()).isEmpty()
                 || cbPrazoPagamento.getValue() != null
                 || !rbFisica.isSelected()
@@ -230,6 +234,18 @@ public class ClienteController {
 
         if (!normalizarDocumentoComparacao(txtDocumento.getText()).equals(
                 normalizarDocumentoComparacao(clienteSelecionado.getDocumento())
+        )) {
+            return true;
+        }
+
+        if (!normalizarTextoComparacao(txtTelefone.getText()).equals(
+                normalizarTextoComparacao(clienteSelecionado.getTelefone())
+        )) {
+            return true;
+        }
+
+        if (!normalizarTextoComparacao(txtEmail.getText()).equals(
+                normalizarTextoComparacao(clienteSelecionado.getEmail())
         )) {
             return true;
         }
@@ -583,6 +599,8 @@ public class ClienteController {
         try {
             String nome = txtNome.getText();
             String documento = txtDocumento.getText();
+            String telefone = txtTelefone.getText();
+            String email = txtEmail.getText();
             BigDecimal limite = converterLimiteCredito(txtLimiteCredito.getText());
 
             Cliente.TipoCliente tipo = obterTipoSelecionado();
@@ -597,7 +615,17 @@ public class ClienteController {
 
             if (clienteSelecionado == null) {
 
-                Cliente cliente = new Cliente(null, nome, documento, tipo, limite, status, prazo);
+                Cliente cliente = new Cliente(
+                        null,
+                        nome,
+                        documento,
+                        telefone,
+                        email,
+                        tipo,
+                        limite,
+                        status,
+                        prazo
+                );
                 clienteService.cadastrar(cliente);
 
                 System.out.println("[LOG] Cliente cadastrado via UI: " + cliente.getNome());
@@ -608,6 +636,8 @@ public class ClienteController {
                         clienteSelecionado.getIdCliente(),
                         nome,
                         documento,
+                        telefone,
+                        email,
                         tipo,
                         limite,
                         status,
@@ -746,6 +776,8 @@ public class ClienteController {
 
         txtNome.clear();
         txtDocumento.clear();
+        txtTelefone.clear();
+        txtEmail.clear();
         txtLimiteCredito.clear();
 
         cbPrazoPagamento.getSelectionModel().clearSelection();
@@ -841,6 +873,16 @@ public class ClienteController {
 
         txtNome.setText(cliente.getNome());
         txtDocumento.setText(formatarDocumentoConformeTipo(cliente.getDocumento()));
+        txtTelefone.setText(
+                cliente.getTelefone() == null
+                        ? ""
+                        : cliente.getTelefone()
+        );
+        txtEmail.setText(
+                cliente.getEmail() == null
+                        ? ""
+                        : cliente.getEmail()
+        );
         txtLimiteCredito.setText(cliente.getLimiteCredito().toString().replace(".", ","));
 
         selecionarPrazoNoCombo(cliente.getPrazoPagamento());

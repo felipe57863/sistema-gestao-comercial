@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS Cliente (
     nome TEXT NOT NULL,
     -- CPF ou CNPJ sem pontuação
     documento TEXT NOT NULL UNIQUE,
+    telefone TEXT,
+    email TEXT,
     -- Tipo do cliente: PF ou PJ
     tipo_cliente TEXT NOT NULL CHECK (tipo_cliente IN ('PF', 'PJ')),
     -- Limite de crédito do cliente

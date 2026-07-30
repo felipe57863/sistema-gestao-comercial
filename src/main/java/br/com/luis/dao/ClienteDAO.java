@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,8 +26,8 @@ public class ClienteDAO {
 
         String sql = """
             INSERT INTO Cliente
-            (nome, documento, tipo_cliente, limite_credito, status, prazo_pagamento_id)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (nome, documento, telefone, email, tipo_cliente, limite_credito, status, prazo_pagamento_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = ConnectionFactory.getConnection();
@@ -35,20 +36,32 @@ public class ClienteDAO {
             stmt.setString(1, cliente.getNome());
             stmt.setString(2, cliente.getDocumento());
 
+            if (cliente.getTelefone() == null) {
+                stmt.setNull(3, Types.VARCHAR);
+            } else {
+                stmt.setString(3, cliente.getTelefone());
+            }
+
+            if (cliente.getEmail() == null) {
+                stmt.setNull(4, Types.VARCHAR);
+            } else {
+                stmt.setString(4, cliente.getEmail());
+            }
+
             // SQLite não possui ENUM → armazenamos como texto
-            stmt.setString(3, cliente.getTipo().name());
+            stmt.setString(5, cliente.getTipo().name());
 
             // JDBC converte BigDecimal corretamente
-            stmt.setBigDecimal(4, cliente.getLimiteCredito());
+            stmt.setBigDecimal(6, cliente.getLimiteCredito());
 
-            stmt.setString(5, cliente.getStatus().name());
+            stmt.setString(7, cliente.getStatus().name());
 
             // Validação defensiva da FK
             if (cliente.getPrazoPagamento() == null || cliente.getPrazoPagamento().getIdPrazo() == null) {
                 throw new IllegalArgumentException("Prazo de pagamento inválido.");
             }
 
-            stmt.setInt(6, cliente.getPrazoPagamento().getIdPrazo());
+            stmt.setInt(8, cliente.getPrazoPagamento().getIdPrazo());
 
             stmt.executeUpdate();
 
@@ -81,7 +94,8 @@ public class ClienteDAO {
     public List<Cliente> listarTodos() {
 
         String sql = """
-            SELECT c.id_cliente, c.nome, c.documento, c.tipo_cliente, c.limite_credito, c.status,
+            SELECT c.id_cliente, c.nome, c.documento, c.telefone, c.email,
+                   c.tipo_cliente, c.limite_credito, c.status,
                    p.id_prazo, p.descricao AS prazo_descricao, p.quantidade_dias, p.ativo
             FROM Cliente c
             INNER JOIN PrazoPagamento p ON c.prazo_pagamento_id = p.id_prazo
@@ -109,6 +123,8 @@ public class ClienteDAO {
                         rs.getInt("id_cliente"),
                         rs.getString("nome"),
                         rs.getString("documento"),
+                        rs.getString("telefone"),
+                        rs.getString("email"),
                         Cliente.TipoCliente.valueOf(rs.getString("tipo_cliente")),
                         rs.getBigDecimal("limite_credito"),
                         Cliente.StatusCliente.valueOf(rs.getString("status")),
@@ -134,6 +150,8 @@ public class ClienteDAO {
             UPDATE Cliente
             SET nome = ?,
                 documento = ?,
+                telefone = ?,
+                email = ?,
                 tipo_cliente = ?,
                 limite_credito = ?,
                 status = ?,
@@ -146,17 +164,30 @@ public class ClienteDAO {
 
             stmt.setString(1, cliente.getNome());
             stmt.setString(2, cliente.getDocumento());
-            stmt.setString(3, cliente.getTipo().name());
-            stmt.setBigDecimal(4, cliente.getLimiteCredito());
-            stmt.setString(5, cliente.getStatus().name());
+
+            if (cliente.getTelefone() == null) {
+                stmt.setNull(3, Types.VARCHAR);
+            } else {
+                stmt.setString(3, cliente.getTelefone());
+            }
+
+            if (cliente.getEmail() == null) {
+                stmt.setNull(4, Types.VARCHAR);
+            } else {
+                stmt.setString(4, cliente.getEmail());
+            }
+
+            stmt.setString(5, cliente.getTipo().name());
+            stmt.setBigDecimal(6, cliente.getLimiteCredito());
+            stmt.setString(7, cliente.getStatus().name());
 
             // Validação defensiva da FK
             if (cliente.getPrazoPagamento() == null || cliente.getPrazoPagamento().getIdPrazo() == null) {
                 throw new IllegalArgumentException("Prazo de pagamento inválido.");
             }
 
-            stmt.setInt(6, cliente.getPrazoPagamento().getIdPrazo());
-            stmt.setInt(7, cliente.getIdCliente());
+            stmt.setInt(8, cliente.getPrazoPagamento().getIdPrazo());
+            stmt.setInt(9, cliente.getIdCliente());
 
             int linhasAfetadas = stmt.executeUpdate();
 
@@ -211,6 +242,8 @@ public class ClienteDAO {
             SELECT c.id_cliente,
                    c.nome,
                    c.documento,
+                   c.telefone,
+                   c.email,
                    c.tipo_cliente,
                    COALESCE(c.limite_credito, 0) AS limite_credito,
                    c.status,
@@ -243,6 +276,8 @@ public class ClienteDAO {
                             rs.getInt("id_cliente"),
                             rs.getString("nome"),
                             rs.getString("documento"),
+                            rs.getString("telefone"),
+                            rs.getString("email"),
                             Cliente.TipoCliente.valueOf(rs.getString("tipo_cliente")),
                             limiteCredito,
                             Cliente.StatusCliente.valueOf(rs.getString("status")),
