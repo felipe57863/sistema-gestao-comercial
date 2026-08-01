@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="br.com.luis.controller.RelatorioMovimentacaoFinanceiraController"
+            prefWidth="1180.0"
+            prefHeight="720.0"
+            stylesheets="@TelaPrincipal.css"
+            styleClass="tela-principal">
+
+    <top>
+        <BorderPane styleClass="cabecalho-principal">
+
+            <left>
+                <HBox alignment="CENTER_LEFT"
+                      spacing="12.0">
+
+                    <Button fx:id="btnVoltar"
+                            text="Voltar"
+                            prefWidth="90.0"
+                            onAction="#onVoltar" />
+
+                    <Label text="Relatório de Movimentações Financeiras"
+                           styleClass="titulo-sistema" />
+                </HBox>
+            </left>
+
+            <right>
+                <HBox alignment="CENTER_RIGHT"
+                      spacing="8.0"
+                      styleClass="identificacao-cabecalho">
+
+                    <Label fx:id="lblUsuario"
+                           text="Usuário não identificado"
+                           styleClass="texto-cabecalho" />
+
+                    <Label text="|"
+                           styleClass="separador-cabecalho" />
+
+                    <Label fx:id="lblDataHora"
+                           text="--/--/---- --:--:--"
+                           styleClass="texto-cabecalho" />
+                </HBox>
+            </right>
+        </BorderPane>
+    </top>
+
+    <center>
+        <VBox spacing="14.0"
+              styleClass="conteudo-dashboard">
+
+            <padding>
+                <Insets top="16.0"
+                        right="16.0"
+                        bottom="16.0"
+                        left="16.0" />
+            </padding>
+
+            <VBox spacing="12.0"
+                  maxWidth="Infinity"
+                  styleClass="cartao-dashboard">
+
+                <Label text="Filtros"
+                       styleClass="cartao-titulo" />
+
+                <GridPane hgap="12.0"
+                          vgap="6.0"
+                          maxWidth="Infinity">
+
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="130.0"
+                                           prefWidth="145.0" />
+
+                        <ColumnConstraints minWidth="130.0"
+                                           prefWidth="145.0" />
+
+                        <ColumnConstraints minWidth="135.0"
+                                           prefWidth="150.0" />
+
+                        <ColumnConstraints minWidth="210.0"
+                                           prefWidth="245.0" />
+
+                        <ColumnConstraints minWidth="150.0"
+                                           prefWidth="170.0" />
+                    </columnConstraints>
+
+                    <Label text="Data inicial:"
+                           GridPane.columnIndex="0"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+
+                    <Label text="Data final:"
+                           GridPane.columnIndex="1"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+
+                    <Label text="Tipo:"
+                           GridPane.columnIndex="2"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+
+                    <Label text="Origem:"
+                           GridPane.columnIndex="3"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+
+                    <Label text="Forma de pagamento:"
+                           GridPane.columnIndex="4"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+
+                    <DatePicker fx:id="dpDataInicial"
+                                prefWidth="145.0"
+                                GridPane.columnIndex="0"
+                                GridPane.rowIndex="1" />
+
+                    <DatePicker fx:id="dpDataFinal"
+                                prefWidth="145.0"
+                                GridPane.columnIndex="1"
+                                GridPane.rowIndex="1" />
+
+                    <ComboBox fx:id="cbTipoMovimentacao"
+                              maxWidth="Infinity"
+                              prefWidth="150.0"
+                              GridPane.columnIndex="2"
+                              GridPane.rowIndex="1"
+                              styleClass="combo-periodo" />
+
+                    <ComboBox fx:id="cbOrigemMovimentacao"
+                              maxWidth="Infinity"
+                              prefWidth="245.0"
+                              GridPane.columnIndex="3"
+                              GridPane.rowIndex="1"
+                              styleClass="combo-periodo" />
+
+                    <ComboBox fx:id="cbFormaPagamento"
+                              maxWidth="Infinity"
+                              prefWidth="170.0"
+                              GridPane.columnIndex="4"
+                              GridPane.rowIndex="1"
+                              styleClass="combo-periodo" />
+                </GridPane>
+
+                <HBox alignment="CENTER_LEFT"
+                      spacing="10.0">
+
+                    <StackPane minWidth="28.0"
+                               prefWidth="28.0"
+                               maxWidth="28.0"
+                               minHeight="28.0"
+                               prefHeight="28.0"
+                               maxHeight="28.0"
+                               styleClass="area-carregamento">
+
+                        <ProgressIndicator fx:id="progressoRelatorio"
+                                           visible="false"
+                                           managed="false"
+                                           prefWidth="22.0"
+                                           prefHeight="22.0"
+                                           styleClass="indicador-carregamento" />
+                    </StackPane>
+
+                    <Label fx:id="lblEstadoConsulta"
+                           text="Relatório pronto para consulta."
+                           wrapText="true"
+                           styleClass="cartao-texto-secundario" />
+
+                    <Region HBox.hgrow="ALWAYS" />
+
+                    <Button fx:id="btnLimparFiltros"
+                            text="Limpar"
+                            onAction="#onLimparFiltros" />
+
+                    <Button fx:id="btnFiltrar"
+                            text="Filtrar"
+                            disable="true"
+                            onAction="#onFiltrar"
+                            styleClass="botao-atualizar" />
+                </HBox>
+            </VBox>
+
+            <VBox spacing="10.0"
+                  maxWidth="Infinity"
+                  VBox.vgrow="ALWAYS"
+                  styleClass="cartao-dashboard">
+
+                <Label text="Movimentações encontradas"
+                       styleClass="cartao-titulo" />
+
+                <TableView fx:id="tabelaMovimentacoes"
+                           maxWidth="Infinity"
+                           maxHeight="Infinity"
+                           VBox.vgrow="ALWAYS">
+
+                    <columns>
+                        <TableColumn fx:id="colMovimentacaoId"
+                                     text="Movimento"
+                                     prefWidth="80.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colDataHora"
+                                     text="Data/Hora"
+                                     prefWidth="155.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colTipo"
+                                     text="Tipo"
+                                     prefWidth="85.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colOrigem"
+                                     text="Origem"
+                                     prefWidth="210.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colFormaPagamento"
+                                     text="Pagamento"
+                                     prefWidth="105.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colValor"
+                                     text="Valor"
+                                     prefWidth="110.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colVendaId"
+                                     text="Venda"
+                                     prefWidth="70.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colContaReceberId"
+                                     text="Conta"
+                                     prefWidth="75.0"
+                                     sortable="false" />
+
+                        <TableColumn fx:id="colResponsavel"
+                                     text="Responsável"
+                                     prefWidth="230.0"
+                                     sortable="false" />
+                    </columns>
+                </TableView>
+
+                <Label fx:id="lblFiltroAplicado"
+                       text=""
+                       wrapText="true"
+                       styleClass="cartao-texto-secundario" />
+            </VBox>
+
+            <HBox spacing="12.0"
+                  maxWidth="Infinity">
+
+                <VBox spacing="4.0"
+                      maxWidth="Infinity"
+                      HBox.hgrow="ALWAYS"
+                      styleClass="cartao-informacao">
+
+                    <Label text="Movimentações"
+                           styleClass="cartao-texto-secundario" />
+
+                    <Label fx:id="lblQuantidadeMovimentacoes"
+                           text="0 movimentações" />
+                </VBox>
+
+                <VBox spacing="4.0"
+                      maxWidth="Infinity"
+                      HBox.hgrow="ALWAYS"
+                      styleClass="cartao-informacao">
+
+                    <Label text="Entradas"
+                           styleClass="cartao-texto-secundario" />
+
+                    <Label fx:id="lblTotalEntradas"
+                           text="R$ 0,00" />
+                </VBox>
+
+                <VBox spacing="4.0"
+                      maxWidth="Infinity"
+                      HBox.hgrow="ALWAYS"
+                      styleClass="cartao-informacao">
+
+                    <Label text="Saídas"
+                           styleClass="cartao-texto-secundario" />
+
+                    <Label fx:id="lblTotalSaidas"
+                           text="R$ 0,00" />
+                </VBox>
+
+                <VBox spacing="4.0"
+                      maxWidth="Infinity"
+                      HBox.hgrow="ALWAYS"
+                      styleClass="cartao-informacao">
+
+                    <Label text="Líquido"
+                           styleClass="cartao-texto-secundario" />
+
+                    <Label fx:id="lblResultadoLiquido"
+                           text="R$ 0,00" />
+                </VBox>
+            </HBox>
+        </VBox>
+    </center>
+</BorderPane>

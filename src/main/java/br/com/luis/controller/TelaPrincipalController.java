@@ -1,5 +1,6 @@
 package br.com.luis.controller;
 
+import br.com.luis.model.Usuario;
 import br.com.luis.service.DashboardService;
 import br.com.luis.service.DashboardService.PeriodoDashboard;
 import br.com.luis.util.CabecalhoUtil;
@@ -13,6 +14,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
@@ -26,6 +28,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Controller da Tela Principal apresentada após o login.
@@ -51,6 +54,9 @@ public class TelaPrincipalController {
     private static final DateTimeFormatter FORMATADOR_DATA =
             DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+    private static final String MENSAGEM_ACESSO_NEGADO_RELATORIO =
+            "Usuário não autorizado a consultar o relatório financeiro.";
+
     private final DashboardService dashboardService;
     private final NumberFormat formatadorMoeda;
 
@@ -58,6 +64,7 @@ public class TelaPrincipalController {
 
     @FXML private Label lblUsuario;
     @FXML private Label lblDataHora;
+    @FXML private Button btnRelatorios;
 
     @FXML private ComboBox<PeriodoDashboard> cmbPeriodoDashboard;
     @FXML private Button btnAtualizarDashboard;
@@ -105,6 +112,8 @@ public class TelaPrincipalController {
                 lblDataHora
         );
 
+        configurarVisibilidadeBotaoRelatorios();
+
         cmbPeriodoDashboard
                 .getItems()
                 .setAll(PeriodoDashboard.values());
@@ -120,6 +129,49 @@ public class TelaPrincipalController {
         configurarEstadoCarregamentoDashboard(false);
 
         iniciarCarregamentoDashboard();
+    }
+
+    /**
+     * Configura a visibilidade do botão de relatórios conforme o usuário
+     * mantido na sessão atual.
+     *
+     * Essa proteção é apenas visual. A autorização definitiva continua sendo
+     * realizada pelo Service do relatório financeiro.
+     */
+    private void configurarVisibilidadeBotaoRelatorios() {
+
+        boolean administrador =
+                usuarioAtualEhAdministrador();
+
+        btnRelatorios.setVisible(administrador);
+        btnRelatorios.setManaged(administrador);
+        btnRelatorios.setDisable(!administrador);
+    }
+
+    /**
+     * Verifica se a sessão atual possui um administrador com ID válido.
+     *
+     * @return true quando existe usuário identificado com perfil ADMIN.
+     */
+    private boolean usuarioAtualEhAdministrador() {
+
+        Usuario usuarioLogado =
+                SessaoUsuario
+                        .getInstance()
+                        .getUsuarioLogado();
+
+        if (usuarioLogado == null) {
+            return false;
+        }
+
+        Integer usuarioId =
+                usuarioLogado.getIdUsuario();
+
+        return usuarioId != null
+                && usuarioId > 0
+                && "ADMIN".equals(
+                        usuarioLogado.getPerfil()
+                );
     }
 
     /**
@@ -625,6 +677,57 @@ public class TelaPrincipalController {
     }
 
     /**
+     * Apresenta as opções de relatório efetivamente implementadas.
+     *
+     * O carregamento do dashboard somente é cancelado quando o usuário
+     * confirma a abertura de uma opção. O cancelamento do diálogo mantém
+     * integralmente a Tela Principal.
+     */
+    @FXML
+    public void abrirRelatorios() {
+
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    MENSAGEM_ACESSO_NEGADO_RELATORIO
+            );
+
+            return;
+        }
+
+        OpcaoRelatorio opcaoInicial =
+                OpcaoRelatorio.MOVIMENTACOES_FINANCEIRAS;
+
+        ChoiceDialog<OpcaoRelatorio> dialog =
+                new ChoiceDialog<>(
+                        opcaoInicial,
+                        OpcaoRelatorio.values()
+                );
+
+        dialog.setTitle("Relatórios");
+        dialog.setHeaderText(
+                "Selecione o relatório que deseja consultar."
+        );
+        dialog.setContentText("Relatório:");
+
+        Optional<OpcaoRelatorio> escolha =
+                dialog.showAndWait();
+
+        if (escolha.isEmpty()) {
+            return;
+        }
+
+        OpcaoRelatorio opcaoSelecionada =
+                escolha.get();
+
+        abrirTela(
+                opcaoSelecionada.getCaminhoFxml(),
+                opcaoSelecionada.getTituloTela()
+        );
+    }
+
+    /**
      * Cancela qualquer carregamento pendente do dashboard, encerra a sessão
      * atual e retorna à tela de Login reutilizando o mesmo Stage.
      *
@@ -887,4 +990,43 @@ public class TelaPrincipalController {
         alerta.setContentText(mensagem);
         alerta.showAndWait();
     }
+    /**
+     * Opções de relatório efetivamente disponíveis no sistema.
+     */
+    private enum OpcaoRelatorio {
+
+        MOVIMENTACOES_FINANCEIRAS(
+                "Movimentações financeiras",
+                "/br/com/luis/view/RelatorioMovimentacaoFinanceira.fxml",
+                "Relatório de Movimentações Financeiras"
+        );
+
+        private final String rotulo;
+        private final String caminhoFxml;
+        private final String tituloTela;
+
+        OpcaoRelatorio(
+                String rotulo,
+                String caminhoFxml,
+                String tituloTela
+        ) {
+            this.rotulo = rotulo;
+            this.caminhoFxml = caminhoFxml;
+            this.tituloTela = tituloTela;
+        }
+
+        private String getCaminhoFxml() {
+            return caminhoFxml;
+        }
+
+        private String getTituloTela() {
+            return tituloTela;
+        }
+
+        @Override
+        public String toString() {
+            return rotulo;
+        }
+    }
+
 }

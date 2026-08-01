@@ -65,6 +65,13 @@
                     maxWidth="Infinity"
                     styleClass="botao-menu" />
 
+            <Button fx:id="btnRelatorios"
+                    text="Relatórios"
+                    onAction="#abrirRelatorios"
+                    prefHeight="44.0"
+                    maxWidth="Infinity"
+                    styleClass="botao-menu" />
+
             <Region VBox.vgrow="ALWAYS" />
 
             <Button fx:id="btnSair"
