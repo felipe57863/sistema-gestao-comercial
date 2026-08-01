@@ -13,18 +13,34 @@ public class Usuario {
     private String perfil;
     private String status;
 
+    /**
+     * Indica que o usuário deve definir uma nova senha antes do acesso normal.
+     * A pendência também pode existir após uma redefinição, não apenas no
+     * primeiro acesso.
+     */
+    private boolean trocaSenhaObrigatoria = true;
+
     // Construtor padrão
     public Usuario() {
     }
 
     // Construtor completo com validação
-    public Usuario(Integer idUsuario, String nome, String login, String senhaHash, String perfil, String status) {
+    public Usuario(
+            Integer idUsuario,
+            String nome,
+            String login,
+            String senhaHash,
+            String perfil,
+            String status,
+            boolean trocaSenhaObrigatoria
+    ) {
         this.idUsuario = idUsuario;
         setNome(nome);
         setLogin(login);
         setSenha(senhaHash);
         setPerfil(perfil);
         setStatus(status);
+        setTrocaSenhaObrigatoria(trocaSenhaObrigatoria);
     }
 
     public Integer getIdUsuario() {
@@ -108,6 +124,14 @@ public class Usuario {
         this.status = statusFormatado;
     }
 
+    public boolean isTrocaSenhaObrigatoria() {
+        return trocaSenhaObrigatoria;
+    }
+
+    public void setTrocaSenhaObrigatoria(boolean trocaSenhaObrigatoria) {
+        this.trocaSenhaObrigatoria = trocaSenhaObrigatoria;
+    }
+
     @Override
     public String toString() {
         // Senha omitida propositalmente por segurança
@@ -117,6 +141,7 @@ public class Usuario {
                 ", login='" + login + '\'' +
                 ", perfil='" + perfil + '\'' +
                 ", status='" + status + '\'' +
+                ", trocaSenhaObrigatoria=" + trocaSenhaObrigatoria +
                 '}';
     }
 }

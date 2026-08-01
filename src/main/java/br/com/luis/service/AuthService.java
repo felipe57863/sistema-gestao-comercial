@@ -2,6 +2,7 @@ package br.com.luis.service;
 
 import br.com.luis.dao.UsuarioDAO;
 import br.com.luis.model.Usuario;
+import br.com.luis.viewmodel.ResultadoAutenticacao;
 import org.mindrot.jbcrypt.BCrypt;
 
 /**
@@ -10,7 +11,8 @@ import org.mindrot.jbcrypt.BCrypt;
  * UsuarioDAO, verifica a senha usando o hash BCrypt e rejeita usuários inativos.
  * Não controla componentes JavaFX, a navegação ou a SessaoUsuario; após a
  * autenticação, cabe ao Controller registrar o usuário na sessão e decidir a
- * navegação da aplicação.
+ * navegação da aplicação. Credenciais válidas não significam necessariamente
+ * acesso normal liberado, pois pode existir uma troca de senha pendente.
  */
 public class AuthService {
 
@@ -54,9 +56,8 @@ public class AuthService {
         if (adminExistente == null) {
             System.out.println("[INFO] Administrador não encontrado. Criando usuário padrão...");
 
-            // Regra de segurança:
-            // A senha padrão deve ser usada apenas na primeira execução.
-            // Recomenda-se substituir a senha padrão antes do uso regular.
+            // A senha padrão existe somente para permitir a autenticação inicial.
+            // Seu valor nunca deve ser impresso em logs ou mensagens.
             String senhaSegura = gerarHash("admin123");
 
             // Criação do usuário administrador
@@ -66,13 +67,17 @@ public class AuthService {
                     "admin",
                     senhaSegura, // Hash BCrypt da senha já gerado
                     "ADMIN",
-                    "ATIVO"
+                    "ATIVO",
+                    true
             );
 
             // Persiste no banco
             usuarioDAO.cadastrar(novoAdmin);
 
-            System.out.println("[INFO] Administrador criado com sucesso. Login: admin | Senha: admin123");
+            System.out.println(
+                    "[INFO] Administrador-base criado. "
+                            + "A troca de senha será obrigatória antes do acesso normal."
+            );
 
         } else {
             System.out.println("[INFO] Administrador já existente.");
@@ -87,16 +92,18 @@ public class AuthService {
      * 2. Busca usuário no banco
      * 3. Compara senha usando BCrypt
      * 4. Verifica status do usuário
+     * 5. Informa se o acesso normal está liberado ou se a troca é obrigatória
      *
      * @param login Login digitado
      * @param senhaLimpa Senha digitada (texto puro)
-     * @return Usuario autenticado
+     * @return resultado explícito de uma autenticação bem-sucedida
      * @throws RuntimeException se login/senha inválidos ou usuário inativo
      *
-     * @implNote Autentica o usuário usando BCrypt e bloqueia o acesso de
-     * usuários inativos.
+     * @implNote Autentica o usuário usando BCrypt e bloqueia usuários inativos.
+     * A criação da sessão permanece sob responsabilidade do Controller, depois
+     * da decisão sobre a troca obrigatória de senha.
      */
-    public Usuario autenticar(String login, String senhaLimpa) {
+    public ResultadoAutenticacao autenticar(String login, String senhaLimpa) {
 
         // Validação básica (fail-fast)
         if (login == null || login.isBlank() || senhaLimpa == null || senhaLimpa.isBlank()) {
@@ -132,9 +139,10 @@ public class AuthService {
             throw new RuntimeException("Usuário inativo. Contate o administrador.");
         }
 
-        // Registro informativo no console para acompanhamento da autenticação.
-        System.out.println("[LOG] Login realizado com sucesso: " + usuario.getLogin());
+        // As credenciais podem ser válidas mesmo quando o acesso normal ainda
+        // depende da conclusão da troca obrigatória de senha.
+        System.out.println("[LOG] Credenciais validadas para: " + usuario.getLogin());
 
-        return usuario;
+        return new ResultadoAutenticacao(usuario);
     }
 }

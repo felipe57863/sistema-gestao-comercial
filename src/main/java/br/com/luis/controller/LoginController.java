@@ -4,6 +4,7 @@ import br.com.luis.model.Usuario;
 import br.com.luis.service.AuthService;
 import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
+import br.com.luis.viewmodel.ResultadoAutenticacao;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -22,8 +23,8 @@ import java.net.URL;
  * Controller da Tela de Login.
  *
  * Captura login e senha da interface, delega a autenticação ao AuthService e,
- * após o sucesso, armazena o Usuario autenticado na SessaoUsuario e abre a
- * Tela Principal com o dashboard e os módulos funcionais do sistema.
+ * após o sucesso, verifica se o acesso normal está liberado. Somente usuários
+ * sem troca de senha pendente entram na SessaoUsuario e abrem a Tela Principal.
  *
  * Não contém a regra interna de autenticação nem acessa DAO diretamente.
  * Também controla o feedback visual e o estado do botão durante a tentativa.
@@ -51,9 +52,11 @@ public class LoginController {
      * Processa a ação do botão "Entrar".
      *
      * Lê as credenciais da interface, evita múltiplos cliques durante o fluxo e
-     * delega a autenticação ao AuthService. Quando autenticado, mantém o usuário
-     * na SessaoUsuario, prepara a Tela Principal e exibe a confirmação ainda no
-     * Login. Após o usuário fechar o alerta, substitui a Scene no mesmo Stage.
+     * delega a autenticação ao AuthService. Credenciais válidas com troca de
+     * senha pendente permanecem no Login e não criam uma sessão normal. Quando
+     * o acesso está liberado, prepara a Tela Principal e exibe a confirmação
+     * ainda no Login. Após o usuário fechar o alerta, substitui a Scene no mesmo
+     * Stage.
      *
      * Em falhas de autenticação ou em erros propagados durante o login,
      * apresenta a mensagem correspondente e limpa o campo de senha. Se a Tela
@@ -73,10 +76,35 @@ public class LoginController {
             btnEntrar.setDisable(true);
 
             // Delega a autenticação ao AuthService.
-            Usuario usuarioAutenticado =
+            ResultadoAutenticacao resultadoAutenticacao =
                     authService.autenticar(login, senha);
 
-            // Armazena o usuário autenticado na sessão da aplicação.
+            if (resultadoAutenticacao.isTrocaSenhaObrigatoria()) {
+                // Uma autenticação válida ainda não representa acesso normal.
+                // A sessão permanece vazia até a troca obrigatória ser concluída.
+                SessaoUsuario.getInstance().fazerLogout();
+
+                if (SessaoUsuario.getInstance().isUsuarioLogado()) {
+                    throw new IllegalStateException(
+                            "Não foi possível limpar a sessão antes da troca de senha."
+                    );
+                }
+
+                txtSenha.clear();
+
+                mostrarAlerta(
+                        Alert.AlertType.WARNING,
+                        "Troca de Senha Obrigatória",
+                        "Uma nova senha deve ser definida antes do acesso normal ao ERP."
+                );
+
+                return;
+            }
+
+            Usuario usuarioAutenticado = resultadoAutenticacao.getUsuario();
+
+            // A sessão normal somente é criada depois de o resultado confirmar
+            // que não existe troca obrigatória pendente.
             SessaoUsuario
                     .getInstance()
                     .setUsuarioLogado(usuarioAutenticado);

@@ -3,6 +3,7 @@ package br.com.luis.dao;
 import br.com.luis.model.Usuario;
 import br.com.luis.util.ConnectionFactory;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -32,7 +33,16 @@ public class UsuarioDAO {
             throw new IllegalArgumentException("Usuário é obrigatório para cadastro.");
         }
 
-        String sql = "INSERT INTO Usuario (nome, login, senha, perfil, status) VALUES (?, ?, ?, ?, ?)";
+        String sql = """
+            INSERT INTO Usuario (
+                nome,
+                login,
+                senha,
+                perfil,
+                status,
+                troca_senha_obrigatoria
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """;
 
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -42,6 +52,7 @@ public class UsuarioDAO {
             stmt.setString(3, usuario.getSenha());
             stmt.setString(4, usuario.getPerfil());
             stmt.setString(5, usuario.getStatus());
+            stmt.setInt(6, usuario.isTrocaSenhaObrigatoria() ? 1 : 0);
 
             stmt.executeUpdate();
 
@@ -98,7 +109,8 @@ public class UsuarioDAO {
                    login,
                    senha,
                    perfil,
-                   status
+                   status,
+                   troca_senha_obrigatoria
             FROM Usuario
             WHERE id_usuario = ?
             """;
@@ -115,7 +127,8 @@ public class UsuarioDAO {
                             rs.getString("login"),
                             rs.getString("senha"),
                             rs.getString("perfil"),
-                            rs.getString("status")
+                            rs.getString("status"),
+                            lerTrocaSenhaObrigatoria(rs)
                     );
                 }
             }
@@ -145,7 +158,13 @@ public class UsuarioDAO {
         }
 
         String sql = """
-            SELECT id_usuario, nome, login, senha, perfil, status
+            SELECT id_usuario,
+                   nome,
+                   login,
+                   senha,
+                   perfil,
+                   status,
+                   troca_senha_obrigatoria
             FROM Usuario
             WHERE login = ?
         """;
@@ -165,7 +184,8 @@ public class UsuarioDAO {
                             rs.getString("login"),
                             rs.getString("senha"),
                             rs.getString("perfil"),
-                            rs.getString("status")
+                            rs.getString("status"),
+                            lerTrocaSenhaObrigatoria(rs)
                     );
                 }
             }
@@ -175,5 +195,52 @@ public class UsuarioDAO {
         }
 
         return null;
+    }
+
+    /**
+     * Converte rigorosamente o INTEGER do SQLite para boolean.
+     *
+     * A leitura como Object evita conversões permissivas do JDBC, como truncar
+     * um valor fracionário. Assim, somente os valores numéricos exatos 0 e 1
+     * são aceitos.
+     */
+    private boolean lerTrocaSenhaObrigatoria(ResultSet rs) throws SQLException {
+
+        Object valorPersistido = rs.getObject("troca_senha_obrigatoria");
+
+        if (valorPersistido == null) {
+            throw new IllegalStateException(
+                    "O indicador de troca obrigatória de senha não pode ser nulo."
+            );
+        }
+
+        if (!(valorPersistido instanceof Number valorNumerico)) {
+            throw new IllegalStateException(
+                    "O indicador de troca obrigatória de senha deve ser numérico."
+            );
+        }
+
+        BigDecimal valor;
+
+        try {
+            valor = new BigDecimal(valorNumerico.toString());
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException(
+                    "Valor numérico inválido para troca_senha_obrigatoria.",
+                    e
+            );
+        }
+
+        if (valor.compareTo(BigDecimal.ZERO) == 0) {
+            return false;
+        }
+
+        if (valor.compareTo(BigDecimal.ONE) == 0) {
+            return true;
+        }
+
+        throw new IllegalStateException(
+                "Valor inválido para troca_senha_obrigatoria: " + valorPersistido
+        );
     }
 }
