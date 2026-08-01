@@ -92,11 +92,16 @@ public class LoginController {
 
                 txtSenha.clear();
 
-                mostrarAlerta(
-                        Alert.AlertType.WARNING,
-                        "Troca de Senha Obrigatória",
-                        "Uma nova senha deve ser definida antes do acesso normal ao ERP."
-                );
+                if (!abrirTrocaSenhaObrigatoria(
+                        resultadoAutenticacao.getUsuario()
+                )) {
+                    mostrarAlerta(
+                            Alert.AlertType.ERROR,
+                            "Erro",
+                            "Não foi possível abrir a tela de troca de senha. "
+                                    + "Tente entrar novamente."
+                    );
+                }
 
                 return;
             }
@@ -145,6 +150,89 @@ public class LoginController {
 
         } finally {
             btnEntrar.setDisable(false);
+        }
+    }
+
+    /**
+     * Prepara a tela restrita e entrega o usuário autenticado antes de substituir
+     * a Scene. O usuário ainda não entra na sessão normal neste momento.
+     *
+     * @param usuarioAutenticado usuário com troca obrigatória pendente.
+     * @return true quando a tela restrita foi aberta; false em caso de falha.
+     */
+    private boolean abrirTrocaSenhaObrigatoria(
+            Usuario usuarioAutenticado
+    ) {
+
+        Scene cenaLogin = btnEntrar.getScene();
+        Stage stage = null;
+
+        try {
+            URL fxmlLocation = getClass().getResource(
+                    "/br/com/luis/view/TrocaSenhaObrigatoria.fxml"
+            );
+
+            if (fxmlLocation == null) {
+                throw new IllegalStateException(
+                        "TrocaSenhaObrigatoria.fxml não encontrado."
+                );
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            Parent root = loader.load();
+
+            TrocaSenhaObrigatoriaController controller =
+                    loader.getController();
+
+            if (controller == null) {
+                throw new IllegalStateException(
+                        "Controller da troca obrigatória não encontrado."
+                );
+            }
+
+            // A referência fica somente no Controller restrito e é entregue
+            // antes de qualquer substituição da Scene atual.
+            controller.definirUsuarioAutenticado(usuarioAutenticado);
+
+            if (cenaLogin == null
+                    || !(cenaLogin.getWindow() instanceof Stage stageAtual)) {
+                throw new IllegalStateException(
+                        "Stage atual da tela de Login não encontrado."
+                );
+            }
+
+            stage = stageAtual;
+            Scene cenaTrocaSenha = new Scene(root);
+
+            stage.setMaximized(false);
+            stage.setTitle("ERP Comercial - Troca Obrigatória de Senha");
+            stage.setScene(cenaTrocaSenha);
+            stage.sizeToScene();
+            stage.centerOnScreen();
+
+            return true;
+
+        } catch (IOException | RuntimeException e) {
+            System.err.println(
+                    "[ERRO] Falha ao abrir TrocaSenhaObrigatoria.fxml."
+            );
+            e.printStackTrace();
+
+            // Se a troca de Scene começou antes da falha, restaura o Login.
+            if (stage != null && cenaLogin != null) {
+                try {
+                    stage.setMaximized(false);
+                    stage.setScene(cenaLogin);
+                    stage.setTitle("ERP Comercial - Login");
+                    stage.sizeToScene();
+                    stage.centerOnScreen();
+                } catch (RuntimeException restauracaoErro) {
+                    e.addSuppressed(restauracaoErro);
+                }
+            }
+
+            SessaoUsuario.getInstance().fazerLogout();
+            return false;
         }
     }
 

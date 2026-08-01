@@ -198,6 +198,64 @@ public class UsuarioDAO {
     }
 
     /**
+     * Persiste o novo hash e encerra a troca obrigatória na mesma instrução SQL.
+     *
+     * O método participa da transação controlada pelo Service: não abre outra
+     * Connection, não executa commit, não executa rollback e não fecha a conexão
+     * recebida. A condição do UPDATE impede a conclusão para usuário inativo ou
+     * para um indicador que já não esteja pendente.
+     *
+     * @param conn conexão externa controlada pelo Service.
+     * @param usuarioId identificador do usuário autenticado.
+     * @param novoHash novo hash BCrypt que substituirá o anterior.
+     * @return quantidade de registros atualizados.
+     */
+    public int concluirTrocaSenhaObrigatoria(
+            Connection conn,
+            Integer usuarioId,
+            String novoHash
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException(
+                    "ID do usuário deve ser maior que zero."
+            );
+        }
+
+        if (novoHash == null || novoHash.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Novo hash de senha é obrigatório."
+            );
+        }
+
+        String sql = """
+            UPDATE Usuario
+            SET senha = ?,
+                troca_senha_obrigatoria = 0
+            WHERE id_usuario = ?
+              AND status = 'ATIVO'
+              AND troca_senha_obrigatoria = 1
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, novoHash);
+            stmt.setInt(2, usuarioId);
+
+            return stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao concluir a troca obrigatória de senha no banco.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Converte rigorosamente o INTEGER do SQLite para boolean.
      *
      * A leitura como Object evita conversões permissivas do JDBC, como truncar
