@@ -18,6 +18,7 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
@@ -61,6 +62,7 @@ public class TelaPrincipalController {
     private final NumberFormat formatadorMoeda;
 
     private Task<DashboardResumoView> tarefaDashboardAtual;
+    private Stage janelaAlterarSenha;
 
     @FXML private Label lblUsuario;
     @FXML private Label lblDataHora;
@@ -725,6 +727,80 @@ public class TelaPrincipalController {
                 opcaoSelecionada.getCaminhoFxml(),
                 opcaoSelecionada.getTituloTela()
         );
+    }
+
+    /**
+     * Abre a alteração voluntária de senha em uma janela modal pertencente à
+     * Tela Principal, preservando a Scene e a sessão atuais.
+     */
+    @FXML
+    public void abrirAlterarSenha() {
+        if (janelaAlterarSenha != null
+                && janelaAlterarSenha.isShowing()) {
+            janelaAlterarSenha.requestFocus();
+            janelaAlterarSenha.toFront();
+            return;
+        }
+
+        try {
+            Usuario usuarioLogado =
+                    SessaoUsuario
+                            .getInstance()
+                            .getUsuarioLogado();
+
+            if (usuarioLogado == null) {
+                throw new IllegalStateException(
+                        "Não existe usuário logado para alterar a senha."
+                );
+            }
+
+            URL fxmlLocation = getClass().getResource(
+                    "/br/com/luis/view/AlterarSenha.fxml"
+            );
+
+            if (fxmlLocation == null) {
+                throw new IllegalStateException(
+                        "AlterarSenha.fxml não encontrado."
+                );
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            Parent root = loader.load();
+
+            AlterarSenhaController controller = loader.getController();
+            controller.definirUsuarioLogado(usuarioLogado);
+
+            Stage stagePrincipal = obterStageAtual();
+            Stage stageAlterarSenha = new Stage();
+
+            stageAlterarSenha.initOwner(stagePrincipal);
+            stageAlterarSenha.initModality(Modality.WINDOW_MODAL);
+            stageAlterarSenha.setTitle("ERP Comercial - Alterar Senha");
+            stageAlterarSenha.setScene(new Scene(root));
+            stageAlterarSenha.setResizable(false);
+
+            janelaAlterarSenha = stageAlterarSenha;
+
+            try {
+                stageAlterarSenha.showAndWait();
+            } finally {
+                if (janelaAlterarSenha == stageAlterarSenha) {
+                    janelaAlterarSenha = null;
+                }
+            }
+
+        } catch (IOException | RuntimeException e) {
+            System.err.println(
+                    "[ERRO] Falha ao abrir a alteração voluntária de senha."
+            );
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível abrir a tela Alterar Senha."
+            );
+        }
     }
 
     /**

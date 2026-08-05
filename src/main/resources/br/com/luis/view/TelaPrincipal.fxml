@@ -104,6 +104,11 @@
                                text="Usuário não identificado"
                                styleClass="texto-cabecalho" />
 
+                        <Button fx:id="btnAlterarSenha"
+                                text="Alterar Senha"
+                                onAction="#abrirAlterarSenha"
+                                styleClass="botao-atualizar" />
+
                         <Label text="|"
                                styleClass="separador-cabecalho" />
 

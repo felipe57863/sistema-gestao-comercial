@@ -118,6 +118,115 @@ public class TrocaSenhaService {
         }
     }
 
+    /**
+     * Altera voluntariamente a senha do usuário já liberado e mantém a sessão
+     * existente ativa.
+     *
+     * A senha atual é conferida com BCrypt antes da abertura da conexão. O DAO
+     * também compara o hash persistido com o hash conhecido pelo objeto para
+     * proteger contra uma sessão desatualizada. O objeto em memória somente é
+     * atualizado depois do commit confirmado.
+     *
+     * @param usuario usuário já logado e liberado para o acesso normal.
+     * @param senhaAtual senha atual informada pelo usuário.
+     * @param novaSenha nova senha escolhida pelo usuário.
+     * @param confirmacao confirmação da nova senha.
+     * @throws IllegalArgumentException quando as senhas informadas forem inválidas.
+     * @throws IllegalStateException quando o usuário ou a persistência estiverem
+     *                               em estado incompatível.
+     */
+    public void alterarSenhaVoluntariamente(
+            Usuario usuario,
+            String senhaAtual,
+            String novaSenha,
+            String confirmacao
+    ) {
+
+        validarUsuarioParaAlteracaoVoluntaria(usuario);
+        validarSenhasAlteracaoVoluntaria(
+                senhaAtual,
+                novaSenha,
+                confirmacao
+        );
+
+        String hashAtual = usuario.getSenha();
+        validarSenhaAtual(senhaAtual, hashAtual);
+
+        if (senhaAtual.equals(novaSenha)) {
+            throw new IllegalArgumentException(
+                    "A nova senha deve ser diferente da senha atual."
+            );
+        }
+
+        String novoHash = BCrypt.hashpw(
+                novaSenha,
+                BCrypt.gensalt(CUSTO_BCRYPT)
+        );
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+            boolean autoCommitOriginal = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+
+            try {
+                // Senha e proteção contra sessão desatualizada participam da
+                // mesma transação controlada integralmente pelo Service.
+                conn.setAutoCommit(false);
+
+                int registrosAtualizados =
+                        usuarioDAO.alterarSenhaVoluntariamente(
+                                conn,
+                                usuario.getIdUsuario(),
+                                hashAtual,
+                                novoHash
+                        );
+
+                if (registrosAtualizados != 1) {
+                    throw new IllegalStateException(
+                            "Não foi possível alterar a senha. A sessão ou os "
+                                    + "dados do usuário ficaram desatualizados."
+                    );
+                }
+
+                conn.commit();
+
+            } catch (SQLException | RuntimeException e) {
+                falhaOriginal = e;
+                executarRollbackSeguro(conn, e);
+
+                if (e instanceof IllegalArgumentException) {
+                    throw (IllegalArgumentException) e;
+                }
+
+                if (e instanceof IllegalStateException) {
+                    throw (IllegalStateException) e;
+                }
+
+                throw new IllegalStateException(
+                        "Erro ao alterar voluntariamente a senha.",
+                        e
+                );
+
+            } finally {
+                restaurarAutoCommitSeguro(
+                        conn,
+                        autoCommitOriginal,
+                        falhaOriginal
+                );
+            }
+
+            // O mesmo Usuario continua na sessão; somente um commit confirmado
+            // autoriza sua atualização em memória, sem criar ou trocar a sessão.
+            usuario.setSenha(novoHash);
+            usuario.setTrocaSenhaObrigatoria(false);
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao controlar a transação da alteração voluntária de senha.",
+                    e
+            );
+        }
+    }
+
     private void validarUsuario(Usuario usuario) {
         if (usuario == null) {
             throw new IllegalArgumentException(
@@ -169,6 +278,72 @@ public class TrocaSenhaService {
             throw new IllegalArgumentException(
                     "A nova senha deve possuir pelo menos 8 caracteres."
             );
+        }
+    }
+
+    private void validarUsuarioParaAlteracaoVoluntaria(Usuario usuario) {
+        if (usuario == null) {
+            throw new IllegalArgumentException(
+                    "Usuário logado é obrigatório para alterar a senha."
+            );
+        }
+
+        if (usuario.getIdUsuario() == null || usuario.getIdUsuario() <= 0) {
+            throw new IllegalStateException(
+                    "Usuário logado não possui um ID válido."
+            );
+        }
+
+        if (!"ATIVO".equals(usuario.getStatus())) {
+            throw new IllegalStateException(
+                    "O usuário não está apto à alteração de senha."
+            );
+        }
+
+        if (usuario.isTrocaSenhaObrigatoria()) {
+            throw new IllegalStateException(
+                    "A troca obrigatória ainda está pendente para este usuário."
+            );
+        }
+
+        if (usuario.getSenha() == null || usuario.getSenha().isBlank()) {
+            throw new IllegalStateException(
+                    "Os dados de autenticação do usuário são inválidos."
+            );
+        }
+    }
+
+    private void validarSenhasAlteracaoVoluntaria(
+            String senhaAtual,
+            String novaSenha,
+            String confirmacao
+    ) {
+
+        if (senhaAtual == null || senhaAtual.isBlank()) {
+            throw new IllegalArgumentException("A senha atual é obrigatória.");
+        }
+
+        validarNovaSenha(novaSenha, confirmacao);
+    }
+
+    private void validarSenhaAtual(
+            String senhaAtual,
+            String hashAtual
+    ) {
+
+        boolean senhaCorreta;
+
+        try {
+            senhaCorreta = BCrypt.checkpw(senhaAtual, hashAtual);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "Os dados de autenticação do usuário são inválidos.",
+                    e
+            );
+        }
+
+        if (!senhaCorreta) {
+            throw new IllegalArgumentException("Senha atual incorreta.");
         }
     }
 

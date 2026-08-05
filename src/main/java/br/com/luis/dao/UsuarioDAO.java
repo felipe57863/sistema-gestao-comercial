@@ -256,6 +256,72 @@ public class UsuarioDAO {
     }
 
     /**
+     * Altera somente a senha de um usuário já liberado para o acesso normal.
+     *
+     * O hash atual participa da condição do UPDATE para impedir que uma sessão
+     * desatualizada sobrescreva uma senha alterada por outro fluxo. O método usa
+     * a conexão externa e não controla commit, rollback ou seu fechamento.
+     *
+     * @param conn conexão externa controlada pelo Service.
+     * @param usuarioId identificador do usuário logado.
+     * @param hashAtual hash conhecido pela sessão atual.
+     * @param novoHash novo hash BCrypt que substituirá o atual.
+     * @return quantidade de registros atualizados.
+     */
+    public int alterarSenhaVoluntariamente(
+            Connection conn,
+            Integer usuarioId,
+            String hashAtual,
+            String novoHash
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException(
+                    "ID do usuário deve ser maior que zero."
+            );
+        }
+
+        if (hashAtual == null || hashAtual.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Hash atual de senha é obrigatório."
+            );
+        }
+
+        if (novoHash == null || novoHash.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Novo hash de senha é obrigatório."
+            );
+        }
+
+        String sql = """
+            UPDATE Usuario
+            SET senha = ?
+            WHERE id_usuario = ?
+              AND senha = ?
+              AND status = 'ATIVO'
+              AND troca_senha_obrigatoria = 0
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, novoHash);
+            stmt.setInt(2, usuarioId);
+            stmt.setString(3, hashAtual);
+
+            return stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao alterar voluntariamente a senha no banco.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Converte rigorosamente o INTEGER do SQLite para boolean.
      *
      * A leitura como Object evita conversões permissivas do JDBC, como truncar
