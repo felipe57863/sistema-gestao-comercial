@@ -220,7 +220,6 @@
                        styleClass="cartao-titulo" />
 
                 <TableView fx:id="tabelaMovimentacoes"
-                           minHeight="260.0"
                            maxWidth="Infinity"
                            maxHeight="Infinity"
                            VBox.vgrow="ALWAYS">

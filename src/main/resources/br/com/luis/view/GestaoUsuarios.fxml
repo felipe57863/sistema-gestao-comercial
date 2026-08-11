@@ -147,7 +147,6 @@
                                 </VBox>
 
                                 <TableView fx:id="tabelaUsuarios"
-                                           minHeight="280.0"
                                            VBox.vgrow="ALWAYS">
                                     <columns>
                                         <TableColumn fx:id="colId"
