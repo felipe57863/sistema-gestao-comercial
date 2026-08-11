@@ -9,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * DAO responsável pela persistência e consulta de usuários por JDBC.
@@ -198,6 +200,214 @@ public class UsuarioDAO {
     }
 
     /**
+     * Lista todos os usuários em ordem estável de nome, login e ID.
+     *
+     * @return usuários cadastrados no banco.
+     */
+    public List<Usuario> listarTodos() {
+
+        String sql = """
+            SELECT id_usuario,
+                   nome,
+                   login,
+                   senha,
+                   perfil,
+                   status,
+                   troca_senha_obrigatoria
+            FROM Usuario
+            ORDER BY nome COLLATE NOCASE,
+                     login COLLATE NOCASE,
+                     id_usuario
+            """;
+
+        List<Usuario> usuarios = new ArrayList<>();
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                usuarios.add(new Usuario(
+                        rs.getInt("id_usuario"),
+                        rs.getString("nome"),
+                        rs.getString("login"),
+                        rs.getString("senha"),
+                        rs.getString("perfil"),
+                        rs.getString("status"),
+                        lerTrocaSenhaObrigatoria(rs)
+                ));
+            }
+
+            return usuarios;
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao listar usuários no banco de dados.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Verifica a existência de um login normalizado sem carregar a senha.
+     *
+     * @param login login que será consultado.
+     * @return true quando o login já estiver cadastrado.
+     */
+    public boolean existeLogin(String login) {
+
+        if (login == null || login.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Login é obrigatório para consulta."
+            );
+        }
+
+        String sql = """
+            SELECT 1
+            FROM Usuario
+            WHERE login = ?
+            LIMIT 1
+            """;
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, login.trim().toLowerCase());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao verificar a existência do login.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Altera somente o status quando o valor persistido ainda corresponde ao
+     * estado conhecido pelo Service.
+     *
+     * @return quantidade de registros atualizados.
+     */
+    public int atualizarStatus(
+            Connection conn,
+            Integer usuarioId,
+            String statusAtual,
+            String novoStatus
+    ) {
+
+        validarConexaoEUsuarioId(conn, usuarioId);
+
+        if (statusAtual == null || statusAtual.isBlank()) {
+            throw new IllegalArgumentException("Status atual é obrigatório.");
+        }
+
+        if (novoStatus == null || novoStatus.isBlank()) {
+            throw new IllegalArgumentException("Novo status é obrigatório.");
+        }
+
+        String sql = """
+            UPDATE Usuario
+            SET status = ?
+            WHERE id_usuario = ?
+              AND status = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, novoStatus);
+            stmt.setInt(2, usuarioId);
+            stmt.setString(3, statusAtual);
+
+            return stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao atualizar o status do usuário.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Conta administradores ativos dentro da transação do Service.
+     */
+    public int contarAdministradoresAtivos(Connection conn) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        String sql = """
+            SELECT COUNT(*)
+            FROM Usuario
+            WHERE perfil = 'ADMIN'
+              AND status = 'ATIVO'
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            if (!rs.next()) {
+                throw new IllegalStateException(
+                        "Não foi possível contar os administradores ativos."
+                );
+            }
+
+            return rs.getInt(1);
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao contar administradores ativos.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Persiste o novo hash e ativa a troca obrigatória sem alterar os demais
+     * dados do usuário.
+     *
+     * @return quantidade de registros atualizados.
+     */
+    public int redefinirSenhaAdministrativamente(
+            Connection conn,
+            Integer usuarioId,
+            String novoHash
+    ) {
+
+        validarConexaoEUsuarioId(conn, usuarioId);
+
+        if (novoHash == null || novoHash.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Novo hash de senha é obrigatório."
+            );
+        }
+
+        String sql = """
+            UPDATE Usuario
+            SET senha = ?,
+                troca_senha_obrigatoria = 1
+            WHERE id_usuario = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, novoHash);
+            stmt.setInt(2, usuarioId);
+
+            return stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao redefinir administrativamente a senha.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Persiste o novo hash e encerra a troca obrigatória na mesma instrução SQL.
      *
      * O método participa da transação controlada pelo Service: não abre outra
@@ -317,6 +527,22 @@ public class UsuarioDAO {
             throw new IllegalStateException(
                     "Erro ao alterar voluntariamente a senha no banco.",
                     e
+            );
+        }
+    }
+
+    private void validarConexaoEUsuarioId(
+            Connection conn,
+            Integer usuarioId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException(
+                    "ID do usuário deve ser maior que zero."
             );
         }
     }

@@ -72,6 +72,13 @@
                     maxWidth="Infinity"
                     styleClass="botao-menu" />
 
+            <Button fx:id="btnUsuarios"
+                    text="Usuários"
+                    onAction="#abrirGestaoUsuarios"
+                    prefHeight="44.0"
+                    maxWidth="Infinity"
+                    styleClass="botao-menu" />
+
             <Region VBox.vgrow="ALWAYS" />
 
             <Button fx:id="btnSair"
@@ -103,11 +110,6 @@
                         <Label fx:id="lblUsuario"
                                text="Usuário não identificado"
                                styleClass="texto-cabecalho" />
-
-                        <Button fx:id="btnAlterarSenha"
-                                text="Alterar Senha"
-                                onAction="#abrirAlterarSenha"
-                                styleClass="botao-atualizar" />
 
                         <Label text="|"
                                styleClass="separador-cabecalho" />

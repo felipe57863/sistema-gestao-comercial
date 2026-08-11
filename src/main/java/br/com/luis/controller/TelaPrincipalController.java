@@ -18,7 +18,6 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
@@ -62,11 +61,13 @@ public class TelaPrincipalController {
     private final NumberFormat formatadorMoeda;
 
     private Task<DashboardResumoView> tarefaDashboardAtual;
-    private Stage janelaAlterarSenha;
 
     @FXML private Label lblUsuario;
     @FXML private Label lblDataHora;
+    @FXML private Button btnClientes;
+    @FXML private Button btnProdutos;
     @FXML private Button btnRelatorios;
+    @FXML private Button btnUsuarios;
 
     @FXML private ComboBox<PeriodoDashboard> cmbPeriodoDashboard;
     @FXML private Button btnAtualizarDashboard;
@@ -115,6 +116,7 @@ public class TelaPrincipalController {
         );
 
         configurarVisibilidadeBotaoRelatorios();
+        configurarVisibilidadeOpcoesAdministrativas();
 
         cmbPeriodoDashboard
                 .getItems()
@@ -151,9 +153,30 @@ public class TelaPrincipalController {
     }
 
     /**
+     * Limita visualmente Produtos, Clientes e Usuários ao administrador apto.
+     * As opções também são protegidas pelos respectivos métodos de abertura, e
+     * as operações de usuários permanecem autorizadas pelo Service.
+     */
+    private void configurarVisibilidadeOpcoesAdministrativas() {
+        boolean administrador = usuarioAtualEhAdministrador();
+
+        btnProdutos.setVisible(administrador);
+        btnProdutos.setManaged(administrador);
+        btnProdutos.setDisable(!administrador);
+
+        btnClientes.setVisible(administrador);
+        btnClientes.setManaged(administrador);
+        btnClientes.setDisable(!administrador);
+
+        btnUsuarios.setVisible(administrador);
+        btnUsuarios.setManaged(administrador);
+        btnUsuarios.setDisable(!administrador);
+    }
+
+    /**
      * Verifica se a sessão atual possui um administrador com ID válido.
      *
-     * @return true quando existe usuário identificado com perfil ADMIN.
+     * @return true quando existe administrador ativo e liberado para o acesso.
      */
     private boolean usuarioAtualEhAdministrador() {
 
@@ -171,9 +194,9 @@ public class TelaPrincipalController {
 
         return usuarioId != null
                 && usuarioId > 0
-                && "ADMIN".equals(
-                        usuarioLogado.getPerfil()
-                );
+                && "ADMIN".equals(usuarioLogado.getPerfil())
+                && "ATIVO".equals(usuarioLogado.getStatus())
+                && !usuarioLogado.isTrocaSenhaObrigatoria();
     }
 
     /**
@@ -624,6 +647,15 @@ public class TelaPrincipalController {
      */
     @FXML
     public void abrirClientes() {
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "O cadastro de clientes é exclusivo para administradores ativos."
+            );
+            return;
+        }
+
         abrirTela(
                 "/br/com/luis/view/Cliente.fxml",
                 "Cadastro de Clientes"
@@ -635,6 +667,15 @@ public class TelaPrincipalController {
      */
     @FXML
     public void abrirProdutos() {
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "O cadastro de produtos é exclusivo para administradores ativos."
+            );
+            return;
+        }
+
         abrirTela(
                 "/br/com/luis/view/Produto.fxml",
                 "Cadastro de Produtos"
@@ -730,77 +771,23 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Abre a alteração voluntária de senha em uma janela modal pertencente à
-     * Tela Principal, preservando a Scene e a sessão atuais.
+     * Abre a Gestão de Usuários como tela funcional no mesmo Stage.
      */
     @FXML
-    public void abrirAlterarSenha() {
-        if (janelaAlterarSenha != null
-                && janelaAlterarSenha.isShowing()) {
-            janelaAlterarSenha.requestFocus();
-            janelaAlterarSenha.toFront();
+    public void abrirGestaoUsuarios() {
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "A gestão de usuários é exclusiva para administradores ativos."
+            );
             return;
         }
 
-        try {
-            Usuario usuarioLogado =
-                    SessaoUsuario
-                            .getInstance()
-                            .getUsuarioLogado();
-
-            if (usuarioLogado == null) {
-                throw new IllegalStateException(
-                        "Não existe usuário logado para alterar a senha."
-                );
-            }
-
-            URL fxmlLocation = getClass().getResource(
-                    "/br/com/luis/view/AlterarSenha.fxml"
-            );
-
-            if (fxmlLocation == null) {
-                throw new IllegalStateException(
-                        "AlterarSenha.fxml não encontrado."
-                );
-            }
-
-            FXMLLoader loader = new FXMLLoader(fxmlLocation);
-            Parent root = loader.load();
-
-            AlterarSenhaController controller = loader.getController();
-            controller.definirUsuarioLogado(usuarioLogado);
-
-            Stage stagePrincipal = obterStageAtual();
-            Stage stageAlterarSenha = new Stage();
-
-            stageAlterarSenha.initOwner(stagePrincipal);
-            stageAlterarSenha.initModality(Modality.WINDOW_MODAL);
-            stageAlterarSenha.setTitle("ERP Comercial - Alterar Senha");
-            stageAlterarSenha.setScene(new Scene(root));
-            stageAlterarSenha.setResizable(false);
-
-            janelaAlterarSenha = stageAlterarSenha;
-
-            try {
-                stageAlterarSenha.showAndWait();
-            } finally {
-                if (janelaAlterarSenha == stageAlterarSenha) {
-                    janelaAlterarSenha = null;
-                }
-            }
-
-        } catch (IOException | RuntimeException e) {
-            System.err.println(
-                    "[ERRO] Falha ao abrir a alteração voluntária de senha."
-            );
-            e.printStackTrace();
-
-            mostrarAlerta(
-                    Alert.AlertType.ERROR,
-                    "Erro",
-                    "Não foi possível abrir a tela Alterar Senha."
-            );
-        }
+        abrirTela(
+                "/br/com/luis/view/GestaoUsuarios.fxml",
+                "Gestão de Usuários"
+        );
     }
 
     /**
