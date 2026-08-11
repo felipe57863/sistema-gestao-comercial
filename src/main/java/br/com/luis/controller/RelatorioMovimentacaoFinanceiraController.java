@@ -1092,7 +1092,7 @@ public class RelatorioMovimentacaoFinanceiraController {
 
         String textoEstado =
                 resultadoVazio
-                        ? MENSAGEM_RESULTADO_VAZIO
+                        ? "Consulta concluída."
                         : "Relatório atualizado com sucesso.";
 
         Label placeholder =
