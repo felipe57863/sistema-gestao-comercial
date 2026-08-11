@@ -7,6 +7,7 @@ import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -27,6 +28,8 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -37,7 +40,10 @@ import java.util.Optional;
  */
 public class GestaoUsuariosController {
 
+    private static final String FILTRO_TODOS = "Todos";
+
     private final GestaoUsuarioService gestaoUsuarioService;
+    private final ObservableList<Usuario> usuariosCarregados;
 
     private Usuario administradorLogado;
     private Stage janelaAlterarSenha;
@@ -55,6 +61,12 @@ public class GestaoUsuariosController {
     @FXML private TableColumn<Usuario, String> colStatus;
     @FXML private TableColumn<Usuario, String> colTrocaObrigatoria;
 
+    @FXML private TextField txtPesquisaUsuario;
+    @FXML private ComboBox<String> cmbFiltroPerfil;
+    @FXML private ComboBox<String> cmbFiltroStatus;
+    @FXML private ComboBox<String> cmbFiltroTrocaObrigatoria;
+    @FXML private Label lblTotalUsuarios;
+
     @FXML private Button btnAtualizarLista;
     @FXML private Button btnAlterarStatus;
     @FXML private Button btnRedefinirSenha;
@@ -69,6 +81,7 @@ public class GestaoUsuariosController {
 
     public GestaoUsuariosController() {
         this.gestaoUsuarioService = new GestaoUsuarioService();
+        this.usuariosCarregados = FXCollections.observableArrayList();
     }
 
     @FXML
@@ -79,6 +92,7 @@ public class GestaoUsuariosController {
         );
 
         configurarTabela();
+        configurarFiltros();
 
         cmbPerfil.getItems().setAll("ADMIN", "VENDEDOR");
         cmbPerfil.getSelectionModel().select("VENDEDOR");
@@ -151,6 +165,27 @@ public class GestaoUsuariosController {
                 );
     }
 
+    private void configurarFiltros() {
+        cmbFiltroPerfil.getItems().setAll(
+                FILTRO_TODOS,
+                "ADMIN",
+                "VENDEDOR"
+        );
+        cmbFiltroStatus.getItems().setAll(
+                FILTRO_TODOS,
+                "ATIVO",
+                "INATIVO"
+        );
+        cmbFiltroTrocaObrigatoria.getItems().setAll(
+                FILTRO_TODOS,
+                "Sim",
+                "Não"
+        );
+
+        limparControlesFiltro();
+        txtPesquisaUsuario.setOnAction(event -> aplicarFiltros());
+    }
+
     @FXML
     private void atualizarLista() {
         carregarUsuarios();
@@ -164,14 +199,19 @@ public class GestaoUsuariosController {
                 );
             }
 
-            tabelaUsuarios.setItems(
-                    FXCollections.observableArrayList(
-                            gestaoUsuarioService.listarUsuarios(
-                                    administradorLogado
-                            )
-                    )
+            List<Usuario> usuariosAtualizados =
+                    gestaoUsuarioService.listarUsuarios(
+                            administradorLogado
+                    );
+
+            usuariosCarregados.setAll(
+                    usuariosAtualizados == null
+                            ? List.of()
+                            : usuariosAtualizados
             );
-            configurarBotoesSelecao(null);
+
+            limparControlesFiltro();
+            exibirUsuarios(usuariosCarregados);
 
         } catch (RuntimeException e) {
             mostrarAlerta(
@@ -180,6 +220,138 @@ public class GestaoUsuariosController {
                     mensagemErro(e)
             );
         }
+    }
+
+    @FXML
+    private void aplicarFiltros() {
+        List<Usuario> usuariosFiltrados = filtrarUsuariosCarregados(
+                usuariosCarregados,
+                txtPesquisaUsuario.getText(),
+                cmbFiltroPerfil.getValue(),
+                cmbFiltroStatus.getValue(),
+                cmbFiltroTrocaObrigatoria.getValue()
+        );
+
+        exibirUsuarios(usuariosFiltrados);
+    }
+
+    @FXML
+    private void limparFiltros() {
+        limparControlesFiltro();
+        exibirUsuarios(usuariosCarregados);
+    }
+
+    private void limparControlesFiltro() {
+        txtPesquisaUsuario.clear();
+        cmbFiltroPerfil.getSelectionModel().select(FILTRO_TODOS);
+        cmbFiltroStatus.getSelectionModel().select(FILTRO_TODOS);
+        cmbFiltroTrocaObrigatoria.getSelectionModel().select(FILTRO_TODOS);
+    }
+
+    private void exibirUsuarios(List<Usuario> usuarios) {
+        tabelaUsuarios.setItems(
+                FXCollections.observableArrayList(usuarios)
+        );
+        tabelaUsuarios.getSelectionModel().clearSelection();
+        lblTotalUsuarios.setText(
+                "Total de usuários: " + usuarios.size()
+        );
+        configurarBotoesSelecao(null);
+    }
+
+    /**
+     * Filtra somente a lista já mantida pela tela, sem acessar Service ou banco.
+     *
+     * O método é independente dos controles JavaFX para permitir validação não
+     * visual da combinação dos critérios.
+     */
+    static List<Usuario> filtrarUsuariosCarregados(
+            List<Usuario> usuarios,
+            String pesquisa,
+            String perfil,
+            String status,
+            String trocaObrigatoria
+    ) {
+
+        if (usuarios == null || usuarios.isEmpty()) {
+            return List.of();
+        }
+
+        String termoPesquisa = normalizarTextoFiltro(pesquisa);
+
+        return usuarios.stream()
+                .filter(usuario -> usuario != null)
+                .filter(usuario -> termoPesquisa.isEmpty()
+                        || contemIgnorandoCaixa(
+                                usuario.getNome(),
+                                termoPesquisa
+                        )
+                        || contemIgnorandoCaixa(
+                                usuario.getLogin(),
+                                termoPesquisa
+                        ))
+                .filter(usuario -> correspondeOpcao(
+                        usuario.getPerfil(),
+                        perfil
+                ))
+                .filter(usuario -> correspondeOpcao(
+                        usuario.getStatus(),
+                        status
+                ))
+                .filter(usuario -> correspondeTrocaObrigatoria(
+                        usuario.isTrocaSenhaObrigatoria(),
+                        trocaObrigatoria
+                ))
+                .toList();
+    }
+
+    private static boolean contemIgnorandoCaixa(
+            String texto,
+            String termoNormalizado
+    ) {
+        return texto != null
+                && texto.toLowerCase(Locale.ROOT)
+                .contains(termoNormalizado);
+    }
+
+    private static boolean correspondeOpcao(
+            String valorUsuario,
+            String filtro
+    ) {
+        return filtroTodos(filtro)
+                || valorUsuario != null
+                && valorUsuario.equalsIgnoreCase(filtro.trim());
+    }
+
+    private static boolean correspondeTrocaObrigatoria(
+            boolean trocaObrigatoria,
+            String filtro
+    ) {
+        if (filtroTodos(filtro)) {
+            return true;
+        }
+
+        if ("Sim".equalsIgnoreCase(filtro.trim())) {
+            return trocaObrigatoria;
+        }
+
+        if ("Não".equalsIgnoreCase(filtro.trim())) {
+            return !trocaObrigatoria;
+        }
+
+        return false;
+    }
+
+    private static boolean filtroTodos(String filtro) {
+        return filtro == null
+                || filtro.isBlank()
+                || FILTRO_TODOS.equalsIgnoreCase(filtro.trim());
+    }
+
+    private static String normalizarTextoFiltro(String texto) {
+        return texto == null
+                ? ""
+                : texto.trim().toLowerCase(Locale.ROOT);
     }
 
     @FXML
