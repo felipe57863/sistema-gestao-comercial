@@ -1062,6 +1062,12 @@ public class TelaPrincipalController {
                 "Movimentações financeiras",
                 "/br/com/luis/view/RelatorioMovimentacaoFinanceira.fxml",
                 "Relatório de Movimentações Financeiras"
+        ),
+
+        CONTAS_RECEBER(
+                "Contas a receber",
+                "/br/com/luis/view/RelatorioContaReceber.fxml",
+                "Relatório de Contas a Receber"
         );
 
         private final String rotulo;
