@@ -11,6 +11,11 @@ import java.util.List;
  */
 public class ClienteService {
 
+    private static final int[] PESOS_CPF_PRIMEIRO_DIGITO = {10, 9, 8, 7, 6, 5, 4, 3, 2};
+    private static final int[] PESOS_CPF_SEGUNDO_DIGITO = {11, 10, 9, 8, 7, 6, 5, 4, 3, 2};
+    private static final int[] PESOS_CNPJ_PRIMEIRO_DIGITO = {5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
+    private static final int[] PESOS_CNPJ_SEGUNDO_DIGITO = {6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2};
+
     private final ClienteDAO dao;
 
     public ClienteService() {
@@ -91,6 +96,8 @@ public class ClienteService {
             throw new IllegalArgumentException("Tipo de cliente é obrigatório.");
         }
 
+        validarDocumento(cliente.getDocumento(), cliente.getTipo());
+
         if (cliente.getLimiteCredito() == null) {
             throw new IllegalArgumentException("Limite de crédito é obrigatório.");
         }
@@ -102,6 +109,90 @@ public class ClienteService {
         if (cliente.getPrazoPagamento() == null || cliente.getPrazoPagamento().getIdPrazo() == null) {
             throw new IllegalArgumentException("Prazo de pagamento é obrigatório.");
         }
+    }
+
+    /**
+     * Valida o documento normalizado conforme o tipo real do cliente.
+     *
+     * @implNote A regra fica no Service para proteger cadastro e atualização
+     * antes de qualquer consulta de duplicidade ou persistência.
+     */
+    private void validarDocumento(String documento, Cliente.TipoCliente tipo) {
+        if (tipo == Cliente.TipoCliente.PF) {
+            if (!cpfValido(documento)) {
+                throw new IllegalArgumentException("CPF inválido.");
+            }
+            return;
+        }
+
+        if (!cnpjValido(documento)) {
+            throw new IllegalArgumentException("CNPJ inválido.");
+        }
+    }
+
+    private static boolean cpfValido(String cpf) {
+        if (cpf == null
+                || !cpf.matches("[0-9]{11}")
+                || possuiTodosDigitosIguais(cpf)) {
+            return false;
+        }
+
+        int primeiroDigito = calcularDigitoVerificador(
+                cpf.substring(0, 9),
+                PESOS_CPF_PRIMEIRO_DIGITO
+        );
+
+        int segundoDigito = calcularDigitoVerificador(
+                cpf.substring(0, 9) + primeiroDigito,
+                PESOS_CPF_SEGUNDO_DIGITO
+        );
+
+        return primeiroDigito == cpf.charAt(9) - '0'
+                && segundoDigito == cpf.charAt(10) - '0';
+    }
+
+    private static boolean cnpjValido(String cnpj) {
+        if (cnpj == null
+                || !cnpj.matches("[0-9]{14}")
+                || possuiTodosDigitosIguais(cnpj)) {
+            return false;
+        }
+
+        int primeiroDigito = calcularDigitoVerificador(
+                cnpj.substring(0, 12),
+                PESOS_CNPJ_PRIMEIRO_DIGITO
+        );
+
+        int segundoDigito = calcularDigitoVerificador(
+                cnpj.substring(0, 12) + primeiroDigito,
+                PESOS_CNPJ_SEGUNDO_DIGITO
+        );
+
+        return primeiroDigito == cnpj.charAt(12) - '0'
+                && segundoDigito == cnpj.charAt(13) - '0';
+    }
+
+    private static boolean possuiTodosDigitosIguais(String documento) {
+        char primeiroDigito = documento.charAt(0);
+
+        for (int indice = 1; indice < documento.length(); indice++) {
+            if (documento.charAt(indice) != primeiroDigito) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static int calcularDigitoVerificador(String base, int[] pesos) {
+        int soma = 0;
+
+        for (int indice = 0; indice < pesos.length; indice++) {
+            soma += (base.charAt(indice) - '0') * pesos[indice];
+        }
+
+        int resto = soma % 11;
+        return resto < 2 ? 0 : 11 - resto;
     }
 
     /**
