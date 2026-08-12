@@ -287,6 +287,37 @@ public class UsuarioDAO {
     }
 
     /**
+     * Verifica se existe qualquer usuário com perfil administrativo.
+     *
+     * O status não participa da consulta, pois um administrador inativo ainda
+     * representa uma instalação já configurada.
+     *
+     * @return true quando existir ao menos um usuário com perfil ADMIN.
+     */
+    public boolean existeAdministrador() {
+
+        String sql = """
+            SELECT 1
+            FROM Usuario
+            WHERE perfil = 'ADMIN'
+            LIMIT 1
+            """;
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            return rs.next();
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao verificar a existência de administrador.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Altera somente o status quando o valor persistido ainda corresponde ao
      * estado conhecido pelo Service.
      *

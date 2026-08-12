@@ -6,15 +6,20 @@ import br.com.luis.viewmodel.ResultadoAutenticacao;
 import org.mindrot.jbcrypt.BCrypt;
 
 /**
- * Service responsável pela autenticação e pela preparação do usuário
- * administrativo inicial. Normaliza o login, consulta o usuário por meio do
- * UsuarioDAO, verifica a senha usando o hash BCrypt e rejeita usuários inativos.
- * Não controla componentes JavaFX, a navegação ou a SessaoUsuario; após a
- * autenticação, cabe ao Controller registrar o usuário na sessão e decidir a
- * navegação da aplicação. Credenciais válidas não significam necessariamente
- * acesso normal liberado, pois pode existir uma troca de senha pendente.
+ * Service responsável pela autenticação e pelo provisionamento seguro do
+ * administrador inicial. Normaliza o login, consulta usuários por meio do
+ * UsuarioDAO, aplica BCrypt e rejeita usuários inativos.
+ *
+ * Não controla componentes JavaFX, navegação ou SessaoUsuario. A sessão somente
+ * pode ser criada pelo Controller depois do fluxo normal de autenticação.
  */
 public class AuthService {
+
+    private static final String NOME_ADMINISTRADOR_INICIAL =
+            "Administrador do Sistema";
+    private static final String LOGIN_ADMINISTRADOR_INICIAL = "admin";
+    private static final int TAMANHO_MINIMO_SENHA = 8;
+    private static final int CUSTO_BCRYPT = 12;
 
     // Dependência responsável pelo acesso ao banco
     private final UsuarioDAO usuarioDAO;
@@ -25,62 +30,107 @@ public class AuthService {
     }
 
     /**
-     * Gera um hash seguro da senha utilizando BCrypt.
-     * O hash é irreversível e contém um "salt" automático para maior segurança.
-     *
-     * @param senhaLimpa Senha em texto puro digitada pelo usuário
-     * @return Hash seguro da senha
+     * Retorna o nome não secreto definido pelo sistema para o administrador
+     * inicial.
      */
-    private String gerarHash(String senhaLimpa) {
-        // O parâmetro 12 define o nível de custo (work factor)
-        return BCrypt.hashpw(senhaLimpa, BCrypt.gensalt(12));
+    public String obterNomeAdministradorInicial() {
+        return NOME_ADMINISTRADOR_INICIAL;
     }
 
     /**
-     * Garante a existência do usuário administrador padrão durante a preparação
-     * da aplicação.
-     *
-     * Regra:
-     * - Consulta se o usuário "admin" já existe.
-     * - Se não existir, cria o administrador padrão automaticamente.
-     * - Se já existir, não cria outro registro.
-     *
-     * @implNote A verificação torna a operação idempotente em relação à criação
-     * do administrador, cuja senha padrão é armazenada com hash BCrypt.
+     * Retorna o login não secreto definido pelo sistema para o administrador
+     * inicial.
      */
-    public void inicializarAdminBase() {
+    public String obterLoginAdministradorInicial() {
+        return LOGIN_ADMINISTRADOR_INICIAL;
+    }
 
-        // Verifica se já existe um usuário com login "admin"
-        Usuario adminExistente = usuarioDAO.buscarPorLogin("admin");
+    /**
+     * Indica se a instalação ainda não possui nenhum administrador configurado.
+     *
+     * O status não interfere nessa decisão: um ADMIN inativo continua
+     * representando uma instalação já configurada.
+     */
+    public boolean precisaConfigurarAdministradorInicial() {
+        return !usuarioDAO.existeAdministrador();
+    }
 
-        if (adminExistente == null) {
-            System.out.println("[INFO] Administrador não encontrado. Criando usuário padrão...");
+    /**
+     * Cria o primeiro administrador somente depois que o responsável define a
+     * senha definitiva.
+     *
+     * O Service revalida a ausência de qualquer ADMIN, protege o login oficial,
+     * valida os campos, gera o hash BCrypt e solicita um único cadastro ao DAO.
+     * Nenhuma sessão é criada por este fluxo.
+     */
+    public void configurarAdministradorInicial(
+            String senha,
+            String confirmacaoSenha
+    ) {
 
-            // A senha padrão existe somente para permitir a autenticação inicial.
-            // Seu valor nunca deve ser impresso em logs ou mensagens.
-            String senhaSegura = gerarHash("admin123");
-
-            // Criação do usuário administrador
-            Usuario novoAdmin = new Usuario(
-                    null, // ID gerado automaticamente pelo banco
-                    "Administrador do Sistema",
-                    "admin",
-                    senhaSegura, // Hash BCrypt da senha já gerado
-                    "ADMIN",
-                    "ATIVO",
-                    true
+        if (usuarioDAO.existeAdministrador()) {
+            throw new IllegalStateException(
+                    "A configuração inicial já foi concluída."
             );
+        }
 
-            // Persiste no banco
-            usuarioDAO.cadastrar(novoAdmin);
-
-            System.out.println(
-                    "[INFO] Administrador-base criado. "
-                            + "A troca de senha será obrigatória antes do acesso normal."
+        if (usuarioDAO.existeLogin(LOGIN_ADMINISTRADOR_INICIAL)) {
+            throw new IllegalStateException(
+                    "Não foi possível concluir a configuração inicial. "
+                            + "O login administrativo está indisponível."
             );
+        }
 
-        } else {
-            System.out.println("[INFO] Administrador já existente.");
+        validarSenhaInicial(senha, confirmacaoSenha);
+
+        String senhaHash = BCrypt.hashpw(
+                senha,
+                BCrypt.gensalt(CUSTO_BCRYPT)
+        );
+
+        Usuario administradorInicial = new Usuario(
+                null,
+                NOME_ADMINISTRADOR_INICIAL,
+                LOGIN_ADMINISTRADOR_INICIAL,
+                senhaHash,
+                "ADMIN",
+                "ATIVO",
+                false
+        );
+
+        usuarioDAO.cadastrar(administradorInicial);
+
+        if (administradorInicial.getIdUsuario() == null
+                || administradorInicial.getIdUsuario() <= 0) {
+            throw new IllegalStateException(
+                    "Não foi possível confirmar a configuração inicial."
+            );
+        }
+    }
+
+    private void validarSenhaInicial(
+            String senha,
+            String confirmacaoSenha
+    ) {
+
+        if (senha == null || senha.isBlank()) {
+            throw new IllegalArgumentException("Senha é obrigatória.");
+        }
+
+        if (confirmacaoSenha == null || confirmacaoSenha.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Confirmação de senha é obrigatória."
+            );
+        }
+
+        if (!senha.equals(confirmacaoSenha)) {
+            throw new IllegalArgumentException("As senhas não conferem.");
+        }
+
+        if (senha.length() < TAMANHO_MINIMO_SENHA) {
+            throw new IllegalArgumentException(
+                    "A senha deve ter no mínimo 8 caracteres."
+            );
         }
     }
 

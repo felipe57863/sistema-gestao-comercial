@@ -22,6 +22,8 @@ import br.com.luis.service.PrazoPagamentoService;
  */
 public class Main extends Application {
 
+    private boolean configuracaoInicialNecessaria;
+
     /**
      * Método principal da aplicação.
      * Apenas delega para o JavaFX iniciar o ciclo de vida.
@@ -35,9 +37,9 @@ public class Main extends Application {
      * Prepara a infraestrutura antes da criação da interface gráfica.
      *
      * Primeiro cria ou verifica a estrutura do banco por meio dos scripts SQL.
-     * Em seguida, prepara os prazos de pagamento padrão e o usuário administrativo
-     * inicial. Uma falha crítica em qualquer dessas etapas interrompe o ciclo de
-     * inicialização, pois não é seguro abrir o sistema sem os dados essenciais.
+     * Em seguida, prepara os prazos de pagamento padrão e consulta se a instalação
+     * ainda precisa configurar o primeiro administrador. Uma falha crítica em
+     * qualquer dessas etapas interrompe o ciclo de inicialização.
      */
     @Override
     public void init() {
@@ -51,9 +53,10 @@ public class Main extends Application {
             PrazoPagamentoService prazoPagamentoService = new PrazoPagamentoService();
             prazoPagamentoService.inicializarPrazosPadrao();
 
-            // 3. Inicializa dados essenciais (usuário administrador padrão)
+            // 3. Define qual tela deve iniciar o fluxo da aplicação
             AuthService authService = new AuthService();
-            authService.inicializarAdminBase();
+            configuracaoInicialNecessaria =
+                    authService.precisaConfigurarAdministradorInicial();
 
             System.out.println("[INFO] Infraestrutura pronta.");
 
@@ -65,22 +68,30 @@ public class Main extends Application {
     }
 
     /**
-     * Inicia a interface gráfica carregando o Login.fxml.
+     * Inicia a interface gráfica na configuração inicial ou no Login.
      *
-     * Localiza e carrega o FXML, configura a janela principal e exibe a tela de
-     * autenticação. Após um login válido, a continuidade da navegação é coordenada
-     * pelo Controller responsável pela tela.
+     * Quando nenhum ADMIN existe, o responsável deve definir a senha definitiva
+     * antes de usar o Login. Uma instalação já configurada abre diretamente a
+     * autenticação normal.
      */
     @Override
     public void start(Stage primaryStage) throws Exception {
 
+        String caminhoFxml = configuracaoInicialNecessaria
+                ? "/br/com/luis/view/ConfiguracaoInicial.fxml"
+                : "/br/com/luis/view/Login.fxml";
+
+        String titulo = configuracaoInicialNecessaria
+                ? "ERP Comercial - Configuração Inicial"
+                : "ERP Comercial - Login";
+
         // 1. Localiza o ficheiro FXML dentro da pasta resources
-        URL fxmlLocation = getClass().getResource("/br/com/luis/view/Login.fxml");
+        URL fxmlLocation = getClass().getResource(caminhoFxml);
 
         // Fail-Fast: garante que o arquivo existe antes de continuar
         if (fxmlLocation == null) {
             throw new IllegalStateException(
-                    "Login.fxml não encontrado! Verifique o caminho em resources."
+                    "Tela inicial não encontrada: " + caminhoFxml
             );
         }
 
@@ -92,7 +103,7 @@ public class Main extends Application {
         Scene scene = new Scene(root);
 
         // 4. Configura a janela principal
-        primaryStage.setTitle("ERP Comercial - Login");
+        primaryStage.setTitle(titulo);
         primaryStage.setScene(scene);
 
         // Mantém a janela principal maximizada.
