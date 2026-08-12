@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import br.com.luis.viewmodel.ContaReceberListagemView;
+import br.com.luis.viewmodel.ContaReceberRelatorioDados;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -452,4 +453,187 @@ public class ContaReceberDAO {
             throw new RuntimeException("Erro ao listar contas a receber pendentes.", e);
         }
     }
+
+    /**
+     * Lista contas a receber para o relatório histórico no intervalo informado.
+     *
+     * Usa uma Connection externa e resolve ContaReceber e Cliente em uma única
+     * consulta. O período considera a data de vencimento no intervalo
+     * [inicioInclusivo, fimExclusivo). O filtro de cliente é opcional e pesquisa
+     * parcialmente pelo nome, sem diferenciar maiúsculas e minúsculas, ou pelo
+     * documento persistido sem pontuação.
+     *
+     * O método retorna somente a projeção persistida necessária ao relatório.
+     * Não calcula A_VENCER ou VENCIDA, não consolida totais e não executa regras
+     * de autorização; essas responsabilidades pertencem ao Service.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param inicioInclusivo primeira data de vencimento incluída no período.
+     * @param fimExclusivo primeira data de vencimento não incluída no período.
+     * @param clienteTexto texto opcional para pesquisa por nome ou documento.
+     * @return lista de projeções persistidas em ordem crescente de vencimento e ID.
+     * @throws IllegalArgumentException quando a conexão ou os limites do período
+     *                                  forem inválidos.
+     * @throws IllegalStateException quando um registro persistido não puder ser
+     *                               convertido para a projeção do relatório.
+     * @throws RuntimeException quando ocorrer erro de acesso ao banco de dados.
+     */
+    public List<ContaReceberRelatorioDados> listarParaRelatorio(
+            Connection conn,
+            LocalDate inicioInclusivo,
+            LocalDate fimExclusivo,
+            String clienteTexto
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (inicioInclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data inicial do período é obrigatória."
+            );
+        }
+
+        if (fimExclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Data final exclusiva do período é obrigatória."
+            );
+        }
+
+        if (!fimExclusivo.isAfter(inicioInclusivo)) {
+            throw new IllegalArgumentException(
+                    "O limite final do período deve ser posterior ao limite inicial."
+            );
+        }
+
+        String termoCliente =
+                clienteTexto == null || clienteTexto.isBlank()
+                        ? null
+                        : clienteTexto.trim();
+
+        String termoDocumento = null;
+
+        if (termoCliente != null) {
+            String documentoNormalizado =
+                    termoCliente.replaceAll("[^0-9]", "");
+
+            if (!documentoNormalizado.isBlank()) {
+                termoDocumento = documentoNormalizado;
+            }
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT conta.id_conta,
+                       conta.venda_id,
+                       cliente.nome AS nome_cliente,
+                       conta.valor,
+                       conta.data_vencimento,
+                       conta.status
+                FROM ContaReceber conta
+                INNER JOIN Cliente cliente
+                        ON cliente.id_cliente = conta.cliente_id
+                WHERE conta.data_vencimento >= ?
+                  AND conta.data_vencimento < ?
+                """);
+
+        if (termoCliente != null) {
+            if (termoDocumento != null) {
+                sql.append("""
+                          AND (
+                              LOWER(cliente.nome) LIKE ?
+                              OR cliente.documento LIKE ?
+                          )
+                        """);
+            } else {
+                sql.append("""
+                          AND LOWER(cliente.nome) LIKE ?
+                        """);
+            }
+        }
+
+        sql.append("""
+                ORDER BY conta.data_vencimento ASC,
+                         conta.id_conta ASC
+                """);
+
+        List<ContaReceberRelatorioDados> contas = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            int indiceParametro = 1;
+
+            stmt.setString(
+                    indiceParametro++,
+                    inicioInclusivo.toString()
+            );
+
+            stmt.setString(
+                    indiceParametro++,
+                    fimExclusivo.toString()
+            );
+
+            if (termoCliente != null) {
+                stmt.setString(
+                        indiceParametro++,
+                        "%" + termoCliente.toLowerCase() + "%"
+                );
+
+                if (termoDocumento != null) {
+                    stmt.setString(
+                            indiceParametro++,
+                            "%" + termoDocumento + "%"
+                    );
+                }
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Integer idConta = null;
+
+                    try {
+                        idConta = rs.getInt("id_conta");
+
+                        ContaReceberRelatorioDados contaDados =
+                                new ContaReceberRelatorioDados(
+                                        idConta,
+                                        rs.getInt("venda_id"),
+                                        rs.getString("nome_cliente"),
+                                        rs.getBigDecimal("valor"),
+                                        LocalDate.parse(
+                                                rs.getString("data_vencimento")
+                                        ),
+                                        StatusContaReceber.valueOf(
+                                                rs.getString("status")
+                                        )
+                                );
+
+                        contas.add(contaDados);
+
+                    } catch (RuntimeException e) {
+                        String contextoIdentificacao =
+                                idConta != null && idConta > 0
+                                        ? " de ID " + idConta
+                                        : "";
+
+                        throw new IllegalStateException(
+                                "Dados persistidos inválidos ao mapear conta a receber"
+                                        + contextoIdentificacao
+                                        + " para o relatório.",
+                                e
+                        );
+                    }
+                }
+            }
+
+            return contas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar contas a receber para o relatório.",
+                    e
+            );
+        }
+    }
+
 }
