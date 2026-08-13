@@ -4,11 +4,16 @@ import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
 import br.com.luis.model.Promocao.TipoDesconto;
 import br.com.luis.util.ConnectionFactory;
+import br.com.luis.viewmodel.FiltroRelatorioPromocaoProduto;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * DAO da entidade Promocao.
@@ -139,5 +144,158 @@ public class PromocaoDAO {
         }
 
         return null;
+    }
+
+    /**
+     * Lista as promoções ativas destinadas ao relatório de produtos.
+     *
+     * Uma única consulta com INNER JOIN recupera cada promoção e o respectivo
+     * produto, evitando consultas adicionais por linha. Promoções distintas do
+     * mesmo produto permanecem separadas e ordenadas pelo ID da promoção.
+     *
+     * Usa a Connection recebida externamente e encerra somente o
+     * PreparedStatement e o ResultSet criados. Não executa commit, rollback nem
+     * fecha a Connection informada.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param filtro fotografia imutável dos filtros aplicados ao relatório.
+     * @return promoções ativas encontradas; lista vazia quando não houver registros.
+     * @throws IllegalArgumentException quando a conexão ou o filtro for nulo.
+     * @throws IllegalStateException quando um registro persistido for inválido.
+     * @throws RuntimeException quando ocorrer erro de acesso ao banco de dados.
+     */
+    public List<Promocao> listarParaRelatorioProdutos(
+            Connection conn,
+            FiltroRelatorioPromocaoProduto filtro
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (filtro == null) {
+            throw new IllegalArgumentException(
+                    "Filtro do relatório de promoções não pode ser nulo."
+            );
+        }
+
+        filtro.validar();
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT promocao.id_promocao AS promocao_id,
+                       promocao.tipo_desconto,
+                       promocao.valor_desconto,
+                       promocao.ativa AS promocao_ativa,
+                       produto.id_produto AS produto_id,
+                       produto.descricao AS produto_descricao,
+                       produto.preco AS produto_preco,
+                       produto.quantidade_estoque AS produto_quantidade_estoque,
+                       produto.estoque_minimo AS produto_estoque_minimo,
+                       produto.ativo AS produto_ativo
+                FROM Promocao promocao
+                INNER JOIN Produto produto
+                        ON produto.id_produto = promocao.produto_id
+                WHERE promocao.ativa = 1
+                """);
+
+        if (filtro.getDescricao() != null) {
+            sql.append("  AND LOWER(produto.descricao) LIKE ?\n");
+        }
+
+        if (filtro.getProdutoAtivo() != null) {
+            sql.append("  AND produto.ativo = ?\n");
+        }
+
+        if (filtro.getTipoDesconto() != null) {
+            sql.append("  AND promocao.tipo_desconto = ?\n");
+        }
+
+        sql.append("""
+                ORDER BY produto.descricao COLLATE NOCASE ASC,
+                         produto.id_produto ASC,
+                         promocao.id_promocao ASC
+                """);
+
+        List<Promocao> promocoes = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            int indiceParametro = 1;
+
+            if (filtro.getDescricao() != null) {
+                stmt.setString(
+                        indiceParametro++,
+                        "%" + filtro.getDescricao().toLowerCase(Locale.ROOT) + "%"
+                );
+            }
+
+            if (filtro.getProdutoAtivo() != null) {
+                stmt.setInt(
+                        indiceParametro++,
+                        Boolean.TRUE.equals(filtro.getProdutoAtivo()) ? 1 : 0
+                );
+            }
+
+            if (filtro.getTipoDesconto() != null) {
+                stmt.setString(
+                        indiceParametro,
+                        filtro.getTipoDesconto().name()
+                );
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Integer promocaoId = null;
+
+                    try {
+                        promocaoId = rs.getInt("promocao_id");
+                        promocoes.add(mapearPromocaoParaRelatorio(rs));
+
+                    } catch (RuntimeException e) {
+                        String contextoIdentificacao =
+                                promocaoId != null && promocaoId > 0
+                                        ? " de ID " + promocaoId
+                                        : "";
+
+                        throw new IllegalStateException(
+                                "Dados persistidos inválidos ao mapear promoção"
+                                        + contextoIdentificacao
+                                        + " para o relatório de produtos.",
+                                e
+                        );
+                    }
+                }
+            }
+
+            return promocoes;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar promoções ativas para o relatório de produtos.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Reconstrói a promoção e o produto obtidos pela consulta JOIN do relatório.
+     */
+    private Promocao mapearPromocaoParaRelatorio(ResultSet rs) throws SQLException {
+        Produto produto = new Produto(
+                rs.getInt("produto_id"),
+                rs.getString("produto_descricao"),
+                rs.getBigDecimal("produto_preco"),
+                rs.getInt("produto_quantidade_estoque"),
+                rs.getInt("produto_estoque_minimo"),
+                rs.getInt("produto_ativo") == 1
+        );
+
+        return new Promocao(
+                rs.getInt("promocao_id"),
+                TipoDesconto.valueOf(rs.getString("tipo_desconto")),
+                rs.getBigDecimal("valor_desconto"),
+                rs.getInt("promocao_ativa") == 1,
+                produto
+        );
     }
 }

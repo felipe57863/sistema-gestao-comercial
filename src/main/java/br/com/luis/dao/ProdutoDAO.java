@@ -2,6 +2,7 @@ package br.com.luis.dao;
 
 import br.com.luis.model.Produto;
 import br.com.luis.util.ConnectionFactory;
+import br.com.luis.viewmodel.FiltroRelatorioEstoqueProduto;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * DAO da entidade Produto.
@@ -229,6 +231,119 @@ public class ProdutoDAO {
         }
 
         return produtos;
+    }
+
+    /**
+     * Lista os dados persistidos de produtos necessários ao relatório de estoque.
+     *
+     * A consulta aplica somente os filtros que pertencem diretamente às colunas
+     * persistidas: descrição e status cadastral. A classificação da situação de
+     * estoque, seu filtro e a ordenação gerencial final pertencem ao Service.
+     *
+     * Usa a Connection recebida externamente e encerra somente o
+     * PreparedStatement e o ResultSet criados. Não executa commit, rollback nem
+     * fecha a Connection informada.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param filtro fotografia imutável dos filtros aplicados ao relatório.
+     * @return produtos encontrados; lista vazia quando não houver registros.
+     * @throws IllegalArgumentException quando a conexão ou o filtro for nulo.
+     * @throws IllegalStateException quando um registro persistido for inválido.
+     * @throws RuntimeException quando ocorrer erro de acesso ao banco de dados.
+     */
+    public List<Produto> listarParaRelatorioEstoque(
+            Connection conn,
+            FiltroRelatorioEstoqueProduto filtro
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (filtro == null) {
+            throw new IllegalArgumentException(
+                    "Filtro do relatório de estoque não pode ser nulo."
+            );
+        }
+
+        filtro.validar();
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT produto.id_produto,
+                       produto.descricao,
+                       produto.preco,
+                       produto.quantidade_estoque,
+                       produto.estoque_minimo,
+                       produto.ativo
+                FROM Produto produto
+                WHERE 1 = 1
+                """);
+
+        if (filtro.getDescricao() != null) {
+            sql.append("  AND LOWER(produto.descricao) LIKE ?\n");
+        }
+
+        if (filtro.getAtivo() != null) {
+            sql.append("  AND produto.ativo = ?\n");
+        }
+
+        sql.append("""
+                ORDER BY produto.descricao COLLATE NOCASE ASC,
+                         produto.id_produto ASC
+                """);
+
+        List<Produto> produtos = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+
+            int indiceParametro = 1;
+
+            if (filtro.getDescricao() != null) {
+                stmt.setString(
+                        indiceParametro++,
+                        "%" + filtro.getDescricao().toLowerCase(Locale.ROOT) + "%"
+                );
+            }
+
+            if (filtro.getAtivo() != null) {
+                stmt.setInt(
+                        indiceParametro,
+                        Boolean.TRUE.equals(filtro.getAtivo()) ? 1 : 0
+                );
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Integer produtoId = null;
+
+                    try {
+                        produtoId = rs.getInt("id_produto");
+                        produtos.add(mapearProduto(rs));
+
+                    } catch (RuntimeException e) {
+                        String contextoIdentificacao =
+                                produtoId != null && produtoId > 0
+                                        ? " de ID " + produtoId
+                                        : "";
+
+                        throw new IllegalStateException(
+                                "Dados persistidos inválidos ao mapear produto"
+                                        + contextoIdentificacao
+                                        + " para o relatório de estoque.",
+                                e
+                        );
+                    }
+                }
+            }
+
+            return produtos;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar produtos para o relatório de estoque.",
+                    e
+            );
+        }
     }
 
     /**
