@@ -5,7 +5,9 @@ import br.com.luis.model.StatusVenda;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.StatusContaReceber;
 import br.com.luis.model.TipoVenda;
+import br.com.luis.viewmodel.FiltroRelatorioDescontoVenda;
 import br.com.luis.viewmodel.FiltroHistoricoVenda;
+import br.com.luis.viewmodel.VendaDescontoRelatorioDados;
 import br.com.luis.viewmodel.VendaHistoricoListagemView;
 import br.com.luis.util.ConnectionFactory;
 
@@ -521,6 +523,191 @@ public class VendaDAO {
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Erro ao somar o valor das vendas válidas no período.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Lista as vendas válidas com desconto no período informado.
+     *
+     * A consulta agrega os valores históricos congelados em ItemVenda por venda,
+     * associa Venda e Cliente em uma única execução e não acessa Produto ou
+     * Promocao. O limite inicial é inclusivo e a data final visual é convertida
+     * para o início exclusivo do dia seguinte.
+     *
+     * Não abre ou fecha Connection, não executa commit e não executa rollback.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param filtro fotografia dos filtros aplicados ao relatório.
+     * @return projeções históricas ordenadas ou lista vazia.
+     */
+    public List<VendaDescontoRelatorioDados> listarParaRelatorioDescontos(
+            Connection conn,
+            FiltroRelatorioDescontoVenda filtro
+    ) {
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (filtro == null) {
+            throw new IllegalArgumentException(
+                    "Filtro do relatório de descontos não pode ser nulo."
+            );
+        }
+
+        filtro.validar();
+
+        if (LocalDateTime.MAX.toLocalDate().equals(filtro.getDataFinal())) {
+            throw new IllegalArgumentException(
+                    "A data final informada não permite calcular "
+                            + "o limite exclusivo do período."
+            );
+        }
+
+        LocalDateTime inicioInclusivo =
+                filtro.getDataInicial().atStartOfDay();
+
+        LocalDateTime fimExclusivo;
+
+        try {
+            fimExclusivo = filtro.getDataFinal()
+                    .plusDays(1)
+                    .atStartOfDay();
+
+        } catch (DateTimeException e) {
+            throw new IllegalArgumentException(
+                    "Data final inválida para consulta do relatório de descontos.",
+                    e
+            );
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                WITH itens_agregados AS (
+                    SELECT
+                        item.venda_id,
+                        COALESCE(
+                            SUM(item.quantidade * item.preco_unitario),
+                            0
+                        ) AS valor_bruto_itens,
+                        COALESCE(
+                            SUM(item.desconto_promocional),
+                            0
+                        ) AS desconto_promocional_itens,
+                        COALESCE(
+                            SUM(item.desconto_global),
+                            0
+                        ) AS desconto_global_itens,
+                        COALESCE(
+                            SUM(item.subtotal),
+                            0
+                        ) AS valor_liquido_itens
+                    FROM ItemVenda item
+                    GROUP BY item.venda_id
+                )
+                SELECT
+                    venda.id_venda,
+                    venda.data_hora,
+                    venda.tipo_venda,
+                    venda.status,
+                    cliente.nome AS nome_cliente,
+                    venda.valor_total AS valor_total_venda,
+                    venda.valor_desconto_global AS desconto_global_venda,
+                    itens.valor_bruto_itens,
+                    itens.desconto_promocional_itens,
+                    itens.desconto_global_itens,
+                    itens.valor_liquido_itens
+                FROM Venda venda
+                INNER JOIN itens_agregados itens
+                        ON itens.venda_id = venda.id_venda
+                LEFT JOIN Cliente cliente
+                       ON cliente.id_cliente = venda.cliente_id
+                WHERE venda.data_hora >= ?
+                  AND venda.data_hora < ?
+                  AND venda.status IN (?, ?)
+                  AND (
+                      itens.desconto_promocional_itens
+                      + itens.desconto_global_itens
+                  ) > 0
+                """);
+
+        if (filtro.getTipoVenda() != null) {
+            sql.append("""
+                      AND venda.tipo_venda = ?
+                    """);
+        }
+
+        sql.append("""
+                ORDER BY (
+                             itens.desconto_promocional_itens
+                             + itens.desconto_global_itens
+                         ) DESC,
+                         venda.data_hora DESC,
+                         venda.id_venda DESC
+                """);
+
+        List<VendaDescontoRelatorioDados> vendas = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            int parametro = 1;
+
+            stmt.setString(parametro++, inicioInclusivo.toString());
+            stmt.setString(parametro++, fimExclusivo.toString());
+            stmt.setString(parametro++, StatusVenda.PAGA.name());
+            stmt.setString(parametro++, StatusVenda.PENDENTE.name());
+
+            if (filtro.getTipoVenda() != null) {
+                stmt.setString(parametro, filtro.getTipoVenda().name());
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Integer vendaId = rs.getInt("id_venda");
+
+                    try {
+                        VendaDescontoRelatorioDados dados =
+                                new VendaDescontoRelatorioDados(
+                                        vendaId,
+                                        LocalDateTime.parse(
+                                                rs.getString("data_hora")
+                                        ),
+                                        TipoVenda.valueOf(
+                                                rs.getString("tipo_venda")
+                                        ),
+                                        StatusVenda.valueOf(
+                                                rs.getString("status")
+                                        ),
+                                        rs.getString("nome_cliente"),
+                                        rs.getBigDecimal("valor_total_venda"),
+                                        rs.getBigDecimal("desconto_global_venda"),
+                                        rs.getBigDecimal("valor_bruto_itens"),
+                                        rs.getBigDecimal(
+                                                "desconto_promocional_itens"
+                                        ),
+                                        rs.getBigDecimal("desconto_global_itens"),
+                                        rs.getBigDecimal("valor_liquido_itens")
+                                );
+
+                        vendas.add(dados);
+
+                    } catch (DateTimeException | IllegalArgumentException e) {
+                        throw new IllegalStateException(
+                                "Venda " + vendaId
+                                        + " possui dados históricos inválidos "
+                                        + "no relatório de descontos.",
+                                e
+                        );
+                    }
+                }
+            }
+
+            return vendas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar vendas para o relatório de descontos.",
                     e
             );
         }

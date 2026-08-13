@@ -1106,6 +1106,12 @@ public class TelaPrincipalController {
                 "Clientes com pendências",
                 "/br/com/luis/view/RelatorioClientePendencia.fxml",
                 "Clientes com Pendências Financeiras"
+        ),
+
+        DESCONTOS_CONCEDIDOS(
+                "Descontos concedidos",
+                "/br/com/luis/view/RelatorioDescontoVenda.fxml",
+                "Relatório de Descontos Concedidos"
         );
 
         private final String rotulo;
