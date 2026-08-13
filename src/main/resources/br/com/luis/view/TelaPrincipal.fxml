@@ -51,6 +51,13 @@
                     maxWidth="Infinity"
                     styleClass="botao-menu" />
 
+            <Button fx:id="btnPrazosPagamento"
+                    text="Prazos de Pagamento"
+                    onAction="#abrirPrazosPagamento"
+                    prefHeight="44.0"
+                    maxWidth="Infinity"
+                    styleClass="botao-menu" />
+
             <Button fx:id="btnContasReceber"
                     text="Contas a Receber"
                     onAction="#abrirContasReceber"

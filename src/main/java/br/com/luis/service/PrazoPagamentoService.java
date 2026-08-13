@@ -25,10 +25,8 @@ public class PrazoPagamentoService {
      */
     public void cadastrar(PrazoPagamento prazo) {
 
-        // Fail-fast: validação básica
-        if (prazo == null) {
-            throw new IllegalArgumentException("Prazo de pagamento é obrigatório.");
-        }
+        // Fail-fast: validação dos dados administrativos obrigatórios
+        validarDadosObrigatorios(prazo);
 
         // Regra de negócio: evitar duplicidade de descrição
         validarDescricaoDuplicada(prazo.getDescricao(), null);
@@ -48,13 +46,11 @@ public class PrazoPagamentoService {
      */
     public void atualizar(PrazoPagamento prazo) {
 
-        // Fail-fast: validação básica
-        if (prazo == null) {
-            throw new IllegalArgumentException("Prazo de pagamento é obrigatório.");
-        }
+        // Fail-fast: validação dos dados administrativos obrigatórios
+        validarDadosObrigatorios(prazo);
 
-        if (prazo.getIdPrazo() == null) {
-            throw new IllegalArgumentException("ID do prazo de pagamento é obrigatório para atualização.");
+        if (prazo.getIdPrazo() == null || prazo.getIdPrazo() <= 0) {
+            throw new IllegalArgumentException("ID do prazo de pagamento deve ser válido para atualização.");
         }
 
         // Regra de negócio: evitar duplicidade de descrição em outro registro
@@ -94,6 +90,28 @@ public class PrazoPagamentoService {
      */
     public List<PrazoPagamento> listarTodos() {
         return dao.listarTodos();
+    }
+
+    /**
+     * Valida os dados administrativos obrigatórios de um prazo de pagamento.
+     */
+    private void validarDadosObrigatorios(PrazoPagamento prazo) {
+
+        if (prazo == null) {
+            throw new IllegalArgumentException("Prazo de pagamento é obrigatório.");
+        }
+
+        if (prazo.getDescricao() == null || prazo.getDescricao().isBlank()) {
+            throw new IllegalArgumentException("Descrição do prazo é obrigatória.");
+        }
+
+        if (prazo.getQuantidadeDias() == null) {
+            throw new IllegalArgumentException("Quantidade de dias é obrigatória.");
+        }
+
+        if (prazo.getQuantidadeDias() <= 0) {
+            throw new IllegalArgumentException("Quantidade de dias deve ser maior que zero.");
+        }
     }
 
     /**

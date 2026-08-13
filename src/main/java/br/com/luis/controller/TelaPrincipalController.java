@@ -66,6 +66,7 @@ public class TelaPrincipalController {
     @FXML private Label lblDataHora;
     @FXML private Button btnClientes;
     @FXML private Button btnProdutos;
+    @FXML private Button btnPrazosPagamento;
     @FXML private Button btnRelatorios;
     @FXML private Button btnUsuarios;
 
@@ -153,7 +154,8 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Limita visualmente Produtos, Clientes e Usuários ao administrador apto.
+     * Limita visualmente Produtos, Clientes, Prazos de Pagamento e Usuários ao
+     * administrador apto.
      * As opções também são protegidas pelos respectivos métodos de abertura, e
      * as operações de usuários permanecem autorizadas pelo Service.
      */
@@ -167,6 +169,10 @@ public class TelaPrincipalController {
         btnClientes.setVisible(administrador);
         btnClientes.setManaged(administrador);
         btnClientes.setDisable(!administrador);
+
+        btnPrazosPagamento.setVisible(administrador);
+        btnPrazosPagamento.setManaged(administrador);
+        btnPrazosPagamento.setDisable(!administrador);
 
         btnUsuarios.setVisible(administrador);
         btnUsuarios.setManaged(administrador);
@@ -679,6 +685,26 @@ public class TelaPrincipalController {
         abrirTela(
                 "/br/com/luis/view/Produto.fxml",
                 "Cadastro de Produtos"
+        );
+    }
+
+    /**
+     * Abre a tela administrativa de prazos de pagamento no mesmo Stage.
+     */
+    @FXML
+    public void abrirPrazosPagamento() {
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "O gerenciamento de prazos de pagamento é exclusivo para administradores ativos."
+            );
+            return;
+        }
+
+        abrirTela(
+                "/br/com/luis/view/PrazoPagamento.fxml",
+                "Prazos de Pagamento"
         );
     }
 
