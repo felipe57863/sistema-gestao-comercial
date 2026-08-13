@@ -1100,6 +1100,12 @@ public class TelaPrincipalController {
                 "Relatórios de produtos",
                 "/br/com/luis/view/RelatorioProduto.fxml",
                 "Relatório de Produtos"
+        ),
+
+        CLIENTES_PENDENCIAS(
+                "Clientes com pendências",
+                "/br/com/luis/view/RelatorioClientePendencia.fxml",
+                "Clientes com Pendências Financeiras"
         );
 
         private final String rotulo;

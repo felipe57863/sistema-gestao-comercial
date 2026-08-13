@@ -1,5 +1,6 @@
 package br.com.luis.dao;
 
+import br.com.luis.model.Cliente;
 import br.com.luis.model.ContaReceber;
 import br.com.luis.model.StatusContaReceber;
 
@@ -16,6 +17,8 @@ import java.time.LocalDateTime;
 
 import br.com.luis.viewmodel.ContaReceberListagemView;
 import br.com.luis.viewmodel.ContaReceberRelatorioDados;
+import br.com.luis.viewmodel.ClientePendenciaRelatorioView;
+import br.com.luis.viewmodel.FiltroRelatorioClientePendencia;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -631,6 +634,215 @@ public class ContaReceberDAO {
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Erro ao listar contas a receber para o relatório.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Lista, em uma única consulta agregada, os clientes que possuem contas
+     * pendentes conforme os filtros informados.
+     *
+     * Cada linha corresponde a um cliente. PAGA e CANCELADA não participam da
+     * agregação. Uma conta é considerada vencida somente quando sua data de
+     * vencimento é anterior à data única de referência recebida. O filtro de
+     * vencidas é aplicado no HAVING e a ordenação prioriza criticidade financeira.
+     *
+     * O método usa e preserva a Connection externa: não abre conexão, não executa
+     * commit ou rollback e não fecha a conexão recebida.
+     *
+     * @param conn conexão externa controlada pelo Service.
+     * @param filtro fotografia dos filtros aplicados.
+     * @param dataReferencia data única usada para identificar contas vencidas.
+     * @return linhas agregadas e ordenadas, ou lista vazia quando não houver dados.
+     */
+    public List<ClientePendenciaRelatorioView> listarClientesComPendencias(
+            Connection conn,
+            FiltroRelatorioClientePendencia filtro,
+            LocalDate dataReferencia
+    ) {
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (filtro == null) {
+            throw new IllegalArgumentException(
+                    "Filtro do relatório de pendências não pode ser nulo."
+            );
+        }
+
+        filtro.validar();
+
+        if (dataReferencia == null) {
+            throw new IllegalArgumentException(
+                    "Data de referência do relatório de pendências é obrigatória."
+            );
+        }
+
+        String termoCliente = filtro.getClienteTexto();
+        String termoDocumento = null;
+
+        if (termoCliente != null) {
+            String documentoNormalizado =
+                    termoCliente.replaceAll("[^0-9]", "");
+
+            if (!documentoNormalizado.isBlank()) {
+                termoDocumento = documentoNormalizado;
+            }
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT cliente.id_cliente,
+                       cliente.nome,
+                       cliente.documento,
+                       cliente.status AS status_cliente,
+                       COUNT(conta.id_conta) AS quantidade_contas_pendentes,
+                       COALESCE(SUM(conta.valor), 0) AS valor_pendente,
+                       SUM(
+                           CASE
+                               WHEN conta.data_vencimento < ? THEN 1
+                               ELSE 0
+                           END
+                       ) AS quantidade_contas_vencidas,
+                       COALESCE(
+                           SUM(
+                               CASE
+                                   WHEN conta.data_vencimento < ? THEN conta.valor
+                                   ELSE 0
+                               END
+                           ),
+                           0
+                       ) AS valor_vencido
+                FROM ContaReceber conta
+                INNER JOIN Cliente cliente
+                        ON cliente.id_cliente = conta.cliente_id
+                WHERE conta.status = ?
+                """);
+
+        if (termoCliente != null) {
+            if (termoDocumento != null) {
+                sql.append("""
+                          AND (
+                              LOWER(cliente.nome) LIKE ?
+                              OR cliente.documento LIKE ?
+                          )
+                        """);
+            } else {
+                sql.append("""
+                          AND LOWER(cliente.nome) LIKE ?
+                        """);
+            }
+        }
+
+        if (filtro.getStatusCliente() != null) {
+            sql.append("""
+                      AND cliente.status = ?
+                    """);
+        }
+
+        sql.append("""
+                GROUP BY cliente.id_cliente,
+                         cliente.nome,
+                         cliente.documento,
+                         cliente.status
+                """);
+
+        if (Boolean.TRUE.equals(filtro.getPossuiVencidas())) {
+            sql.append("""
+                    HAVING quantidade_contas_vencidas > 0
+                    """);
+
+        } else if (Boolean.FALSE.equals(filtro.getPossuiVencidas())) {
+            sql.append("""
+                    HAVING quantidade_contas_vencidas = 0
+                    """);
+        }
+
+        sql.append("""
+                ORDER BY CASE
+                             WHEN quantidade_contas_vencidas > 0 THEN 1
+                             ELSE 0
+                         END DESC,
+                         valor_vencido DESC,
+                         valor_pendente DESC,
+                         cliente.nome COLLATE NOCASE ASC,
+                         cliente.id_cliente ASC
+                """);
+
+        List<ClientePendenciaRelatorioView> clientes = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            int indiceParametro = 1;
+
+            stmt.setString(indiceParametro++, dataReferencia.toString());
+            stmt.setString(indiceParametro++, dataReferencia.toString());
+            stmt.setString(indiceParametro++, StatusContaReceber.PENDENTE.name());
+
+            if (termoCliente != null) {
+                stmt.setString(
+                        indiceParametro++,
+                        "%" + termoCliente.toLowerCase() + "%"
+                );
+
+                if (termoDocumento != null) {
+                    stmt.setString(
+                            indiceParametro++,
+                            "%" + termoDocumento + "%"
+                    );
+                }
+            }
+
+            if (filtro.getStatusCliente() != null) {
+                stmt.setString(
+                        indiceParametro,
+                        filtro.getStatusCliente().name()
+                );
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Integer clienteId = null;
+
+                    try {
+                        clienteId = rs.getInt("id_cliente");
+
+                        ClientePendenciaRelatorioView cliente =
+                                new ClientePendenciaRelatorioView(
+                                        clienteId,
+                                        rs.getString("nome"),
+                                        rs.getString("documento"),
+                                        Cliente.StatusCliente.valueOf(
+                                                rs.getString("status_cliente")
+                                        ),
+                                        rs.getInt("quantidade_contas_pendentes"),
+                                        rs.getBigDecimal("valor_pendente"),
+                                        rs.getInt("quantidade_contas_vencidas"),
+                                        rs.getBigDecimal("valor_vencido")
+                                );
+
+                        clientes.add(cliente);
+
+                    } catch (RuntimeException e) {
+                        String contextoIdentificacao =
+                                clienteId != null && clienteId > 0
+                                        ? " de ID " + clienteId
+                                        : "";
+
+                        throw new IllegalStateException(
+                                "Dados persistidos inválidos ao mapear cliente"
+                                        + contextoIdentificacao
+                                        + " para o relatório de pendências.",
+                                e
+                        );
+                    }
+                }
+            }
+
+            return clientes;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar clientes com pendências financeiras.",
                     e
             );
         }

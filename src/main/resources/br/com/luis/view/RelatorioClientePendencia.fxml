@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="br.com.luis.controller.RelatorioClientePendenciaController"
+            prefWidth="1180.0"
+            prefHeight="720.0"
+            stylesheets="@TelaPrincipal.css"
+            style="-fx-background-color: #f4f6f9;"
+            styleClass="tela-principal">
+
+    <top>
+        <BorderPane style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-padding: 15 20 15 20;"
+                    styleClass="cabecalho-principal">
+            <left>
+                <HBox alignment="CENTER_LEFT" spacing="12.0">
+                    <Button fx:id="btnVoltar"
+                            text="Voltar"
+                            prefWidth="90.0"
+                            onAction="#onVoltar" />
+                    <Label text="Clientes com Pendências Financeiras"
+                           styleClass="titulo-sistema" />
+                </HBox>
+            </left>
+
+            <right>
+                <HBox alignment="CENTER_RIGHT"
+                      spacing="8.0"
+                      styleClass="identificacao-cabecalho">
+                    <Label fx:id="lblUsuario"
+                           text="Usuário não identificado"
+                           styleClass="texto-cabecalho" />
+                    <Label text="|" styleClass="separador-cabecalho" />
+                    <Label fx:id="lblDataHora"
+                           text="--/--/---- --:--:--"
+                           styleClass="texto-cabecalho" />
+                </HBox>
+            </right>
+        </BorderPane>
+    </top>
+
+    <center>
+        <VBox spacing="12.0" style="-fx-background-color: #f4f6f9;">
+            <padding>
+                <Insets top="16.0" right="18.0" bottom="16.0" left="18.0" />
+            </padding>
+
+            <VBox spacing="10.0"
+                  maxWidth="Infinity"
+                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14;">
+                <Label text="Filtros" styleClass="cartao-titulo" />
+
+                <GridPane hgap="12.0" vgap="7.0" maxWidth="Infinity">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="54.0" hgrow="ALWAYS" />
+                        <ColumnConstraints percentWidth="22.0" hgrow="ALWAYS" />
+                        <ColumnConstraints percentWidth="24.0" hgrow="ALWAYS" />
+                    </columnConstraints>
+
+                    <Label text="Cliente:"
+                           GridPane.columnIndex="0"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+                    <Label text="Status:"
+                           GridPane.columnIndex="1"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+                    <Label text="Pendência:"
+                           GridPane.columnIndex="2"
+                           GridPane.rowIndex="0"
+                           styleClass="rotulo-periodo" />
+
+                    <TextField fx:id="txtCliente"
+                               promptText="Nome ou documento"
+                               prefHeight="34.0"
+                               maxWidth="Infinity"
+                               GridPane.columnIndex="0"
+                               GridPane.rowIndex="1" />
+                    <ComboBox fx:id="cbStatusCliente"
+                              prefHeight="34.0"
+                              maxWidth="Infinity"
+                              styleClass="combo-periodo"
+                              GridPane.columnIndex="1"
+                              GridPane.rowIndex="1" />
+                    <ComboBox fx:id="cbPendencia"
+                              prefHeight="34.0"
+                              maxWidth="Infinity"
+                              styleClass="combo-periodo"
+                              GridPane.columnIndex="2"
+                              GridPane.rowIndex="1" />
+                </GridPane>
+
+                <HBox alignment="CENTER_LEFT" minHeight="35.0" spacing="10.0">
+                    <StackPane minWidth="28.0"
+                               prefWidth="28.0"
+                               maxWidth="28.0"
+                               minHeight="28.0"
+                               prefHeight="28.0"
+                               maxHeight="28.0"
+                               styleClass="area-carregamento">
+                        <ProgressIndicator fx:id="progressoRelatorio"
+                                           visible="false"
+                                           managed="false"
+                                           prefWidth="22.0"
+                                           prefHeight="22.0"
+                                           styleClass="indicador-carregamento" />
+                    </StackPane>
+
+                    <Label fx:id="lblEstadoConsulta"
+                           text="Relatório pronto para consulta."
+                           wrapText="true"
+                           styleClass="cartao-texto-secundario" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Button fx:id="btnFiltrar"
+                            text="Filtrar"
+                            disable="true"
+                            prefWidth="110.0"
+                            prefHeight="35.0"
+                            onAction="#onFiltrar"
+                            styleClass="botao-atualizar" />
+                </HBox>
+            </VBox>
+
+            <VBox spacing="8.0"
+                  maxWidth="Infinity"
+                  maxHeight="Infinity"
+                  VBox.vgrow="ALWAYS"
+                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14;">
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Clientes encontrados" styleClass="cartao-titulo" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Label fx:id="lblPosicao"
+                           text="Posição em: —"
+                           styleClass="cartao-texto-secundario" />
+                </HBox>
+
+                <TableView fx:id="tabelaClientes"
+                           maxWidth="Infinity"
+                           maxHeight="Infinity"
+                           VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colClienteId"
+                                     text="ID Cliente"
+                                     prefWidth="75.0"
+                                     sortable="false" />
+                        <TableColumn fx:id="colClienteNome"
+                                     text="Cliente"
+                                     prefWidth="220.0"
+                                     sortable="false" />
+                        <TableColumn fx:id="colDocumento"
+                                     text="CPF/CNPJ"
+                                     prefWidth="135.0"
+                                     sortable="false" />
+                        <TableColumn fx:id="colStatusCliente"
+                                     text="Status do cliente"
+                                     prefWidth="120.0"
+                                     sortable="false" />
+                        <TableColumn fx:id="colContasPendentes"
+                                     text="Contas pendentes"
+                                     prefWidth="120.0"
+                                     sortable="false" />
+                        <TableColumn fx:id="colValorPendente"
+                                     text="Valor pendente"
+                                     prefWidth="135.0"
+                                     sortable="false" />
+                        <TableColumn fx:id="colContasVencidas"
+                                     text="Contas vencidas"
+                                     prefWidth="115.0"
+                                     sortable="false" />
+                        <TableColumn fx:id="colValorVencido"
+                                     text="Valor vencido"
+                                     prefWidth="130.0"
+                                     sortable="false" />
+                    </columns>
+
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                </TableView>
+            </VBox>
+
+            <GridPane hgap="10.0" maxWidth="Infinity">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="25.0" />
+                    <ColumnConstraints percentWidth="25.0" />
+                    <ColumnConstraints percentWidth="25.0" />
+                    <ColumnConstraints percentWidth="25.0" />
+                </columnConstraints>
+
+                <VBox spacing="3.0"
+                      minHeight="64.0"
+                      maxWidth="Infinity"
+                      GridPane.columnIndex="0"
+                      style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14 10 14;">
+                    <Label text="Clientes listados" styleClass="cartao-texto-secundario" />
+                    <Label fx:id="lblQuantidadeClientes"
+                           text="0"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" />
+                </VBox>
+
+                <VBox spacing="3.0"
+                      minHeight="64.0"
+                      maxWidth="Infinity"
+                      GridPane.columnIndex="1"
+                      style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14 10 14;">
+                    <Label text="Valor total pendente" styleClass="cartao-texto-secundario" />
+                    <Label fx:id="lblValorTotalPendente"
+                           text="R$ 0,00"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" />
+                </VBox>
+
+                <VBox spacing="3.0"
+                      minHeight="64.0"
+                      maxWidth="Infinity"
+                      GridPane.columnIndex="2"
+                      style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14 10 14;">
+                    <Label text="Clientes com vencidas" styleClass="cartao-texto-secundario" />
+                    <Label fx:id="lblClientesComVencidas"
+                           text="0"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" />
+                </VBox>
+
+                <VBox spacing="3.0"
+                      minHeight="64.0"
+                      maxWidth="Infinity"
+                      GridPane.columnIndex="3"
+                      style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14 10 14;">
+                    <Label text="Valor total vencido" styleClass="cartao-texto-secundario" />
+                    <Label fx:id="lblValorTotalVencido"
+                           text="R$ 0,00"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" />
+                </VBox>
+            </GridPane>
+        </VBox>
+    </center>
+</BorderPane>
