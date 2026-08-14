@@ -173,6 +173,77 @@
                         </StackPane>
                     </HBox>
 
+                    <VBox fx:id="painelAlertasVencimento"
+                          visible="false"
+                          managed="false"
+                          spacing="10.0"
+                          maxWidth="Infinity"
+                          styleClass="painel-alertas-vencimento">
+
+                        <HBox alignment="CENTER_LEFT"
+                              spacing="10.0">
+
+                            <Label text="Alertas de vencimento"
+                                   styleClass="alerta-vencimento-titulo" />
+
+                            <Label fx:id="lblEstadoAlertasVencimento"
+                                   text="Aguardando atualização"
+                                   wrapText="true"
+                                   styleClass="alerta-vencimento-estado" />
+
+                            <Region HBox.hgrow="ALWAYS" />
+
+                            <ProgressIndicator fx:id="progressoAlertasVencimento"
+                                               visible="false"
+                                               managed="false"
+                                               prefWidth="20.0"
+                                               prefHeight="20.0"
+                                               styleClass="indicador-carregamento" />
+
+                            <Button fx:id="btnConfigurarAlertasVencimento"
+                                    text="Configurar"
+                                    disable="true"
+                                    onAction="#configurarAlertasVencimento"
+                                    styleClass="botao-alerta-vencimento" />
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT"
+                              spacing="18.0">
+
+                            <VBox spacing="2.0"
+                                  minWidth="190.0">
+                                <Label text="Vencidas"
+                                       styleClass="alerta-vencimento-rotulo" />
+                                <Label fx:id="lblResumoAlertasVencidos"
+                                       text="0 contas • R$ 0,00"
+                                       styleClass="alerta-vencimento-resumo, alerta-vencimento-resumo-vencido" />
+                            </VBox>
+
+                            <VBox spacing="2.0"
+                                  minWidth="190.0">
+                                <Label text="Próximas"
+                                       styleClass="alerta-vencimento-rotulo" />
+                                <Label fx:id="lblResumoAlertasProximos"
+                                       text="0 contas • R$ 0,00"
+                                       styleClass="alerta-vencimento-resumo" />
+                            </VBox>
+
+                            <Region HBox.hgrow="ALWAYS" />
+
+                            <Button fx:id="btnDetalhesAlertasVencimento"
+                                    text="Ver detalhes"
+                                    disable="true"
+                                    onAction="#mostrarDetalhesAlertasVencimento"
+                                    styleClass="botao-alerta-vencimento" />
+
+                            <Button fx:id="btnVerContasAlertasVencimento"
+                                    text="Ver contas"
+                                    disable="true"
+                                    onAction="#abrirContasReceber"
+                                    styleClass="botao-alerta-vencimento, botao-alerta-vencimento-destaque" />
+                        </HBox>
+                    </VBox>
+
                     <GridPane hgap="16.0"
                               vgap="16.0"
                               maxWidth="Infinity"

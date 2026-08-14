@@ -1,12 +1,19 @@
 package br.com.luis.controller;
 
 import br.com.luis.model.Usuario;
+import br.com.luis.service.AlertaVencimentoService;
 import br.com.luis.service.DashboardService;
 import br.com.luis.service.DashboardService.PeriodoDashboard;
 import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
+import br.com.luis.viewmodel.ContaAlertaVencimentoView;
 import br.com.luis.viewmodel.DashboardResumoView;
+import br.com.luis.viewmodel.ResultadoAlertaVencimento;
+import br.com.luis.viewmodel.SituacaoAlertaVencimento;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,8 +25,12 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -47,7 +58,8 @@ import java.util.Optional;
  * encerra a SessaoUsuario e retorna ao Login reutilizando o mesmo Stage.
  *
  * O Controller não executa SQL nem contém regras de negócio, delegando
- * a consolidação dos indicadores ao {@link DashboardService}.
+ * a consolidação dos indicadores ao {@link DashboardService} e a consulta e
+ * configuração dos alertas ao {@link AlertaVencimentoService}.
  */
 public class TelaPrincipalController {
 
@@ -57,10 +69,17 @@ public class TelaPrincipalController {
     private static final String MENSAGEM_ACESSO_NEGADO_RELATORIO =
             "Usuário não autorizado a consultar o relatório financeiro.";
 
+    private static final int INTERVALO_ALERTAS_MINUTOS = 15;
+
     private final DashboardService dashboardService;
+    private final AlertaVencimentoService alertaVencimentoService;
     private final NumberFormat formatadorMoeda;
 
     private Task<DashboardResumoView> tarefaDashboardAtual;
+    private Task<?> tarefaAlertasAtual;
+    private Timeline timelineAlertasVencimento;
+    private ResultadoAlertaVencimento ultimoResultadoAlertas;
+    private boolean rotinaAlertasIniciada;
 
     @FXML private Label lblUsuario;
     @FXML private Label lblDataHora;
@@ -86,6 +105,15 @@ public class TelaPrincipalController {
 
     @FXML private Label lblQuantidadeProdutosEstoqueBaixo;
 
+    @FXML private VBox painelAlertasVencimento;
+    @FXML private Label lblEstadoAlertasVencimento;
+    @FXML private Label lblResumoAlertasVencidos;
+    @FXML private Label lblResumoAlertasProximos;
+    @FXML private Button btnDetalhesAlertasVencimento;
+    @FXML private Button btnVerContasAlertasVencimento;
+    @FXML private Button btnConfigurarAlertasVencimento;
+    @FXML private ProgressIndicator progressoAlertasVencimento;
+
     /**
      * Cria o Controller com uma única instância do serviço responsável pelo
      * dashboard e configura o formatador monetário brasileiro.
@@ -95,6 +123,7 @@ public class TelaPrincipalController {
      */
     public TelaPrincipalController() {
         this.dashboardService = new DashboardService();
+        this.alertaVencimentoService = new AlertaVencimentoService();
 
         this.formatadorMoeda =
                 NumberFormat.getCurrencyInstance(
@@ -118,6 +147,8 @@ public class TelaPrincipalController {
 
         configurarVisibilidadeBotaoRelatorios();
         configurarVisibilidadeOpcoesAdministrativas();
+        configurarVisibilidadeAlertasVencimento();
+        registrarEncerramentoRotinaAlertas();
 
         cmbPeriodoDashboard
                 .getItems()
@@ -320,6 +351,7 @@ public class TelaPrincipalController {
             }
 
             finalizarCarregamentoDashboard(tarefa);
+            iniciarRotinaAlertasVencimentoSeNecessario();
         });
 
         tarefa.setOnFailed(event -> {
@@ -443,6 +475,8 @@ public class TelaPrincipalController {
                         + "do dashboard.\n"
                         + "Os dados já exibidos foram mantidos."
         );
+
+        iniciarRotinaAlertasVencimentoSeNecessario();
     }
 
     /**
@@ -646,6 +680,783 @@ public class TelaPrincipalController {
                 + (quantidade == 1
                 ? " produto"
                 : " produtos");
+    }
+
+
+    /**
+     * Configura a área de alertas conforme a sessão atual.
+     *
+     * O painel é exclusivo do administrador apto. A proteção definitiva das
+     * consultas e da alteração da configuração continua no Service.
+     */
+    private void configurarVisibilidadeAlertasVencimento() {
+
+        boolean administrador = usuarioAtualEhAdministrador();
+
+        painelAlertasVencimento.setVisible(administrador);
+        painelAlertasVencimento.setManaged(administrador);
+
+        btnDetalhesAlertasVencimento.setDisable(true);
+        btnVerContasAlertasVencimento.setDisable(!administrador);
+        btnConfigurarAlertasVencimento.setDisable(true);
+
+        progressoAlertasVencimento.setVisible(false);
+        progressoAlertasVencimento.setManaged(false);
+
+        if (!administrador) {
+            return;
+        }
+
+        lblEstadoAlertasVencimento.setText(
+                "Aguardando a primeira atualização automática."
+        );
+
+        lblResumoAlertasVencidos.setText(
+                "0 contas • " + formatarMoeda(BigDecimal.ZERO)
+        );
+
+        lblResumoAlertasProximos.setText(
+                "0 contas • " + formatarMoeda(BigDecimal.ZERO)
+        );
+    }
+
+    /**
+     * Registra o encerramento da rotina quando a Scene da Tela Principal deixa
+     * a Window atual.
+     *
+     * O listener replica o padrão de ciclo de vida usado pelo CabecalhoUtil e
+     * funciona também quando a troca de Scene ocorre fora dos métodos deste
+     * Controller.
+     */
+    private void registrarEncerramentoRotinaAlertas() {
+
+        lblUsuario.sceneProperty().addListener(
+                (observable, sceneAnterior, sceneAtual) -> {
+                    if (sceneAtual != null) {
+                        acompanharWindowAlertas(sceneAtual);
+                    }
+                }
+        );
+
+        Scene sceneAtual = lblUsuario.getScene();
+
+        if (sceneAtual != null) {
+            acompanharWindowAlertas(sceneAtual);
+        }
+    }
+
+    /**
+     * Para a rotina quando a Scene anteriormente vinculada perde sua Window.
+     */
+    private void acompanharWindowAlertas(Scene scene) {
+
+        scene.windowProperty().addListener(
+                (observable, janelaAnterior, janelaAtual) -> {
+                    if (janelaAnterior != null && janelaAtual == null) {
+                        encerrarRotinaAlertasVencimento();
+                    }
+                }
+        );
+    }
+
+    /**
+     * Inicia uma única rotina de alertas para a instância atual da Tela Principal.
+     *
+     * A primeira consulta é imediata. Depois disso, o Timeline apenas dispara
+     * novas tentativas a cada quinze minutos; o JDBC permanece dentro de Task.
+     */
+    private void iniciarRotinaAlertasVencimentoSeNecessario() {
+
+        if (rotinaAlertasIniciada
+                || !usuarioAtualEhAdministrador()) {
+            return;
+        }
+
+        rotinaAlertasIniciada = true;
+
+        timelineAlertasVencimento = new Timeline(
+                new KeyFrame(
+                        Duration.minutes(INTERVALO_ALERTAS_MINUTOS),
+                        event -> iniciarConsultaAlertasVencimento()
+                )
+        );
+
+        timelineAlertasVencimento.setCycleCount(
+                Animation.INDEFINITE
+        );
+
+        iniciarConsultaAlertasVencimento();
+
+        if (rotinaAlertasIniciada
+                && timelineAlertasVencimento != null) {
+
+            timelineAlertasVencimento.play();
+        }
+    }
+
+    /**
+     * Dispara uma consulta dos alertas quando não existe outra operação do
+     * mesmo bloco em andamento.
+     */
+    private void iniciarConsultaAlertasVencimento() {
+
+        if (!rotinaAlertasIniciada
+                || tarefaAlertasAtual != null) {
+            return;
+        }
+
+        Integer usuarioId = obterUsuarioIdAtual();
+
+        if (usuarioId == null) {
+            tratarFalhaAutorizacaoAlertas(
+                    new SecurityException(
+                            "A sessão atual não possui um administrador apto."
+                    )
+            );
+            return;
+        }
+
+        Task<ResultadoAlertaVencimento> novaTarefa =
+                new Task<>() {
+
+                    @Override
+                    protected ResultadoAlertaVencimento call() {
+                        return alertaVencimentoService.consultar(
+                                usuarioId
+                        );
+                    }
+                };
+
+        tarefaAlertasAtual = novaTarefa;
+
+        novaTarefa.setOnSucceeded(event -> {
+            if (tarefaAlertasAtual != novaTarefa) {
+                return;
+            }
+
+            ResultadoAlertaVencimento resultado =
+                    novaTarefa.getValue();
+
+            if (resultado == null) {
+                tratarFalhaConsultaAlertas(
+                        novaTarefa,
+                        new IllegalStateException(
+                                "A consulta dos alertas não retornou resultado."
+                        )
+                );
+                return;
+            }
+
+            try {
+                atualizarPainelAlertasVencimento(resultado);
+
+            } catch (RuntimeException e) {
+                tratarFalhaConsultaAlertas(
+                        novaTarefa,
+                        e
+                );
+                return;
+            }
+
+            finalizarOperacaoAlertas(novaTarefa);
+        });
+
+        novaTarefa.setOnFailed(event -> {
+            if (tarefaAlertasAtual != novaTarefa) {
+                return;
+            }
+
+            Throwable causa =
+                    novaTarefa.getException();
+
+            if (causa instanceof SecurityException) {
+                tratarFalhaAutorizacaoAlertas(causa);
+                return;
+            }
+
+            tratarFalhaConsultaAlertas(
+                    novaTarefa,
+                    causa
+            );
+        });
+
+        novaTarefa.setOnCancelled(event -> {
+            if (tarefaAlertasAtual != novaTarefa) {
+                return;
+            }
+
+            finalizarOperacaoAlertas(novaTarefa);
+        });
+
+        configurarEstadoOperacaoAlertas(true);
+
+        Thread thread = new Thread(
+                novaTarefa,
+                "alertas-vencimento-consulta"
+        );
+
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Aplica uma fotografia válida do Service à área persistente de alertas.
+     */
+    private void atualizarPainelAlertasVencimento(
+            ResultadoAlertaVencimento resultado
+    ) {
+
+        if (resultado == null) {
+            throw new IllegalArgumentException(
+                    "Resultado dos alertas não pode ser nulo."
+            );
+        }
+
+        String textoVencidas =
+                formatarQuantidadeContas(
+                        resultado.getQuantidadeVencidas()
+                )
+                        + " • "
+                        + formatarMoeda(
+                        resultado.getValorTotalVencido()
+                );
+
+        String textoProximas =
+                formatarQuantidadeContas(
+                        resultado.getQuantidadeProximas()
+                )
+                        + " • "
+                        + formatarMoeda(
+                        resultado.getValorTotalProximo()
+                );
+
+        String textoEstado;
+
+        if (resultado.getQuantidadeVencidas() == 0
+                && resultado.getQuantidadeProximas() == 0) {
+
+            textoEstado =
+                    "Nenhuma conta vencida ou próxima do vencimento. "
+                            + formatarJanelaAlertas(resultado);
+
+        } else {
+            textoEstado =
+                    formatarJanelaAlertas(resultado);
+        }
+
+        ultimoResultadoAlertas = resultado;
+
+        lblResumoAlertasVencidos.setText(textoVencidas);
+        lblResumoAlertasProximos.setText(textoProximas);
+        lblEstadoAlertasVencimento.setText(textoEstado);
+
+        btnDetalhesAlertasVencimento.setDisable(
+                resultado.getContas().isEmpty()
+        );
+    }
+
+    /**
+     * Formata a data de referência, o limite e os dias usados na fotografia.
+     */
+    private String formatarJanelaAlertas(
+            ResultadoAlertaVencimento resultado
+    ) {
+
+        return "Referência: "
+                + resultado.getDataReferencia().format(FORMATADOR_DATA)
+                + " • Janela até: "
+                + resultado.getLimiteInclusivo().format(FORMATADOR_DATA)
+                + " ("
+                + resultado.getDiasAntecedencia()
+                + (resultado.getDiasAntecedencia() == 1
+                ? " dia)"
+                : " dias)");
+    }
+
+    /**
+     * Trata falha não relacionada à autorização durante uma consulta automática.
+     *
+     * O último resultado válido permanece visível e o próximo ciclo do Timeline
+     * continuará tentando normalmente.
+     */
+    private void tratarFalhaConsultaAlertas(
+            Task<?> tarefa,
+            Throwable causa
+    ) {
+
+        if (tarefaAlertasAtual != tarefa) {
+            return;
+        }
+
+        Throwable causaEfetiva =
+                causa != null
+                        ? causa
+                        : new IllegalStateException(
+                        "A falha da consulta dos alertas não informou uma causa."
+                );
+
+        System.err.println(
+                "[ERRO] Falha ao atualizar os alertas de vencimento."
+        );
+        causaEfetiva.printStackTrace();
+
+        finalizarOperacaoAlertas(tarefa);
+
+        if (ultimoResultadoAlertas == null) {
+            lblEstadoAlertasVencimento.setText(
+                    "Não foi possível atualizar os alertas. "
+                            + "Uma nova tentativa ocorrerá automaticamente."
+            );
+            return;
+        }
+
+        lblEstadoAlertasVencimento.setText(
+                "Não foi possível atualizar os alertas. "
+                        + "Os últimos dados válidos foram mantidos."
+        );
+    }
+
+    /**
+     * Interrompe a rotina quando o Service rejeita a autorização persistida.
+     *
+     * Os dados financeiros deixam de ser apresentados e o usuário recebe uma
+     * orientação única para autenticar-se novamente.
+     */
+    private void tratarFalhaAutorizacaoAlertas(
+            Throwable causa
+    ) {
+
+        System.err.println(
+                "[ERRO] A rotina de alertas perdeu a autorização da sessão."
+        );
+
+        if (causa != null) {
+            causa.printStackTrace();
+        }
+
+        encerrarRotinaAlertasVencimento();
+
+        ultimoResultadoAlertas = null;
+
+        lblResumoAlertasVencidos.setText("—");
+        lblResumoAlertasProximos.setText("—");
+        lblEstadoAlertasVencimento.setText(
+                "Sessão sem autorização para consultar os alertas."
+        );
+
+        btnDetalhesAlertasVencimento.setDisable(true);
+        btnConfigurarAlertasVencimento.setDisable(true);
+
+        mostrarAlerta(
+                Alert.AlertType.WARNING,
+                "Sessão sem autorização",
+                "Não foi possível continuar atualizando os alertas de vencimento.\n"
+                        + "Saia e entre novamente no sistema."
+        );
+    }
+
+    /**
+     * Atualiza o estado visual de uma operação assíncrona dos alertas.
+     */
+    private void configurarEstadoOperacaoAlertas(
+            boolean carregando
+    ) {
+
+        progressoAlertasVencimento.setVisible(carregando);
+        progressoAlertasVencimento.setManaged(carregando);
+
+        btnConfigurarAlertasVencimento.setDisable(
+                carregando
+                        || ultimoResultadoAlertas == null
+                        || !usuarioAtualEhAdministrador()
+        );
+    }
+
+    /**
+     * Finaliza a operação somente quando ela ainda é a Task atual.
+     */
+    private void finalizarOperacaoAlertas(
+            Task<?> tarefa
+    ) {
+
+        if (tarefaAlertasAtual != tarefa) {
+            return;
+        }
+
+        tarefaAlertasAtual = null;
+        configurarEstadoOperacaoAlertas(false);
+    }
+
+    /**
+     * Cancela Task e Timeline pertencentes à instância atual da Tela Principal.
+     */
+    private void encerrarRotinaAlertasVencimento() {
+
+        rotinaAlertasIniciada = false;
+
+        Timeline timelineAnterior =
+                timelineAlertasVencimento;
+
+        timelineAlertasVencimento = null;
+
+        if (timelineAnterior != null) {
+            timelineAnterior.stop();
+        }
+
+        Task<?> tarefaAnterior =
+                tarefaAlertasAtual;
+
+        tarefaAlertasAtual = null;
+
+        if (tarefaAnterior != null
+                && !tarefaAnterior.isDone()) {
+
+            tarefaAnterior.cancel(true);
+        }
+
+        progressoAlertasVencimento.setVisible(false);
+        progressoAlertasVencimento.setManaged(false);
+    }
+
+    /**
+     * Retorna o ID da sessão somente quando o usuário atual continua apto
+     * visualmente para o bloco administrativo.
+     */
+    private Integer obterUsuarioIdAtual() {
+
+        if (!usuarioAtualEhAdministrador()) {
+            return null;
+        }
+
+        Usuario usuario =
+                SessaoUsuario
+                        .getInstance()
+                        .getUsuarioLogado();
+
+        return usuario != null
+                ? usuario.getIdUsuario()
+                : null;
+    }
+
+    /**
+     * Abre os detalhes consolidados da última fotografia válida dos alertas.
+     */
+    @FXML
+    public void mostrarDetalhesAlertasVencimento() {
+
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "Os alertas de vencimento são exclusivos para administradores ativos."
+            );
+            return;
+        }
+
+        ResultadoAlertaVencimento resultado =
+                ultimoResultadoAlertas;
+
+        if (resultado == null
+                || resultado.getContas().isEmpty()) {
+            mostrarAlerta(
+                    Alert.AlertType.INFORMATION,
+                    "Alertas de vencimento",
+                    "Não há contas vencidas ou próximas do vencimento na fotografia atual."
+            );
+            return;
+        }
+
+        StringBuilder texto = new StringBuilder();
+
+        texto.append("Referência: ")
+                .append(
+                        resultado
+                                .getDataReferencia()
+                                .format(FORMATADOR_DATA)
+                )
+                .append("\n");
+
+        texto.append("Janela até: ")
+                .append(
+                        resultado
+                                .getLimiteInclusivo()
+                                .format(FORMATADOR_DATA)
+                )
+                .append(" (")
+                .append(resultado.getDiasAntecedencia())
+                .append(
+                        resultado.getDiasAntecedencia() == 1
+                                ? " dia)\n\n"
+                                : " dias)\n\n"
+                );
+
+        for (ContaAlertaVencimentoView conta
+                : resultado.getContas()) {
+
+            texto.append("Conta #")
+                    .append(conta.getIdConta())
+                    .append(" | Venda #")
+                    .append(conta.getVendaId())
+                    .append("\n");
+
+            texto.append("Cliente: ")
+                    .append(conta.getNomeCliente())
+                    .append("\n");
+
+            texto.append("Valor: ")
+                    .append(formatarMoeda(conta.getValor()))
+                    .append(" | Vencimento: ")
+                    .append(
+                            conta.getDataVencimento()
+                                    .format(FORMATADOR_DATA)
+                    )
+                    .append(" | Situação: ")
+                    .append(
+                            formatarSituacaoAlerta(
+                                    conta.getSituacao()
+                            )
+                    )
+                    .append("\n\n");
+        }
+
+        TextArea areaDetalhes =
+                new TextArea(texto.toString());
+
+        areaDetalhes.setEditable(false);
+        areaDetalhes.setWrapText(true);
+        areaDetalhes.setPrefColumnCount(70);
+        areaDetalhes.setPrefRowCount(20);
+
+        Alert alerta =
+                new Alert(Alert.AlertType.INFORMATION);
+
+        alerta.setTitle("Alertas de vencimento");
+        alerta.setHeaderText(
+                "Contas vencidas e próximas do vencimento"
+        );
+        alerta.getDialogPane().setContent(areaDetalhes);
+        alerta.setResizable(true);
+        alerta.showAndWait();
+    }
+
+    /**
+     * Retorna o texto amigável da situação calculada pelo Service.
+     */
+    private String formatarSituacaoAlerta(
+            SituacaoAlertaVencimento situacao
+    ) {
+
+        if (situacao == SituacaoAlertaVencimento.VENCIDA) {
+            return "Vencida";
+        }
+
+        if (situacao
+                == SituacaoAlertaVencimento.PROXIMA_DO_VENCIMENTO) {
+            return "Próxima ao vencimento";
+        }
+
+        throw new IllegalArgumentException(
+                "Situação de alerta inválida."
+        );
+    }
+
+    /**
+     * Solicita a nova antecedência global ao administrador e inicia a
+     * persistência fora da JavaFX Application Thread.
+     */
+    @FXML
+    public void configurarAlertasVencimento() {
+
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "A configuração dos alertas é exclusiva para administradores ativos."
+            );
+            return;
+        }
+
+        if (tarefaAlertasAtual != null) {
+            mostrarAlerta(
+                    Alert.AlertType.INFORMATION,
+                    "Alertas de vencimento",
+                    "Aguarde a operação atual dos alertas terminar."
+            );
+            return;
+        }
+
+        if (ultimoResultadoAlertas == null) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Alertas de vencimento",
+                    "A configuração ficará disponível após a primeira atualização válida."
+            );
+            return;
+        }
+
+        TextInputDialog dialog =
+                new TextInputDialog(
+                        String.valueOf(
+                                ultimoResultadoAlertas
+                                        .getDiasAntecedencia()
+                        )
+                );
+
+        dialog.setTitle("Configurar alertas");
+        dialog.setHeaderText(
+                "Defina a antecedência dos alertas de vencimento."
+        );
+        dialog.setContentText(
+                "Dias corridos ("
+                        + AlertaVencimentoService.DIAS_ANTECEDENCIA_MINIMO
+                        + " a "
+                        + AlertaVencimentoService.DIAS_ANTECEDENCIA_MAXIMO
+                        + "):"
+        );
+
+        Optional<String> resposta =
+                dialog.showAndWait();
+
+        if (resposta.isEmpty()) {
+            return;
+        }
+
+        int diasAntecedencia;
+
+        try {
+            diasAntecedencia =
+                    Integer.parseInt(
+                            resposta.get().trim()
+                    );
+
+        } catch (NumberFormatException e) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Valor inválido",
+                    "Informe uma quantidade inteira de dias."
+            );
+            return;
+        }
+
+        if (diasAntecedencia
+                < AlertaVencimentoService.DIAS_ANTECEDENCIA_MINIMO
+                || diasAntecedencia
+                > AlertaVencimentoService.DIAS_ANTECEDENCIA_MAXIMO) {
+
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Valor inválido",
+                    "Informe um valor entre "
+                            + AlertaVencimentoService.DIAS_ANTECEDENCIA_MINIMO
+                            + " e "
+                            + AlertaVencimentoService.DIAS_ANTECEDENCIA_MAXIMO
+                            + " dias."
+            );
+            return;
+        }
+
+        iniciarAtualizacaoDiasAntecedencia(
+                diasAntecedencia
+        );
+    }
+
+    /**
+     * Persiste a configuração por Task e dispara consulta imediata após sucesso.
+     */
+    private void iniciarAtualizacaoDiasAntecedencia(
+            int diasAntecedencia
+    ) {
+
+        Integer usuarioId =
+                obterUsuarioIdAtual();
+
+        if (usuarioId == null) {
+            tratarFalhaAutorizacaoAlertas(
+                    new SecurityException(
+                            "A sessão atual não possui um administrador apto."
+                    )
+            );
+            return;
+        }
+
+        Task<Void> novaTarefa =
+                new Task<>() {
+
+                    @Override
+                    protected Void call() {
+                        alertaVencimentoService
+                                .atualizarDiasAntecedencia(
+                                        diasAntecedencia,
+                                        usuarioId
+                                );
+
+                        return null;
+                    }
+                };
+
+        tarefaAlertasAtual = novaTarefa;
+
+        novaTarefa.setOnSucceeded(event -> {
+            if (tarefaAlertasAtual != novaTarefa) {
+                return;
+            }
+
+            finalizarOperacaoAlertas(novaTarefa);
+
+            lblEstadoAlertasVencimento.setText(
+                    "Configuração salva. Atualizando os alertas..."
+            );
+
+            iniciarConsultaAlertasVencimento();
+        });
+
+        novaTarefa.setOnFailed(event -> {
+            if (tarefaAlertasAtual != novaTarefa) {
+                return;
+            }
+
+            Throwable causa =
+                    novaTarefa.getException();
+
+            if (causa instanceof SecurityException) {
+                tratarFalhaAutorizacaoAlertas(causa);
+                return;
+            }
+
+            System.err.println(
+                    "[ERRO] Falha ao salvar a configuração dos alertas."
+            );
+
+            if (causa != null) {
+                causa.printStackTrace();
+            }
+
+            finalizarOperacaoAlertas(novaTarefa);
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível salvar a configuração dos alertas de vencimento."
+            );
+        });
+
+        novaTarefa.setOnCancelled(event -> {
+            if (tarefaAlertasAtual != novaTarefa) {
+                return;
+            }
+
+            finalizarOperacaoAlertas(novaTarefa);
+        });
+
+        configurarEstadoOperacaoAlertas(true);
+
+        Thread thread = new Thread(
+                novaTarefa,
+                "alertas-vencimento-configuracao"
+        );
+
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**
@@ -879,6 +1690,8 @@ public class TelaPrincipalController {
             return;
         }
 
+        encerrarRotinaAlertasVencimento();
+
         SessaoUsuario sessaoUsuario =
                 SessaoUsuario.getInstance();
 
@@ -907,6 +1720,7 @@ public class TelaPrincipalController {
                                 + "A Tela Principal foi mantida."
                 );
 
+                iniciarRotinaAlertasVencimentoSeNecessario();
                 return;
             }
 
@@ -1040,6 +1854,7 @@ public class TelaPrincipalController {
     ) {
 
         cancelarCarregamentoDashboard();
+        encerrarRotinaAlertasVencimento();
 
         try {
             NavegacaoUtil.abrirTela(
@@ -1061,6 +1876,8 @@ public class TelaPrincipalController {
                     "Erro",
                     "Não foi possível abrir a tela solicitada."
             );
+
+            iniciarRotinaAlertasVencimentoSeNecessario();
         }
     }
 

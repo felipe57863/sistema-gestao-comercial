@@ -243,3 +243,75 @@
 .valor-conta-vencida {
     -fx-text-fill: #8f3e3e;
 }
+
+.painel-alertas-vencimento {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 10;
+    -fx-border-color: #d8c58e;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 14 16 14 16;
+    -fx-effect: dropshadow(gaussian, rgba(38, 51, 66, 0.06), 10, 0.14, 0, 2);
+}
+
+.alerta-vencimento-titulo {
+    -fx-text-fill: #344253;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.alerta-vencimento-estado {
+    -fx-text-fill: #6c7987;
+    -fx-font-size: 12px;
+}
+
+.alerta-vencimento-rotulo {
+    -fx-text-fill: #8995a2;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.alerta-vencimento-resumo {
+    -fx-text-fill: #344253;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.alerta-vencimento-resumo-vencido {
+    -fx-text-fill: #8f3e3e;
+}
+
+.botao-alerta-vencimento {
+    -fx-background-color: #f6f8fa;
+    -fx-background-radius: 7;
+    -fx-border-color: #cbd5df;
+    -fx-border-radius: 7;
+    -fx-border-width: 1;
+    -fx-text-fill: #344253;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 7 13 7 13;
+    -fx-cursor: hand;
+}
+
+.botao-alerta-vencimento:hover {
+    -fx-background-color: #eaf0f5;
+}
+
+.botao-alerta-vencimento:focused {
+    -fx-border-color: #5e7f9f;
+}
+
+.botao-alerta-vencimento:disabled {
+    -fx-opacity: 0.55;
+}
+
+.botao-alerta-vencimento-destaque {
+    -fx-background-color: #345f86;
+    -fx-border-color: #345f86;
+    -fx-text-fill: #ffffff;
+}
+
+.botao-alerta-vencimento-destaque:hover {
+    -fx-background-color: #2b5275;
+}

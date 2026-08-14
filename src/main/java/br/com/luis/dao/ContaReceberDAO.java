@@ -847,5 +847,105 @@ public class ContaReceberDAO {
             );
         }
     }
+    /**
+     * Lista contas pendentes cujo vencimento não ultrapassa o limite informado.
+     *
+     * A consulta inclui tanto contas já vencidas quanto contas ainda a vencer
+     * dentro da janela do alerta. Não existe limite inferior, portanto dívidas
+     * antigas continuam sendo retornadas.
+     *
+     * A classificação entre VENCIDA e PROXIMA_DO_VENCIMENTO pertence ao Service.
+     *
+     * @param conn conexão externa controlada pelo Service.
+     * @param limiteInclusivo última data de vencimento incluída na janela.
+     * @return contas pendentes ordenadas por vencimento e ID.
+     */
+    public List<ContaReceberRelatorioDados> listarPendentesAteVencimento(
+            Connection conn,
+            LocalDate limiteInclusivo
+    ) {
 
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (limiteInclusivo == null) {
+            throw new IllegalArgumentException(
+                    "Limite de vencimento do alerta é obrigatório."
+            );
+        }
+
+        String sql = """
+                SELECT conta.id_conta,
+                       conta.venda_id,
+                       cliente.nome AS nome_cliente,
+                       conta.valor,
+                       conta.data_vencimento,
+                       conta.status
+                FROM ContaReceber conta
+                INNER JOIN Cliente cliente
+                        ON cliente.id_cliente = conta.cliente_id
+                WHERE conta.status = ?
+                  AND conta.data_vencimento <= ?
+                ORDER BY conta.data_vencimento ASC,
+                         conta.id_conta ASC
+                """;
+
+        List<ContaReceberRelatorioDados> contas = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, StatusContaReceber.PENDENTE.name());
+            stmt.setString(2, limiteInclusivo.toString());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+
+                while (rs.next()) {
+
+                    Integer idConta = null;
+
+                    try {
+                        idConta = rs.getInt("id_conta");
+
+                        contas.add(
+                                new ContaReceberRelatorioDados(
+                                        idConta,
+                                        rs.getInt("venda_id"),
+                                        rs.getString("nome_cliente"),
+                                        rs.getBigDecimal("valor"),
+                                        LocalDate.parse(
+                                                rs.getString("data_vencimento")
+                                        ),
+                                        StatusContaReceber.valueOf(
+                                                rs.getString("status")
+                                        )
+                                )
+                        );
+
+                    } catch (RuntimeException e) {
+
+                        String contexto =
+                                idConta != null && idConta > 0
+                                        ? " de ID " + idConta
+                                        : "";
+
+                        throw new IllegalStateException(
+                                "Dados persistidos inválidos ao mapear conta"
+                                        + contexto
+                                        + " para os alertas de vencimento.",
+                                e
+                        );
+                    }
+                }
+            }
+
+            return contas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao listar contas para os alertas de vencimento.",
+                    e
+            );
+        }
+    }
 }

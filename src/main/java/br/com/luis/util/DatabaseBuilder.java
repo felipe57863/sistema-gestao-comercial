@@ -29,6 +29,8 @@ public class DatabaseBuilder {
             "database/script_venda.sql",
             "database/script_item_venda.sql",
             "database/script_conta_receber.sql",
+            "database/script_configuracao_alerta_vencimento.sql",
+            "database/script_configuracao_alerta_vencimento_padrao.sql",
             "database/script_movimentacao_financeira.sql",
             "database/script_auditoria_estorno_venda.sql"
     );
