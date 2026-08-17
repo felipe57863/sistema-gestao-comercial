@@ -17,6 +17,7 @@ import java.time.LocalDate;
 public class ResultadoFinalizacaoVenda {
 
     private Integer vendaId;
+    private Integer notaVendaId;
     private TipoVenda tipoVenda;
     private StatusVenda statusVenda;
     private FormaPagamento formaPagamento;
@@ -33,6 +34,7 @@ public class ResultadoFinalizacaoVenda {
 
     public ResultadoFinalizacaoVenda(
             Integer vendaId,
+            Integer notaVendaId,
             TipoVenda tipoVenda,
             StatusVenda statusVenda,
             FormaPagamento formaPagamento,
@@ -43,6 +45,7 @@ public class ResultadoFinalizacaoVenda {
             Integer movimentacaoFinanceiraId
     ) {
         this.vendaId = vendaId;
+        this.notaVendaId = notaVendaId;
         this.tipoVenda = tipoVenda;
         this.statusVenda = statusVenda;
         this.formaPagamento = formaPagamento;
@@ -53,12 +56,45 @@ public class ResultadoFinalizacaoVenda {
         this.movimentacaoFinanceiraId = movimentacaoFinanceiraId;
     }
 
+    public ResultadoFinalizacaoVenda(
+            Integer vendaId,
+            TipoVenda tipoVenda,
+            StatusVenda statusVenda,
+            FormaPagamento formaPagamento,
+            BigDecimal valorTotal,
+            BigDecimal troco,
+            LocalDate dataVencimento,
+            Integer contaReceberId,
+            Integer movimentacaoFinanceiraId
+    ) {
+        this(
+                vendaId,
+                null,
+                tipoVenda,
+                statusVenda,
+                formaPagamento,
+                valorTotal,
+                troco,
+                dataVencimento,
+                contaReceberId,
+                movimentacaoFinanceiraId
+        );
+    }
+
     public Integer getVendaId() {
         return vendaId;
     }
 
     public void setVendaId(Integer vendaId) {
         this.vendaId = vendaId;
+    }
+
+    public Integer getNotaVendaId() {
+        return notaVendaId;
+    }
+
+    public void setNotaVendaId(Integer notaVendaId) {
+        this.notaVendaId = notaVendaId;
     }
 
     public TipoVenda getTipoVenda() {
@@ -139,6 +175,7 @@ public class ResultadoFinalizacaoVenda {
     public String toString() {
         return "ResultadoFinalizacaoVenda{" +
                 "vendaId=" + vendaId +
+                ", notaVendaId=" + notaVendaId +
                 ", tipoVenda=" + tipoVenda +
                 ", statusVenda=" + statusVenda +
                 ", formaPagamento=" + formaPagamento +

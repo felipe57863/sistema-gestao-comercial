@@ -7,6 +7,9 @@ import br.com.luis.dao.MovimentacaoFinanceiraDAO;
 import br.com.luis.dao.PrazoPagamentoDAO;
 import br.com.luis.dao.ProdutoDAO;
 import br.com.luis.dao.VendaDAO;
+import br.com.luis.dao.UsuarioDAO;
+import br.com.luis.dao.NotaVendaDAO;
+import br.com.luis.dao.ItemNotaVendaDAO;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.MovimentacaoFinanceira;
@@ -22,6 +25,8 @@ import br.com.luis.model.Venda;
 import br.com.luis.model.Cliente;
 import br.com.luis.model.ContaReceber;
 import br.com.luis.model.StatusContaReceber;
+import br.com.luis.model.Usuario;
+import br.com.luis.model.NotaVenda;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 import br.com.luis.util.ConnectionFactory;
 
@@ -59,6 +64,9 @@ public class VendaService {
     private final PrazoPagamentoDAO prazoPagamentoDAO;
     private final ContaReceberDAO contaReceberDAO;
     private final MovimentacaoFinanceiraDAO movimentacaoFinanceiraDAO;
+    private final UsuarioDAO usuarioDAO;
+    private final NotaVendaDAO notaVendaDAO;
+    private final ItemNotaVendaDAO itemNotaVendaDAO;
 
     public VendaService() {
         this.produtoService = new ProdutoService();
@@ -71,6 +79,9 @@ public class VendaService {
         this.prazoPagamentoDAO = new PrazoPagamentoDAO();
         this.contaReceberDAO = new ContaReceberDAO();
         this.movimentacaoFinanceiraDAO = new MovimentacaoFinanceiraDAO();
+        this.usuarioDAO = new UsuarioDAO();
+        this.notaVendaDAO = new NotaVendaDAO();
+        this.itemNotaVendaDAO = new ItemNotaVendaDAO();
     }
 
     /**
@@ -504,6 +515,9 @@ public class VendaService {
             throw new IllegalArgumentException("Conexão é obrigatória para finalizar venda à vista.");
         }
 
+        Usuario usuario = buscarEValidarUsuarioFinalizacao(conn, usuarioId);
+        Cliente cliente = buscarEValidarClienteVendaAVista(conn, clienteId);
+
         prepararDadosVendaAVista(venda, formaPagamento, clienteId, usuarioId);
 
         BigDecimal troco = calcularTrocoVendaAVista(
@@ -530,12 +544,30 @@ public class VendaService {
                 movimentacaoFinanceira
         );
 
+        Integer notaVendaId = persistirNotaVendaComItens(
+                conn,
+                vendaId,
+                venda,
+                usuario,
+                cliente,
+                formaPagamento == FormaPagamento.DINHEIRO
+                        ? valorRecebido
+                        : null,
+                formaPagamento == FormaPagamento.DINHEIRO
+                        ? troco
+                        : null,
+                null,
+                null,
+                null
+        );
+
         return montarResultadoFinalizacaoVendaAVista(
                 vendaId,
                 formaPagamento,
                 venda.getValorTotal(),
                 troco,
-                movimentacaoFinanceiraId
+                movimentacaoFinanceiraId,
+                notaVendaId
         );
     }
 
@@ -638,6 +670,8 @@ public class VendaService {
         );
 
         PrazoPagamento prazoEfetivo = dadosValidados.getPrazoEfetivo();
+        Cliente cliente = dadosValidados.getCliente();
+        Usuario usuario = buscarEValidarUsuarioFinalizacao(conn, usuarioId);
 
         prepararDadosVendaAPrazo(venda, clienteId, usuarioId);
 
@@ -657,11 +691,25 @@ public class VendaService {
 
         Integer contaReceberId = persistirContaReceber(conn, contaReceber);
 
+        Integer notaVendaId = persistirNotaVendaComItens(
+                conn,
+                vendaId,
+                venda,
+                usuario,
+                cliente,
+                null,
+                null,
+                contaReceber.getPrazoPagamentoId(),
+                contaReceber.getQuantidadeDiasPrazo(),
+                contaReceber.getDataVencimento()
+        );
+
         return montarResultadoFinalizacaoVendaAPrazo(
                 vendaId,
                 venda.getValorTotal(),
                 contaReceber.getDataVencimento(),
-                contaReceberId
+                contaReceberId,
+                notaVendaId
         );
     }
 
@@ -878,7 +926,8 @@ public class VendaService {
             FormaPagamento formaPagamento,
             BigDecimal valorTotal,
             BigDecimal troco,
-            Integer movimentacaoFinanceiraId
+            Integer movimentacaoFinanceiraId,
+            Integer notaVendaId
     ) {
 
         if (vendaId == null || vendaId <= 0) {
@@ -901,8 +950,11 @@ public class VendaService {
             throw new IllegalArgumentException("ID da movimentação financeira é obrigatório para venda à vista.");
         }
 
+        validarNotaVendaIdResultado(notaVendaId);
+
         return new ResultadoFinalizacaoVenda(
                 vendaId,
+                notaVendaId,
                 TipoVenda.A_VISTA,
                 StatusVenda.PAGA,
                 formaPagamento,
@@ -925,7 +977,8 @@ public class VendaService {
             Integer vendaId,
             BigDecimal valorTotal,
             LocalDate dataVencimento,
-            Integer contaReceberId
+            Integer contaReceberId,
+            Integer notaVendaId
     ) {
 
         if (vendaId == null || vendaId <= 0) {
@@ -944,8 +997,11 @@ public class VendaService {
             throw new IllegalArgumentException("ID da conta a receber é obrigatório para venda a prazo.");
         }
 
+        validarNotaVendaIdResultado(notaVendaId);
+
         return new ResultadoFinalizacaoVenda(
                 vendaId,
+                notaVendaId,
                 TipoVenda.A_PRAZO,
                 StatusVenda.PENDENTE,
                 FormaPagamento.A_PRAZO,
@@ -1086,6 +1142,103 @@ public class VendaService {
         }
 
         return contaReceberId;
+    }
+
+    private Usuario buscarEValidarUsuarioFinalizacao(
+            Connection conn,
+            Integer usuarioId
+    ) {
+        if (usuarioId == null || usuarioId <= 0) {
+            throw new IllegalArgumentException("Usuário é obrigatório para finalizar venda.");
+        }
+
+        Usuario usuario = usuarioDAO.buscarPorId(conn, usuarioId);
+
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário não encontrado para finalizar venda.");
+        }
+
+        if (!"ATIVO".equals(usuario.getStatus())) {
+            throw new IllegalArgumentException("Usuário inativo não pode finalizar venda.");
+        }
+
+        return usuario;
+    }
+
+    private Cliente buscarEValidarClienteVendaAVista(
+            Connection conn,
+            Integer clienteId
+    ) {
+        if (clienteId == null) {
+            return null;
+        }
+
+        if (clienteId <= 0) {
+            throw new IllegalArgumentException("Cliente inválido para venda à vista.");
+        }
+
+        Cliente cliente = clienteDAO.buscarPorIdComPrazo(conn, clienteId);
+
+        if (cliente == null) {
+            throw new IllegalArgumentException("Cliente não encontrado para venda à vista.");
+        }
+
+        return cliente;
+    }
+
+    private Integer persistirNotaVendaComItens(
+            Connection conn,
+            Integer vendaId,
+            Venda venda,
+            Usuario usuario,
+            Cliente cliente,
+            BigDecimal valorRecebido,
+            BigDecimal troco,
+            Integer prazoPagamentoId,
+            Integer quantidadeDiasPrazo,
+            LocalDate dataVencimento
+    ) {
+        NotaVenda notaVenda = new NotaVenda();
+        notaVenda.setVendaId(vendaId);
+        notaVenda.setDataHoraVenda(venda.getDataHora());
+        notaVenda.setTipoVenda(TipoVenda.valueOf(venda.getTipoVenda()));
+        notaVenda.setFormaPagamento(FormaPagamento.valueOf(venda.getFormaPagamento()));
+        notaVenda.setUsuarioId(usuario.getIdUsuario());
+        notaVenda.setNomeUsuario(usuario.getNome());
+        notaVenda.setClienteId(cliente == null ? null : cliente.getIdCliente());
+        notaVenda.setNomeCliente(cliente == null ? null : cliente.getNome());
+        notaVenda.setDocumentoCliente(cliente == null ? null : cliente.getDocumento());
+        notaVenda.setValorTotal(venda.getValorTotal());
+        notaVenda.setValorDescontoGlobal(venda.getValorDescontoGlobal());
+        notaVenda.setValorRecebido(valorRecebido);
+        notaVenda.setTroco(troco);
+        notaVenda.setPrazoPagamentoId(prazoPagamentoId);
+        notaVenda.setQuantidadeDiasPrazo(quantidadeDiasPrazo);
+        notaVenda.setDataVencimento(dataVencimento);
+
+        Integer notaVendaId = notaVendaDAO.inserir(conn, notaVenda);
+
+        if (notaVendaId == null || notaVendaId <= 0) {
+            throw new IllegalStateException("Não foi possível obter o ID da Nota de Venda persistida.");
+        }
+
+        int itensCopiados = itemNotaVendaDAO.copiarItensDaVenda(
+                conn,
+                notaVendaId,
+                vendaId
+        );
+
+        if (itensCopiados != venda.getItens().size()) {
+            throw new IllegalStateException("Quantidade de itens históricos copiados diferente da venda.");
+        }
+
+        return notaVendaId;
+    }
+
+    private void validarNotaVendaIdResultado(Integer notaVendaId) {
+        if (notaVendaId == null || notaVendaId <= 0) {
+            throw new IllegalStateException("ID da Nota de Venda é obrigatório no resultado da finalização.");
+        }
     }
 
     /**
@@ -1324,7 +1477,7 @@ public class VendaService {
 
         validarLimiteCreditoDisponivelVendaAPrazo(conn, cliente, valorVenda);
 
-        return new DadosValidadosVendaAPrazo(prazoEfetivo);
+        return new DadosValidadosVendaAPrazo(cliente, prazoEfetivo);
     }
 
     /**
@@ -1882,12 +2035,19 @@ public class VendaService {
      */
     private static class DadosValidadosVendaAPrazo {
 
+        private final Cliente cliente;
         private final PrazoPagamento prazoEfetivo;
 
         private DadosValidadosVendaAPrazo(
+                Cliente cliente,
                 PrazoPagamento prazoEfetivo
         ) {
+            this.cliente = cliente;
             this.prazoEfetivo = prazoEfetivo;
+        }
+
+        private Cliente getCliente() {
+            return cliente;
         }
 
         private PrazoPagamento getPrazoEfetivo() {
