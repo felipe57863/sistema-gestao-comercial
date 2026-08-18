@@ -13,9 +13,11 @@ import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ClienteService;
+import br.com.luis.service.NotaVendaService;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.service.PrazoPagamentoService;
+import br.com.luis.util.TipoViaNotaVendaPdf;
 import br.com.luis.viewmodel.ItemCarrinhoView;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -41,9 +43,12 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 import javafx.event.ActionEvent;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
@@ -70,6 +75,7 @@ public class RegistroVendaController {
     private final ProdutoService produtoService;
     private final ClienteService clienteService;
     private final PrazoPagamentoService prazoPagamentoService;
+    private final NotaVendaService notaVendaService;
     private final ObservableList<ItemCarrinhoView> itensCarrinhoView;
 
     private Venda vendaAtual;
@@ -118,6 +124,7 @@ public class RegistroVendaController {
         this.produtoService = new ProdutoService();
         this.clienteService = new ClienteService();
         this.prazoPagamentoService = new PrazoPagamentoService();
+        this.notaVendaService = new NotaVendaService();
         this.itensCarrinhoView = FXCollections.observableArrayList();
     }
 
@@ -1278,7 +1285,7 @@ public class RegistroVendaController {
      * apresenta o resultado e limpa a tela; erros são propagados ao evento de
      * finalização, que exibe a mensagem sem descartar o carrinho.
      */
-    private void finalizarVendaAPrazo() {
+    private ResultadoFinalizacaoVenda finalizarVendaAPrazo() {
 
         if (clienteSelecionado == null) {
             throw new IllegalArgumentException("Selecione um cliente para a venda a prazo.");
@@ -1291,7 +1298,7 @@ public class RegistroVendaController {
         Optional<PrazoPagamento> prazoSelecionadoOptional = abrirDialogSelecaoPrazoPagamento();
 
         if (prazoSelecionadoOptional.isEmpty()) {
-            return;
+            return null;
         }
 
         PrazoPagamento prazoSelecionado = prazoSelecionadoOptional.get();
@@ -1300,7 +1307,7 @@ public class RegistroVendaController {
             throw new IllegalArgumentException("Prazo de pagamento selecionado inválido.");
         }
 
-        ResultadoFinalizacaoVenda resultado = vendaService.finalizarVenda(
+        return vendaService.finalizarVenda(
                 vendaAtual,
                 TipoVenda.A_PRAZO,
                 FormaPagamento.A_PRAZO,
@@ -1309,9 +1316,6 @@ public class RegistroVendaController {
                 prazoSelecionado.getIdPrazo(),
                 obterUsuarioIdAtual()
         );
-
-        exibirResultadoFinalizacaoAPrazo(resultado);
-        limparTelaAposFinalizacao();
     }
 
     /**
@@ -1330,42 +1334,54 @@ public class RegistroVendaController {
     @FXML
     private void onFinalizarVenda() {
 
+        TipoVenda tipoVenda;
+        ResultadoFinalizacaoVenda resultado;
+
         try {
-            TipoVenda tipoVenda = obterTipoVendaSelecionado();
+            tipoVenda = obterTipoVendaSelecionado();
 
             if (tipoVenda == TipoVenda.A_PRAZO) {
-                finalizarVendaAPrazo();
-                return;
+                resultado = finalizarVendaAPrazo();
+
+                if (resultado == null) {
+                    return;
+                }
+            } else {
+                Optional<DadosPagamentoAVista> dadosPagamentoOptional =
+                        solicitarDadosPagamentoAVista();
+
+                if (dadosPagamentoOptional.isEmpty()) {
+                    return;
+                }
+
+                DadosPagamentoAVista dadosPagamento =
+                        dadosPagamentoOptional.get();
+
+                resultado = vendaService.finalizarVenda(
+                        vendaAtual,
+                        TipoVenda.A_VISTA,
+                        dadosPagamento.getFormaPagamento(),
+                        dadosPagamento.getValorRecebido(),
+                        null,
+                        null,
+                        obterUsuarioIdAtual()
+                );
             }
-
-            Optional<DadosPagamentoAVista> dadosPagamentoOptional = solicitarDadosPagamentoAVista();
-
-            if (dadosPagamentoOptional.isEmpty()) {
-                return;
-            }
-
-            DadosPagamentoAVista dadosPagamento = dadosPagamentoOptional.get();
-
-            ResultadoFinalizacaoVenda resultado = vendaService.finalizarVenda(
-                    vendaAtual,
-                    TipoVenda.A_VISTA,
-                    dadosPagamento.getFormaPagamento(),
-                    dadosPagamento.getValorRecebido(),
-                    null,
-                    null,
-                    obterUsuarioIdAtual()
-            );
-
-            exibirResultadoFinalizacaoAVista(resultado);
-            limparTelaAposFinalizacao();
 
         } catch (IllegalArgumentException | IllegalStateException e) {
             exibirErro(e.getMessage());
+            return;
 
         } catch (Exception e) {
             e.printStackTrace();
             exibirErro("Erro inesperado ao finalizar venda.");
+            return;
         }
+
+        processarEtapaDocumentalAposVenda(
+                resultado,
+                tipoVenda
+        );
     }
 
     /**
@@ -1374,14 +1390,16 @@ public class RegistroVendaController {
      * Apresenta ID, total, forma de pagamento e, quando positivo, o troco
      * calculado pelo VendaService. O troco exibido não é persistido no banco.
      */
-    private void exibirResultadoFinalizacaoAVista(ResultadoFinalizacaoVenda resultado) {
+    private boolean exibirResultadoFinalizacaoAVista(
+            ResultadoFinalizacaoVenda resultado
+    ) {
 
         if (resultado == null) {
             exibirInformacao(
                     "Venda finalizada",
                     "Venda finalizada com sucesso."
             );
-            return;
+            return false;
         }
 
         StringBuilder mensagem = new StringBuilder();
@@ -1390,6 +1408,9 @@ public class RegistroVendaController {
                 .append("\n\n")
                 .append("Venda: ")
                 .append(resultado.getVendaId())
+                .append("\n")
+                .append("Nota de Venda: ")
+                .append(formatarNumeroNota(resultado.getNotaVendaId()))
                 .append("\n")
                 .append("Total: ")
                 .append(formatarMoeda(resultado.getValorTotal()))
@@ -1404,7 +1425,7 @@ public class RegistroVendaController {
                     .append(formatarMoeda(resultado.getTroco()));
         }
 
-        exibirInformacao(
+        return oferecerSalvamentoNotaOriginal(
                 "Venda finalizada",
                 mensagem.toString()
         );
@@ -1416,14 +1437,16 @@ public class RegistroVendaController {
      * Apresenta ID, total, status, vencimento e, quando disponível, o ID da
      * conta a receber gerada pelo VendaService.
      */
-    private void exibirResultadoFinalizacaoAPrazo(ResultadoFinalizacaoVenda resultado) {
+    private boolean exibirResultadoFinalizacaoAPrazo(
+            ResultadoFinalizacaoVenda resultado
+    ) {
 
         if (resultado == null) {
             exibirInformacao(
                     "Venda a prazo finalizada",
                     "Venda a prazo finalizada com sucesso."
             );
-            return;
+            return false;
         }
 
         StringBuilder mensagem = new StringBuilder();
@@ -1432,6 +1455,9 @@ public class RegistroVendaController {
                 .append("\n\n")
                 .append("Venda: ")
                 .append(resultado.getVendaId())
+                .append("\n")
+                .append("Nota de Venda: ")
+                .append(formatarNumeroNota(resultado.getNotaVendaId()))
                 .append("\n")
                 .append("Total: ")
                 .append(formatarMoeda(resultado.getValorTotal()))
@@ -1452,10 +1478,176 @@ public class RegistroVendaController {
                     .append(resultado.getContaReceberId());
         }
 
-        exibirInformacao(
+        return oferecerSalvamentoNotaOriginal(
                 "Venda a prazo finalizada",
                 mensagem.toString()
         );
+    }
+
+    /**
+     * Executa somente a etapa documental depois que a venda comercial já foi
+     * concluída pelo VendaService.
+     *
+     * Cancelamentos e falhas de PDF nunca retornam ao tratamento de erro da
+     * finalização comercial. A tela da venda concluída é sempre limpa ao final.
+     */
+    private void processarEtapaDocumentalAposVenda(
+            ResultadoFinalizacaoVenda resultado,
+            TipoVenda tipoVenda
+    ) {
+        try {
+            boolean salvarNota;
+
+            if (tipoVenda == TipoVenda.A_PRAZO) {
+                salvarNota =
+                        exibirResultadoFinalizacaoAPrazo(resultado);
+            } else {
+                salvarNota =
+                        exibirResultadoFinalizacaoAVista(resultado);
+            }
+
+            if (salvarNota) {
+                gerarNotaOriginal(resultado);
+            }
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            System.err.println(
+                    "[ERRO] Venda concluída, mas houve falha na etapa documental."
+            );
+            e.printStackTrace();
+
+            exibirFalhaDocumental(
+                    e.getMessage()
+            );
+
+        } catch (RuntimeException e) {
+            System.err.println(
+                    "[ERRO] Venda concluída, mas houve falha inesperada na etapa documental."
+            );
+            e.printStackTrace();
+
+            exibirFalhaDocumental(
+                    "Não foi possível concluir a geração do PDF da Nota de Venda."
+            );
+
+        } finally {
+            limparTelaAposFinalizacao();
+        }
+    }
+
+    /**
+     * Exibe o resultado da venda já concluída e oferece o salvamento do PDF.
+     *
+     * Fechar pelo X ou escolher "Agora não" retorna false e não representa erro.
+     */
+    private boolean oferecerSalvamentoNotaOriginal(
+            String titulo,
+            String mensagem
+    ) {
+        Alert alerta = new Alert(Alert.AlertType.INFORMATION);
+        alerta.setTitle(titulo);
+        alerta.setHeaderText(null);
+        alerta.setContentText(mensagem);
+
+        ButtonType botaoSalvar = new ButtonType(
+                "Salvar Nota em PDF",
+                ButtonBar.ButtonData.OK_DONE
+        );
+
+        ButtonType botaoAgoraNao = new ButtonType(
+                "Agora não",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        alerta.getButtonTypes().setAll(
+                botaoSalvar,
+                botaoAgoraNao
+        );
+
+        Optional<ButtonType> resposta = alerta.showAndWait();
+
+        return resposta.isPresent()
+                && resposta.get() == botaoSalvar;
+    }
+
+    /**
+     * Abre o FileChooser e, quando houver destino escolhido, solicita ao Service
+     * a geração da via ORIGINAL. Cancelar o FileChooser não representa erro.
+     */
+    private void gerarNotaOriginal(
+            ResultadoFinalizacaoVenda resultado
+    ) {
+        if (resultado == null) {
+            throw new IllegalStateException(
+                    "Resultado da venda não possui dados para gerar a Nota."
+            );
+        }
+
+        Integer notaVendaId = resultado.getNotaVendaId();
+
+        String nomeSugerido =
+                notaVendaService.sugerirNomeArquivo(
+                        notaVendaId,
+                        TipoViaNotaVendaPdf.ORIGINAL
+                );
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Salvar Nota de Venda");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter(
+                        "Arquivo PDF (*.pdf)",
+                        "*.pdf"
+                )
+        );
+        fileChooser.setInitialFileName(nomeSugerido);
+
+        File arquivoSelecionado = fileChooser.showSaveDialog(
+                btnVoltar.getScene().getWindow()
+        );
+
+        if (arquivoSelecionado == null) {
+            return;
+        }
+
+        Path destino = arquivoSelecionado.toPath();
+
+        notaVendaService.gerarPdfPorNotaId(
+                notaVendaId,
+                TipoViaNotaVendaPdf.ORIGINAL,
+                destino
+        );
+
+        exibirInformacao(
+                "Nota de Venda",
+                "PDF da Nota de Venda salvo com sucesso."
+        );
+    }
+
+    /**
+     * Exibe falha exclusivamente documental após uma venda já concluída.
+     */
+    private void exibirFalhaDocumental(String detalhe) {
+        String mensagemDetalhe =
+                detalhe != null && !detalhe.isBlank()
+                        ? detalhe
+                        : "Não foi possível gerar o PDF da Nota de Venda.";
+
+        exibirErro(
+                "Venda finalizada com sucesso, mas não foi possível gerar "
+                        + "o PDF da Nota de Venda.\n\n"
+                        + mensagemDetalhe
+        );
+    }
+
+    /**
+     * Formata o número documental com preenchimento mínimo de seis dígitos.
+     */
+    private String formatarNumeroNota(Integer notaVendaId) {
+        if (notaVendaId == null || notaVendaId <= 0) {
+            return "—";
+        }
+
+        return String.format("%06d", notaVendaId);
     }
 
     /**

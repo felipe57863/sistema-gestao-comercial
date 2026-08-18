@@ -9,9 +9,11 @@ import br.com.luis.model.TipoVenda;
 import br.com.luis.model.Usuario;
 import br.com.luis.service.EstornoVendaService;
 import br.com.luis.service.HistoricoVendaService;
+import br.com.luis.service.NotaVendaService;
 import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
 import br.com.luis.util.SessaoUsuario;
+import br.com.luis.util.TipoViaNotaVendaPdf;
 import br.com.luis.viewmodel.FiltroHistoricoVenda;
 import br.com.luis.viewmodel.ItemVendaHistoricoView;
 import br.com.luis.viewmodel.ResultadoEstornoVenda;
@@ -37,10 +39,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -77,6 +82,7 @@ public class HistoricoVendasController {
     @FXML private Button btnLimparFiltros;
     @FXML private Button btnFiltrar;
     @FXML private Button btnAtualizar;
+    @FXML private Button btnGerarSegundaVia;
     @FXML private Button btnEstornarVenda;
 
     @FXML private TableView<VendaHistoricoListagemView> tabelaVendas;
@@ -163,6 +169,7 @@ public class HistoricoVendasController {
 
     private final HistoricoVendaService historicoVendaService;
     private final EstornoVendaService estornoVendaService;
+    private final NotaVendaService notaVendaService;
 
     private final ObservableList<VendaHistoricoListagemView>
             vendasExibidas;
@@ -181,6 +188,9 @@ public class HistoricoVendasController {
 
         this.estornoVendaService =
                 new EstornoVendaService();
+
+        this.notaVendaService =
+                new NotaVendaService();
 
         this.vendasExibidas =
                 FXCollections.observableArrayList();
@@ -662,6 +672,7 @@ public class HistoricoVendasController {
     private void carregarDetalhesVenda(Integer vendaId) {
 
         try {
+            btnGerarSegundaVia.setDisable(true);
             btnEstornarVenda.setDisable(true);
 
             VendaHistoricoDetalheView detalhe =
@@ -848,10 +859,7 @@ public class HistoricoVendasController {
             itensVendaExibidos.setAll(itens);
         }
 
-        btnEstornarVenda.setDisable(
-                detalhe.getStatusVenda()
-                        == StatusVenda.ESTORNADA
-        );
+        atualizarEstadoBotoesVendaSelecionada();
     }
 
     /**
@@ -884,6 +892,7 @@ public class HistoricoVendasController {
         lblDetalheMotivoEstorno.setText("—");
 
         itensVendaExibidos.clear();
+        btnGerarSegundaVia.setDisable(true);
         btnEstornarVenda.setDisable(true);
     }
 
@@ -944,6 +953,106 @@ public class HistoricoVendasController {
                     "Erro",
                     "Não foi possível retornar para a Tela Principal."
             );
+        }
+    }
+
+    /**
+     * Gera uma segunda via da Nota vinculada à venda selecionada.
+     *
+     * A Nota é localizada pelo NotaVendaService antes da abertura do FileChooser.
+     * Assim, vendas legadas sem fotografia documental exibem o aviso funcional
+     * sem oferecer um destino de arquivo. Cancelar o FileChooser não é erro e
+     * preserva integralmente seleção e detalhes da tela.
+     */
+    @FXML
+    private void onGerarSegundaVia() {
+
+        VendaHistoricoListagemView vendaSelecionada =
+                tabelaVendas
+                        .getSelectionModel()
+                        .getSelectedItem();
+
+        if (vendaSelecionada == null) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Atenção",
+                    "Selecione uma venda para gerar a 2ª via."
+            );
+            return;
+        }
+
+        Integer vendaId = vendaSelecionada.getVendaId();
+
+        try {
+            bloquearAcoesConsulta(true);
+
+            String nomeSugerido =
+                    notaVendaService.sugerirNomeArquivoPorVendaId(
+                            vendaId,
+                            TipoViaNotaVendaPdf.SEGUNDA_VIA
+                    );
+
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Salvar 2ª Via da Nota de Venda");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter(
+                            "Arquivo PDF (*.pdf)",
+                            "*.pdf"
+                    )
+            );
+            fileChooser.setInitialFileName(nomeSugerido);
+
+            File arquivoSelecionado = fileChooser.showSaveDialog(
+                    btnGerarSegundaVia.getScene().getWindow()
+            );
+
+            if (arquivoSelecionado == null) {
+                return;
+            }
+
+            Path destino = arquivoSelecionado.toPath();
+
+            notaVendaService.gerarPdfPorVendaId(
+                    vendaId,
+                    TipoViaNotaVendaPdf.SEGUNDA_VIA,
+                    destino
+            );
+
+            mostrarAlerta(
+                    Alert.AlertType.INFORMATION,
+                    "Nota de Venda",
+                    "2ª via da Nota de Venda salva com sucesso."
+            );
+
+        } catch (IllegalArgumentException
+                 | IllegalStateException e) {
+
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Não foi possível gerar a 2ª via",
+                    obterMensagemSegura(
+                            e,
+                            "Não foi possível gerar a 2ª via da Nota de Venda."
+                    )
+            );
+
+        } catch (RuntimeException e) {
+
+            System.err.println(
+                    "[ERRO] Falha inesperada ao gerar 2ª via da venda "
+                            + vendaId
+                            + "."
+            );
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível gerar a 2ª via da Nota de Venda."
+            );
+
+        } finally {
+            bloquearAcoesConsulta(false);
         }
     }
 
@@ -1077,7 +1186,6 @@ public class HistoricoVendasController {
 
         } finally {
             bloquearAcoesConsulta(false);
-            atualizarEstadoBotaoEstorno();
         }
     }
 
@@ -1370,14 +1478,21 @@ public class HistoricoVendasController {
     }
 
     /**
-     * Atualiza o botão de estorno conforme a seleção.
+     * Atualiza os botões documentais e de estorno conforme a seleção real.
+     *
+     * A segunda via permanece disponível inclusive para venda estornada. O
+     * estorno conserva a regra atual de bloqueio quando o status já é ESTORNADA.
      */
-    private void atualizarEstadoBotaoEstorno() {
+    private void atualizarEstadoBotoesVendaSelecionada() {
 
         VendaHistoricoListagemView vendaSelecionada =
                 tabelaVendas
                         .getSelectionModel()
                         .getSelectedItem();
+
+        btnGerarSegundaVia.setDisable(
+                vendaSelecionada == null
+        );
 
         btnEstornarVenda.setDisable(
                 vendaSelecionada == null
@@ -1396,8 +1511,12 @@ public class HistoricoVendasController {
         btnAtualizar.setDisable(bloquear);
 
         if (bloquear) {
+            btnGerarSegundaVia.setDisable(true);
             btnEstornarVenda.setDisable(true);
+            return;
         }
+
+        atualizarEstadoBotoesVendaSelecionada();
     }
 
     /**

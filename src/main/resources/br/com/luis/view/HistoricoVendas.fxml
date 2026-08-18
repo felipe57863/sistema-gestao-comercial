@@ -612,7 +612,14 @@
                         </content>
                     </ScrollPane>
 
-                    <HBox alignment="CENTER">
+                    <HBox alignment="CENTER" spacing="12.0">
+                        <Button fx:id="btnGerarSegundaVia"
+                                disable="true"
+                                onAction="#onGerarSegundaVia"
+                                prefHeight="36.0"
+                                prefWidth="170.0"
+                                text="Gerar 2ª Via" />
+
                         <Button fx:id="btnEstornarVenda"
                                 disable="true"
                                 onAction="#onEstornarVenda"

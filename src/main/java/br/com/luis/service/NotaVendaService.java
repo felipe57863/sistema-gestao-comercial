@@ -173,6 +173,57 @@ public class NotaVendaService {
                 + ".pdf";
     }
 
+    /**
+     * Sugere o nome físico do PDF a partir da venda vinculada à Nota.
+     *
+     * Usa somente a fotografia documental já persistida. A ausência de Nota para
+     * a venda é tratada como compatibilidade com legado e não provoca backfill.
+     */
+    public String sugerirNomeArquivoPorVendaId(
+            Integer vendaId,
+            TipoViaNotaVendaPdf tipoVia
+    ) {
+        validarIdPositivo(vendaId, "ID da venda");
+
+        if (tipoVia == null) {
+            throw new IllegalArgumentException(
+                    "Tipo da via da Nota de Venda é obrigatório."
+            );
+        }
+
+        NotaVenda notaVenda;
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+            notaVenda = notaVendaDAO.buscarPorVendaId(
+                    conn,
+                    vendaId
+            );
+
+            if (notaVenda == null) {
+                throw new IllegalStateException(
+                        "Esta venda não possui Nota de Venda disponível para geração."
+                );
+            }
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Não foi possível fechar a consulta da Nota de Venda.",
+                    e
+            );
+        } catch (RuntimeException e) {
+            throw new IllegalStateException(
+                    "Não foi possível localizar a Nota de Venda para geração.",
+                    e
+            );
+        }
+
+        return sugerirNomeArquivo(
+                notaVenda.getIdNota(),
+                tipoVia
+        );
+    }
+
     private Path validarEGerar(
             NotaVenda notaVenda,
             List<ItemNotaVenda> itens,
