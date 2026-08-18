@@ -4,6 +4,7 @@ import br.com.luis.dao.AuditoriaEstornoVendaDAO;
 import br.com.luis.dao.ContaReceberDAO;
 import br.com.luis.dao.ItemVendaDAO;
 import br.com.luis.dao.MovimentacaoFinanceiraDAO;
+import br.com.luis.dao.NotaVendaDAO;
 import br.com.luis.dao.ProdutoDAO;
 import br.com.luis.dao.UsuarioDAO;
 import br.com.luis.dao.VendaDAO;
@@ -12,8 +13,10 @@ import br.com.luis.model.ContaReceber;
 import br.com.luis.model.FormaPagamento;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.MovimentacaoFinanceira;
+import br.com.luis.model.NotaVenda;
 import br.com.luis.model.OrigemMovimentacaoFinanceira;
 import br.com.luis.model.StatusContaReceber;
+import br.com.luis.model.StatusNotaVenda;
 import br.com.luis.model.StatusVenda;
 import br.com.luis.model.TipoMovimentacaoFinanceira;
 import br.com.luis.model.TipoVenda;
@@ -43,6 +46,7 @@ import java.util.Set;
  * - o estorno é sempre total;
  * - os itens da venda são integralmente devolvidos ao estoque;
  * - a venda é finalizada com status ESTORNADA;
+ * - a Nota de Venda vinculada é marcada como ESTORNADA, quando existente;
  * - a conta a receber vinculada é cancelada, quando aplicável;
  * - movimentações financeiras anteriores permanecem imutáveis;
  * - uma nova movimentação de saída é criada quando existe entrada anterior;
@@ -58,6 +62,7 @@ public class EstornoVendaService {
     private final MovimentacaoFinanceiraDAO movimentacaoFinanceiraDAO;
     private final UsuarioDAO usuarioDAO;
     private final AuditoriaEstornoVendaDAO auditoriaEstornoVendaDAO;
+    private final NotaVendaDAO notaVendaDAO;
 
     public EstornoVendaService() {
         this.vendaDAO = new VendaDAO();
@@ -69,6 +74,7 @@ public class EstornoVendaService {
         this.usuarioDAO = new UsuarioDAO();
         this.auditoriaEstornoVendaDAO =
                 new AuditoriaEstornoVendaDAO();
+        this.notaVendaDAO = new NotaVendaDAO();
     }
 
     /**
@@ -76,9 +82,10 @@ public class EstornoVendaService {
      *
      * Abre e controla uma única Connection para revalidar o usuário, a venda, os
      * itens, a conta e as movimentações persistidas. Dentro da mesma transação,
-     * restaura o estoque, altera a venda para ESTORNADA, trata a conta vinculada
-     * conforme o cenário, registra eventual saída compensatória e grava a
-     * auditoria. O commit ocorre somente após todas as etapas; qualquer falha
+     * restaura o estoque, altera a venda e a Nota de Venda vinculada para
+     * ESTORNADA, trata a conta conforme o cenário, registra eventual saída
+     * compensatória e grava a auditoria. O commit ocorre somente após todas as
+     * etapas; qualquer falha
      * provoca rollback integral e o estado anterior de autoCommit é restaurado.
      *
      * @param vendaId identificador da venda que será estornada.
@@ -148,7 +155,8 @@ public class EstornoVendaService {
      * Executa o fluxo completo do estorno dentro da transação.
      *
      * Usa a Connection recebida para executar as validações e alterações de venda,
-     * itens, estoque, conta, movimentações e auditoria. Não abre outra conexão,
+     * Nota de Venda, itens, estoque, conta, movimentações e auditoria. Não abre
+     * outra conexão,
      * não executa commit ou rollback e não fecha a Connection; essas
      * responsabilidades pertencem ao método público que delimita a transação.
      *
@@ -171,6 +179,12 @@ public class EstornoVendaService {
                 conn,
                 vendaId
         );
+
+        NotaVenda notaVenda =
+                buscarEValidarNotaVendaParaEstorno(
+                        conn,
+                        venda
+                );
 
         validarAusenciaAuditoriaAnterior(
                 conn,
@@ -234,6 +248,12 @@ public class EstornoVendaService {
         atualizarVendaParaEstornada(
                 conn,
                 venda
+        );
+
+        marcarNotaVendaComoEstornadaSeAplicavel(
+                conn,
+                venda,
+                notaVenda
         );
 
         cancelarContaReceberDeFormaProtegida(
@@ -480,6 +500,116 @@ public class EstornoVendaService {
         }
 
         return venda;
+    }
+
+    /**
+     * Busca e valida a Nota de Venda vinculada à venda que será estornada.
+     *
+     * Vendas antigas podem não possuir NotaVenda. Nesse caso, o estorno
+     * continua normalmente em modo de compatibilidade com legado.
+     *
+     * Para vendas que possuem Nota, a fotografia deve estar vinculada à
+     * venda correta e permanecer ATIVA antes do estorno.
+     *
+     * @param conn conexão controlada pelo Service.
+     * @param venda venda persistida e previamente validada.
+     * @return NotaVenda ATIVA vinculada ou null para venda legada.
+     */
+    private NotaVenda buscarEValidarNotaVendaParaEstorno(
+            Connection conn,
+            Venda venda
+    ) {
+
+        NotaVenda notaVenda =
+                notaVendaDAO.buscarPorVendaId(
+                        conn,
+                        venda.getIdVenda()
+                );
+
+        if (notaVenda == null) {
+            System.err.println(
+                    "[AVISO] Venda "
+                            + venda.getIdVenda()
+                            + " não possui NotaVenda. "
+                            + "Estorno executado em modo de compatibilidade com legado."
+            );
+
+            return null;
+        }
+
+        if (notaVenda.getIdNota() == null
+                || notaVenda.getIdNota() <= 0) {
+            throw new IllegalStateException(
+                    "Nota de Venda vinculada possui ID inválido."
+            );
+        }
+
+        if (notaVenda.getVendaId() == null
+                || notaVenda.getVendaId() <= 0
+                || !venda.getIdVenda().equals(
+                notaVenda.getVendaId()
+        )) {
+            throw new IllegalStateException(
+                    "Nota de Venda possui vínculo inconsistente com a venda."
+            );
+        }
+
+        if (notaVenda.getStatus() == null) {
+            throw new IllegalStateException(
+                    "Nota de Venda vinculada não possui status."
+            );
+        }
+
+        if (notaVenda.getStatus()
+                == StatusNotaVenda.ESTORNADA) {
+            throw new IllegalStateException(
+                    "Nota de Venda já está ESTORNADA enquanto a venda ainda "
+                            + "possui status válido para estorno."
+            );
+        }
+
+        if (notaVenda.getStatus()
+                != StatusNotaVenda.ATIVA) {
+            throw new IllegalStateException(
+                    "Nota de Venda não possui status permitido para estorno."
+            );
+        }
+
+        return notaVenda;
+    }
+
+    /**
+     * Marca como ESTORNADA a Nota de Venda vinculada.
+     *
+     * Vendas legadas sem NotaVenda não exigem atualização documental.
+     * Para vendas com Nota, a transição ATIVA -> ESTORNADA é obrigatória
+     * e participa da mesma transação do restante do estorno.
+     *
+     * @param conn conexão controlada pelo Service.
+     * @param venda venda que está sendo estornada.
+     * @param notaVenda NotaVenda validada ou null para venda legada.
+     */
+    private void marcarNotaVendaComoEstornadaSeAplicavel(
+            Connection conn,
+            Venda venda,
+            NotaVenda notaVenda
+    ) {
+
+        if (notaVenda == null) {
+            return;
+        }
+
+        boolean notaAtualizada =
+                notaVendaDAO.marcarComoEstornada(
+                        conn,
+                        venda.getIdVenda()
+                );
+
+        if (!notaAtualizada) {
+            throw new IllegalStateException(
+                    "A Nota de Venda não pôde ser marcada como ESTORNADA."
+            );
+        }
     }
 
     /**
