@@ -33,7 +33,6 @@ public class ProdutoDAO {
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // Preenchimento dos parâmetros
             stmt.setString(1, produto.getDescricao());
             stmt.setBigDecimal(2, produto.getPreco());
             stmt.setInt(3, produto.getQuantidadeEstoque());
@@ -44,7 +43,6 @@ public class ProdutoDAO {
 
             stmt.executeUpdate();
 
-            // Recupera o ID gerado pelo banco e sincroniza com o objeto Java
             try (var rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     produto.setIdProduto(rs.getInt(1));
@@ -138,7 +136,6 @@ public class ProdutoDAO {
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // Preenchimento dos parâmetros com base no objeto
             stmt.setString(1, produto.getDescricao());
             stmt.setBigDecimal(2, produto.getPreco());
             stmt.setInt(3, produto.getQuantidadeEstoque());
@@ -147,7 +144,6 @@ public class ProdutoDAO {
             // SQLite não possui BOOLEAN → usamos 1 (true) ou 0 (false)
             stmt.setInt(5, produto.isAtivo() ? 1 : 0);
 
-            // WHERE id_produto = ?
             stmt.setInt(6, produto.getIdProduto());
 
             int linhasAfetadas = stmt.executeUpdate();

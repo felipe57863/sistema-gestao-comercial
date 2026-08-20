@@ -41,7 +41,6 @@ public class PrazoPagamentoDAO {
                 }
             }
 
-            // Registro informativo no console sobre a preparação dos prazos padrão.
             System.out.println("[LOG] Prazo cadastrado: " + prazo.getDescricao());
 
         } catch (SQLException e) {
@@ -72,7 +71,6 @@ public class PrazoPagamentoDAO {
 
             stmt.executeUpdate();
 
-            // Registro informativo no console sobre a preparação dos prazos padrão.
             System.out.println("[LOG] Prazo atualizado: " + prazo.getDescricao());
 
         } catch (SQLException e) {
@@ -98,7 +96,6 @@ public class PrazoPagamentoDAO {
             stmt.setInt(1, idPrazo);
             stmt.executeUpdate();
 
-            // Registro informativo no console sobre a preparação dos prazos padrão.
             System.out.println("[LOG] Prazo inativado. ID: " + idPrazo);
 
         } catch (SQLException e) {

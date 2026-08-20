@@ -47,8 +47,8 @@ public final class FiltroRelatorioPromocaoProduto {
     /**
      * Valida o estado estrutural da fotografia de filtros.
      *
-     * Todos os critérios são opcionais. O método pode ser chamado novamente pelo
-     * futuro Service antes da consulta, seguindo o contrato dos relatórios atuais.
+     * Todos os critérios são opcionais. O método é chamado pelo
+     * RelatorioProdutoService antes da consulta, seguindo o contrato dos relatórios atuais.
      */
     public void validar() {
         if (descricao != null && descricao.isBlank()) {

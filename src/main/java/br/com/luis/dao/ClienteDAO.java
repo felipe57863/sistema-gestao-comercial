@@ -65,14 +65,12 @@ public class ClienteDAO {
 
             stmt.executeUpdate();
 
-            // Recupera ID gerado
             try (var rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     cliente.setIdCliente(rs.getInt(1));
                 }
             }
 
-            // Log
             System.out.println("[LOG] Cliente cadastrado: " + cliente.getNome());
 
         } catch (SQLException e) {
@@ -195,7 +193,6 @@ public class ClienteDAO {
                 throw new RuntimeException("Nenhum cliente encontrado para atualização.");
             }
 
-            // Log
             System.out.println("[LOG] Cliente atualizado: " + cliente.getNome());
 
         } catch (SQLException e) {

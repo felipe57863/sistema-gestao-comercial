@@ -42,7 +42,6 @@ public class Cliente {
     private StatusCliente status;
     private PrazoPagamento prazoPagamento;
 
-    // Construtor vazio para uso no DAO
     public Cliente() {
     }
 

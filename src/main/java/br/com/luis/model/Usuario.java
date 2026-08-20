@@ -20,11 +20,9 @@ public class Usuario {
      */
     private boolean trocaSenhaObrigatoria = true;
 
-    // Construtor padrão
     public Usuario() {
     }
 
-    // Construtor completo com validação
     public Usuario(
             Integer idUsuario,
             String nome,

@@ -43,6 +43,17 @@ public class NotaVendaService {
 
     /**
      * Gera o PDF de uma Nota pelo seu número/ID permanente.
+     * A fotografia documental persistida pode estar ATIVA ou ESTORNADA. A Nota e
+     * seus itens já existem por terem sido gravados na transação comercial; este
+     * método apenas os consulta e gera o arquivo físico depois do commit.
+     *
+     * @param notaId identificador permanente da Nota de Venda.
+     * @param tipoVia indicação de primeira ou segunda via.
+     * @param destino caminho completo do arquivo PDF que será criado.
+     * @return caminho normalizado do PDF gerado.
+     * @throws IllegalArgumentException se os parâmetros de geração forem inválidos.
+     * @throws IllegalStateException se a Nota não existir, sua fotografia estiver
+     *                               inconsistente ou a consulta ou geração falhar.
      */
     public Path gerarPdfPorNotaId(
             Integer notaId,
@@ -95,6 +106,16 @@ public class NotaVendaService {
      *
      * Retorna uma condição funcional específica quando a venda não possui
      * fotografia documental, incluindo vendas legadas anteriores ao RF16.
+     * Notas ATIVAS e ESTORNADAS preservam o mesmo número e snapshot. A geração
+     * física ocorre fora da transação comercial que persistiu essa fotografia.
+     *
+     * @param vendaId identificador da venda vinculada à Nota.
+     * @param tipoVia indicação de primeira ou segunda via.
+     * @param destino caminho completo do arquivo PDF que será criado.
+     * @return caminho normalizado do PDF gerado.
+     * @throws IllegalArgumentException se os parâmetros de geração forem inválidos.
+     * @throws IllegalStateException se a venda não possuir Nota, a fotografia
+     *                               estiver inconsistente ou a consulta ou geração falhar.
      */
     public Path gerarPdfPorVendaId(
             Integer vendaId,
@@ -147,6 +168,11 @@ public class NotaVendaService {
 
     /**
      * Sugere somente o nome físico do arquivo, sem criar diretórios ou arquivos.
+     *
+     * @param notaId identificador permanente da Nota de Venda.
+     * @param tipoVia indicação de primeira ou segunda via.
+     * @return nome sugerido para o arquivo PDF.
+     * @throws IllegalArgumentException se o identificador ou o tipo da via forem inválidos.
      */
     public String sugerirNomeArquivo(
             Integer notaId,
@@ -178,6 +204,12 @@ public class NotaVendaService {
      *
      * Usa somente a fotografia documental já persistida. A ausência de Nota para
      * a venda é tratada como compatibilidade com legado e não provoca backfill.
+     *
+     * @param vendaId identificador da venda vinculada à Nota.
+     * @param tipoVia indicação de primeira ou segunda via.
+     * @return nome sugerido para o arquivo PDF da Nota persistida.
+     * @throws IllegalArgumentException se o identificador ou o tipo da via forem inválidos.
+     * @throws IllegalStateException se a venda não possuir Nota ou a consulta falhar.
      */
     public String sugerirNomeArquivoPorVendaId(
             Integer vendaId,

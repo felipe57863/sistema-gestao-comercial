@@ -31,7 +31,6 @@ public class ProdutoService {
 
         System.out.println("[LOG] Produto enviado para persistência: " + produto.getDescricao());
 
-        // Delega para o DAO
         produtoDAO.cadastrar(produto);
     }
 
@@ -60,7 +59,6 @@ public class ProdutoService {
 
         System.out.println("[LOG] Solicitando atualização do produto: " + produto.getDescricao());
 
-        // Delegação para o DAO (persistência)
         produtoDAO.atualizar(produto);
     }
 
@@ -89,7 +87,6 @@ public class ProdutoService {
                 false
         );
 
-        // Reaproveita o método de atualização
         produtoDAO.atualizar(produtoInativado);
     }
 

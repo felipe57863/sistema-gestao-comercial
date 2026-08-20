@@ -156,8 +156,7 @@ public class EstornoVendaService {
      *
      * Usa a Connection recebida para executar as validações e alterações de venda,
      * Nota de Venda, itens, estoque, conta, movimentações e auditoria. Não abre
-     * outra conexão,
-     * não executa commit ou rollback e não fecha a Connection; essas
+     * outra conexão, não executa commit ou rollback e não fecha a Connection; essas
      * responsabilidades pertencem ao método público que delimita a transação.
      *
      * @return dados internos necessários para montar o resultado

@@ -38,6 +38,21 @@ public class GestaoUsuarioService {
 
     /**
      * Cadastra um usuário ativo com senha temporária e troca obrigatória.
+     * O executor deve representar um administrador ativo, autorizado e sem troca
+     * obrigatória pendente. Nome, login e perfil são normalizados, a senha é
+     * armazenada como hash e o novo usuário inicia com status ATIVO.
+     *
+     * @param administrador administrador executor da operação.
+     * @param nome nome do novo usuário.
+     * @param login login único do novo usuário.
+     * @param perfil perfil ADMIN ou VENDEDOR.
+     * @param senhaTemporaria senha inicial que deverá ser trocada no próximo acesso.
+     * @param confirmacao confirmação da senha temporária.
+     * @return usuário cadastrado com o identificador gerado.
+     * @throws IllegalArgumentException se os dados cadastrais, o perfil, a senha ou
+     *                                  sua confirmação forem inválidos, ou se o login já existir.
+     * @throws IllegalStateException se o executor não estiver autorizado ou se o
+     *                               cadastro não produzir um identificador válido.
      */
     public Usuario cadastrarUsuario(
             Usuario administrador,
@@ -98,6 +113,27 @@ public class GestaoUsuarioService {
     /**
      * Edita nome, login e perfil após revalidar, na mesma transação, o
      * administrador executor, o usuário alvo e o snapshot apresentado pela UI.
+     * A autorização é confirmada no estado persistido antes da leitura e da
+     * alteração do alvo. O snapshot original protege contra sobrescrita de dados
+     * desatualizados, e o próprio administrador não pode alterar seu perfil.
+     * Senha, status e indicador de troca obrigatória permanecem preservados.
+     * O objeto retornado somente recebe os novos dados após o commit.
+     *
+     * @param administradorId identificador do administrador executor.
+     * @param usuarioAlvoId identificador do usuário que será editado.
+     * @param nomeOriginal nome presente no snapshot exibido pela interface.
+     * @param loginOriginal login presente no snapshot exibido pela interface.
+     * @param perfilOriginal perfil presente no snapshot exibido pela interface.
+     * @param novoNome novo nome do usuário alvo.
+     * @param novoLogin novo login do usuário alvo.
+     * @param novoPerfil novo perfil ADMIN ou VENDEDOR.
+     * @return usuário persistido revalidado, atualizado em memória após o commit.
+     * @throws IllegalArgumentException se os novos dados forem inválidos ou se o
+     *                                  login pertencer a outro usuário.
+     * @throws IllegalStateException se o executor não estiver autorizado, o alvo
+     *                               não existir, o snapshot estiver desatualizado,
+     *                               uma regra de perfil impedir a edição ou a
+     *                               transação não puder ser concluída.
      */
     public Usuario editarUsuario(
             Integer administradorId,
@@ -242,6 +278,17 @@ public class GestaoUsuarioService {
      *
      * A contagem do último administrador ocorre na mesma Connection da mudança
      * para impedir que a regra seja avaliada fora da operação persistente.
+     * O objeto recebido somente acompanha o novo status após o commit.
+     *
+     * @param administrador administrador executor da operação.
+     * @param usuarioAlvo usuário cujo status será alterado.
+     * @param novoStatus novo status ATIVO ou INATIVO.
+     * @throws IllegalArgumentException se o alvo não for informado, o status for
+     *                                  inválido ou já corresponder ao estado atual.
+     * @throws IllegalStateException se o executor não estiver autorizado, o alvo
+     *                               não tiver ID válido, a operação inativar o
+     *                               próprio executor ou o último administrador
+     *                               ativo, ou a transação não puder ser concluída.
      */
     public void alterarStatusUsuario(
             Usuario administrador,
@@ -335,6 +382,18 @@ public class GestaoUsuarioService {
 
     /**
      * Redefine a senha de outro usuário e exige nova troca no próximo acesso.
+     * A operação persiste somente o novo hash e o indicador de troca obrigatória
+     * em transação própria. O objeto recebido é atualizado apenas após o commit.
+     *
+     * @param administrador administrador executor da redefinição.
+     * @param usuarioAlvo usuário que receberá a senha temporária.
+     * @param senhaTemporaria nova senha temporária.
+     * @param confirmacao confirmação da nova senha temporária.
+     * @throws IllegalArgumentException se o alvo não for informado ou se a senha
+     *                                  temporária e sua confirmação forem inválidas.
+     * @throws IllegalStateException se o executor não estiver autorizado, o alvo
+     *                               não tiver ID válido, houver tentativa de
+     *                               autorredefinição ou a transação falhar.
      */
     public void redefinirSenhaAdministrativamente(
             Usuario administrador,

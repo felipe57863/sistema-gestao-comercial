@@ -431,8 +431,6 @@ public class ContaReceberDAO {
 
             stmt.setString(1, StatusContaReceber.PENDENTE.name());
 
-            // rs significa ResultSet e representa o conjunto de linhas
-            // retornado pela consulta SELECT executada no banco de dados.
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     ContaReceberListagemView contaView = new ContaReceberListagemView(

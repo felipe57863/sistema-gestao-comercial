@@ -34,7 +34,6 @@ public class PrazoPagamentoService {
         // Regra de negócio: todo novo prazo inicia como ativo
         prazo.setAtivo(true);
 
-        // Persistência
         dao.cadastrar(prazo);
     }
 
@@ -56,7 +55,6 @@ public class PrazoPagamentoService {
         // Regra de negócio: evitar duplicidade de descrição em outro registro
         validarDescricaoDuplicada(prazo.getDescricao(), prazo.getIdPrazo());
 
-        // Persistência
         dao.atualizar(prazo);
     }
 
@@ -72,7 +70,6 @@ public class PrazoPagamentoService {
             throw new IllegalArgumentException("ID do prazo de pagamento é obrigatório para inativação.");
         }
 
-        // Persistência
         dao.inativar(idPrazo);
     }
 

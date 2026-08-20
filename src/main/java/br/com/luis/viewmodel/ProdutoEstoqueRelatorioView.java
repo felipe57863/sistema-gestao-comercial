@@ -4,7 +4,7 @@ package br.com.luis.viewmodel;
  * Representa uma única linha final da visão de relatório de estoque.
  *
  * A classe é imutável e recebe a diferença e a situação já calculadas pelo
- * futuro Service. Não classifica o estoque, não depende do Model Produto e não
+ * RelatorioProdutoService. Não classifica o estoque, não depende do Model Produto e não
  * acessa banco de dados, DAO, Service, sessão, JavaFX ou formatação visual.
  */
 public final class ProdutoEstoqueRelatorioView {
@@ -22,7 +22,7 @@ public final class ProdutoEstoqueRelatorioView {
      *
      * Estoque mínimo igual a zero é válido. A diferença pode ser negativa, zero
      * ou positiva. A coerência da diferença e da situação com as quantidades é
-     * responsabilidade do futuro Service que prepara a linha.
+     * responsabilidade do RelatorioProdutoService, que prepara a linha.
      *
      * @param produtoId identificador do produto.
      * @param descricao descrição atual do produto.

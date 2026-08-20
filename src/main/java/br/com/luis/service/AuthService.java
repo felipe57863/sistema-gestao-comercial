@@ -21,10 +21,8 @@ public class AuthService {
     private static final int TAMANHO_MINIMO_SENHA = 8;
     private static final int CUSTO_BCRYPT = 12;
 
-    // Dependência responsável pelo acesso ao banco
     private final UsuarioDAO usuarioDAO;
 
-    // Construtor padrão com inicialização direta do DAO utilizado pelo Service.
     public AuthService() {
         this.usuarioDAO = new UsuarioDAO();
     }
@@ -162,7 +160,6 @@ public class AuthService {
 
         String loginNormalizado = login.trim();
 
-        // Busca usuário no banco
         Usuario usuario = usuarioDAO.buscarPorLogin(loginNormalizado);
 
         // Evita informar se foi login ou senha que falhou (segurança)
@@ -170,7 +167,6 @@ public class AuthService {
             throw new RuntimeException("Usuário ou senha inválidos.");
         }
 
-        // Valida senha utilizando BCrypt
         boolean senhaValida;
 
         try {

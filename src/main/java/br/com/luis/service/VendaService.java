@@ -47,8 +47,9 @@ import java.util.LinkedHashMap;
  *
  * Gerencia o carrinho em memória, promoções, desconto global e cálculos da venda.
  * Também finaliza vendas à vista e a prazo em uma única transação, persistindo
- * a venda e seus itens, baixando o estoque e gerando a movimentação financeira
- * ou a conta a receber correspondente ao tipo da venda.
+ * a venda e seus itens, baixando o estoque, gerando a movimentação financeira
+ * ou a conta a receber correspondente ao tipo da venda e registrando NotaVenda
+ * e ItemNotaVenda como fotografia documental da operação comercial.
  */
 public class VendaService {
 
@@ -326,12 +327,14 @@ public class VendaService {
      *
      * Após as validações básicas, abre e fecha a Connection, desabilita o
      * autoCommit durante o fluxo e delega a finalização específica usando a
-     * mesma conexão. Persiste a venda e seus itens, revalida e baixa o estoque
-     * e gera uma MovimentacaoFinanceira para venda à vista ou uma ContaReceber
-     * para venda a prazo.
+     * mesma conexão. Persiste a Venda e seus ItemVenda, revalida e baixa o estoque,
+     * gera uma MovimentacaoFinanceira para venda à vista ou uma ContaReceber para
+     * venda a prazo e registra NotaVenda e ItemNotaVenda como fotografia documental.
      *
-     * Executa commit quando todas as operações são concluídas. Em caso de erro,
-     * executa rollback, restaura o estado anterior do autoCommit e propaga a falha.
+     * Executa commit somente depois de concluir todas essas operações. Em caso de
+     * erro, executa rollback, restaura o estado anterior do autoCommit e propaga a
+     * falha. A geração física do PDF não pertence a esta transação e ocorre somente
+     * depois do commit, em fluxo próprio.
      *
      * @param venda venda em memória que será finalizada.
      * @param tipoVenda tipo da venda: A_VISTA ou A_PRAZO.

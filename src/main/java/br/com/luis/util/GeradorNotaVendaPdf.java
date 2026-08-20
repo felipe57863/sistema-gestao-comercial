@@ -78,7 +78,19 @@ public class GeradorNotaVendaPdf {
      *
      * O arquivo final nunca é sobrescrito. A gravação ocorre primeiro em arquivo
      * temporário criado pelo próprio gerador no mesmo diretório e, somente após
-     * o PDF ser concluído, esse arquivo é movido para o destino final.
+     * o PDF ser concluído, esse arquivo é movido para o destino final. O gerador
+     * recebe a fotografia já carregada e validada pelo NotaVendaService, inclusive
+     * para o estado histórico ESTORNADA, e não realiza persistência.
+     *
+     * @param notaVenda fotografia persistida da Nota de Venda.
+     * @param itens itens persistidos que compõem a fotografia documental.
+     * @param tipoVia indicação de primeira ou segunda via.
+     * @param destino caminho completo do arquivo PDF que será criado.
+     * @return caminho absoluto e normalizado do PDF gerado.
+     * @throws IllegalArgumentException se a Nota, os itens, o tipo da via ou o
+     *                                  destino forem inválidos.
+     * @throws IOException se o destino já existir ou ocorrer falha na criação,
+     *                     gravação, movimentação ou limpeza do arquivo físico.
      */
     public Path gerar(
             NotaVenda notaVenda,

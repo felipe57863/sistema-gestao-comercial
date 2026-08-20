@@ -11,11 +11,9 @@ public class PrazoPagamento {
     private Integer quantidadeDias;
     private boolean ativo; // No banco: 1 (true) / 0 (false)
 
-    // Construtor vazio para uso em DAO
     public PrazoPagamento() {
     }
 
-    // Construtor completo com validação
     public PrazoPagamento(Integer idPrazo, String descricao, Integer quantidadeDias, boolean ativo) {
         setIdPrazo(idPrazo);
         setDescricao(descricao);

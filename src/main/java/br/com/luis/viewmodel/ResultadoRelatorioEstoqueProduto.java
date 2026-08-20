@@ -23,7 +23,7 @@ public final class ResultadoRelatorioEstoqueProduto {
      * Cria uma fotografia imutável da visão de estoque.
      *
      * A quantidade total de produtos é obtida do tamanho da lista. Os demais
-     * totalizadores, já calculados pelo futuro Service, são conferidos contra as
+     * totalizadores, já calculados pelo RelatorioProdutoService, são conferidos contra as
      * situações recebidas nas linhas. Uma lista vazia com totalizadores zero é
      * um resultado válido.
      *

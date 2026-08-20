@@ -288,7 +288,18 @@ public class UsuarioDAO {
 
     /**
      * Verifica se o login pertence a outro usuário dentro da Connection
-     * transacional recebida.
+     * transacional recebida. A comparação é insensível a maiúsculas e minúsculas
+     * e exclui o identificador informado. O DAO não executa commit, rollback nem
+     * fecha a Connection, cujo ciclo pertence ao Service chamador.
+     *
+     * @param conn Connection externa que participa do fluxo transacional.
+     * @param login login cuja disponibilidade será consultada.
+     * @param usuarioIdExcluido identificador que não deve participar do conflito.
+     * @return {@code true} quando o login pertence a outro usuário; caso contrário,
+     *         {@code false}.
+     * @throws IllegalArgumentException se a Connection, o login ou o identificador
+     *                                  forem inválidos.
+     * @throws IllegalStateException se a consulta JDBC falhar.
      */
     public boolean existeLoginParaOutroUsuario(
             Connection conn,
@@ -361,9 +372,18 @@ public class UsuarioDAO {
 
     /**
      * Altera somente o status quando o valor persistido ainda corresponde ao
-     * estado conhecido pelo Service.
+     * estado conhecido pelo Service. O UPDATE protegido permite ao chamador
+     * detectar concorrência pelo número de linhas afetadas. O DAO não executa
+     * commit, rollback nem fecha a Connection recebida.
      *
+     * @param conn Connection externa controlada pelo Service.
+     * @param usuarioId identificador do usuário.
+     * @param statusAtual status esperado no registro persistido.
+     * @param novoStatus status que será persistido.
      * @return quantidade de registros atualizados.
+     * @throws IllegalArgumentException se a Connection, o identificador ou os
+     *                                  status forem inválidos.
+     * @throws IllegalStateException se o UPDATE JDBC falhar.
      */
     public int atualizarStatus(
             Connection conn,
@@ -406,9 +426,21 @@ public class UsuarioDAO {
 
     /**
      * Atualiza somente os dados cadastrais quando o snapshot anterior ainda
-     * corresponde ao registro persistido.
+     * corresponde ao registro persistido. O login anterior é comparado sem
+     * distinção entre maiúsculas e minúsculas. O DAO não executa commit, rollback
+     * nem fecha a Connection recebida.
      *
+     * @param conn Connection externa controlada pelo Service.
+     * @param usuarioId identificador do usuário alvo.
+     * @param nomeAtual nome esperado no registro persistido.
+     * @param loginAtual login esperado no registro persistido.
+     * @param perfilAtual perfil esperado no registro persistido.
+     * @param novoNome nome que será persistido.
+     * @param novoLogin login que será persistido.
+     * @param novoPerfil perfil que será persistido.
      * @return quantidade de registros atualizados.
+     * @throws IllegalArgumentException se a Connection ou o identificador forem inválidos.
+     * @throws IllegalStateException se o UPDATE JDBC falhar.
      */
     public int atualizarDadosCadastrais(
             Connection conn,
@@ -490,9 +522,16 @@ public class UsuarioDAO {
 
     /**
      * Persiste o novo hash e ativa a troca obrigatória sem alterar os demais
-     * dados do usuário.
+     * dados do usuário. O DAO não executa commit, rollback nem fecha a Connection
+     * recebida do fluxo transacional do Service.
      *
+     * @param conn Connection externa controlada pelo Service.
+     * @param usuarioId identificador do usuário alvo.
+     * @param novoHash hash da nova senha temporária.
      * @return quantidade de registros atualizados.
+     * @throws IllegalArgumentException se a Connection, o identificador ou o hash
+     *                                  forem inválidos.
+     * @throws IllegalStateException se o UPDATE JDBC falhar.
      */
     public int redefinirSenhaAdministrativamente(
             Connection conn,

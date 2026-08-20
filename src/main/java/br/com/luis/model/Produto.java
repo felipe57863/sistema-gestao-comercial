@@ -28,7 +28,6 @@ public class Produto {
     public Produto(Integer idProduto, String descricao, BigDecimal preco,
                    Integer quantidadeEstoque, Integer estoqueMinimo, boolean ativo) {
 
-        // Usa setters para reaproveitar validações
         setIdProduto(idProduto);
         setDescricao(descricao);
         setPreco(preco);

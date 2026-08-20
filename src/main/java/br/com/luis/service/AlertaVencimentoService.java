@@ -55,6 +55,17 @@ public class AlertaVencimentoService {
 
     /**
      * Consulta a fotografia atual dos alertas de vencimento.
+     * O executor é reconsultado e deve ser um administrador ATIVO. O resultado
+     * reúne as contas pendentes vencidas e as que vencem até o limite inclusivo
+     * calculado com a antecedência persistida.
+     *
+     * @param usuarioId identificador do administrador executor.
+     * @return fotografia consolidada dos alertas na data da consulta.
+     * @throws IllegalArgumentException se o identificador do executor for inválido.
+     * @throws SecurityException se o executor persistido não estiver autorizado.
+     * @throws IllegalStateException se a configuração ou os dados consultados
+     *                               estiverem inconsistentes.
+     * @throws RuntimeException se ocorrer falha de acesso ao banco.
      */
     public ResultadoAlertaVencimento consultar(Integer usuarioId) {
 
@@ -173,6 +184,15 @@ public class AlertaVencimentoService {
 
     /**
      * Altera a configuração global de antecedência dos alertas.
+     * O valor aceito está no intervalo inclusivo de 0 a 365 dias, e o executor
+     * reconsultado deve ser um administrador ATIVO.
+     *
+     * @param diasAntecedencia quantidade global de dias de antecedência, de 0 a 365.
+     * @param usuarioId identificador do administrador executor.
+     * @throws IllegalArgumentException se a antecedência ou o identificador forem inválidos.
+     * @throws SecurityException se o executor persistido não estiver autorizado.
+     * @throws IllegalStateException se a atualização não afetar exatamente um registro.
+     * @throws RuntimeException se ocorrer falha de acesso ao banco.
      */
     public void atualizarDiasAntecedencia(
             Integer diasAntecedencia,

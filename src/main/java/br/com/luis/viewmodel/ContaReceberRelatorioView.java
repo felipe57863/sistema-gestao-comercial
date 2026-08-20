@@ -7,8 +7,8 @@ import java.time.LocalDate;
 /**
  * Representa uma única linha final do relatório de contas a receber.
  *
- * A classe é imutável e transporta somente os dados necessários para futura
- * apresentação na TableView. A situação já deve ter sido calculada pelo Service
+ * A classe é imutável e transporta somente os dados necessários à apresentação
+ * na TableView. A situação já deve ter sido calculada pelo Service
  * antes da criação desta projeção.
  *
  * Esta classe não acessa banco de dados, DAO, Service, sessão, componentes

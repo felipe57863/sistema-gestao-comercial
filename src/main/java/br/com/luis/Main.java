@@ -46,14 +46,11 @@ public class Main extends Application {
         System.out.println("[INFO] Preparando infraestrutura...");
 
         try {
-            // 1. Garante que as tabelas do banco existem
             DatabaseBuilder.buildTables();
 
-            // 2. Inicializa os prazos padrão do sistema
             PrazoPagamentoService prazoPagamentoService = new PrazoPagamentoService();
             prazoPagamentoService.inicializarPrazosPadrao();
 
-            // 3. Define qual tela deve iniciar o fluxo da aplicação
             AuthService authService = new AuthService();
             configuracaoInicialNecessaria =
                     authService.precisaConfigurarAdministradorInicial();
@@ -85,7 +82,6 @@ public class Main extends Application {
                 ? "ERP Comercial - Configuração Inicial"
                 : "ERP Comercial - Login";
 
-        // 1. Localiza o ficheiro FXML dentro da pasta resources
         URL fxmlLocation = getClass().getResource(caminhoFxml);
 
         // Fail-Fast: garante que o arquivo existe antes de continuar
@@ -95,21 +91,17 @@ public class Main extends Application {
             );
         }
 
-        // 2. Carrega o FXML e transforma em componentes JavaFX
         FXMLLoader loader = new FXMLLoader(fxmlLocation);
         Parent root = loader.load();
 
-        // 3. Cria a cena com base no layout carregado
         Scene scene = new Scene(root);
 
-        // 4. Configura a janela principal
         primaryStage.setTitle(titulo);
         primaryStage.setScene(scene);
 
         // Mantém a janela principal maximizada.
         primaryStage.setMaximized(true);
 
-        // 5. Exibe a interface para o usuário
         primaryStage.show();
     }
 }
