@@ -2,6 +2,7 @@ package br.com.luis.service;
 
 import br.com.luis.dao.ContaReceberDAO;
 import br.com.luis.dao.MovimentacaoFinanceiraDAO;
+import br.com.luis.dao.UsuarioDAO;
 import br.com.luis.dao.VendaDAO;
 import br.com.luis.model.ContaReceber;
 import br.com.luis.model.FormaPagamento;
@@ -10,6 +11,7 @@ import br.com.luis.model.OrigemMovimentacaoFinanceira;
 import br.com.luis.model.StatusContaReceber;
 import br.com.luis.model.StatusVenda;
 import br.com.luis.model.TipoMovimentacaoFinanceira;
+import br.com.luis.model.Usuario;
 import br.com.luis.util.ConnectionFactory;
 import br.com.luis.viewmodel.ResultadoRecebimentoConta;
 
@@ -26,10 +28,12 @@ import java.util.List;
 /**
  * Service responsável pelo recebimento integral de contas a receber.
  *
- * Valida os dados de entrada, busca e revalida a conta persistida e, em uma única
- * transação, altera a conta de PENDENTE para PAGA, atualiza a venda vinculada de
- * PENDENTE para PAGA e registra a movimentação financeira de entrada. Qualquer
- * falha provoca rollback integral do fluxo.
+ * Valida os dados de entrada e, em uma única transação, reconsulta e revalida o
+ * usuário executor persistido na mesma Connection antes de qualquer mutação.
+ * Somente após a autorização, busca e revalida a conta, altera a conta de
+ * PENDENTE para PAGA, atualiza a venda vinculada de PENDENTE para PAGA e registra
+ * a movimentação financeira de entrada. Qualquer falha provoca rollback integral
+ * do fluxo.
  *
  * O recebimento usa o valor integral persistido na conta e registra o usuário e
  * a forma de pagamento informados. Não oferece pagamento parcial, juros, multa,
@@ -40,11 +44,13 @@ public class ContaReceberService {
 
     private final ContaReceberDAO contaReceberDAO;
     private final MovimentacaoFinanceiraDAO movimentacaoFinanceiraDAO;
+    private final UsuarioDAO usuarioDAO;
     private final VendaDAO vendaDAO;
 
     public ContaReceberService() {
         this.contaReceberDAO = new ContaReceberDAO();
         this.movimentacaoFinanceiraDAO = new MovimentacaoFinanceiraDAO();
+        this.usuarioDAO = new UsuarioDAO();
         this.vendaDAO = new VendaDAO();
     }
 
@@ -52,10 +58,12 @@ public class ContaReceberService {
      * Recebe integralmente uma conta a receber.
      *
      * Valida a identificação da conta, a forma de pagamento e o usuário responsável
-     * antes de abrir a conexão. Dentro da transação, busca e revalida a conta
-     * persistida, utiliza seu valor integral, atualiza de forma protegida a conta
-     * de PENDENTE para PAGA e a venda vinculada de PENDENTE para PAGA, além de
-     * registrar a movimentação financeira de entrada correspondente.
+     * antes de abrir a conexão. Dentro da transação, reconsulta e revalida o usuário
+     * executor persistido usando a mesma Connection e exige sua autorização antes
+     * de qualquer mutação. Somente depois, busca e revalida a conta persistida,
+     * utiliza seu valor integral, atualiza de forma protegida a conta de PENDENTE
+     * para PAGA e a venda vinculada de PENDENTE para PAGA, além de registrar a
+     * movimentação financeira de entrada correspondente.
      *
      * O commit ocorre somente após a conclusão de todas as etapas. Qualquer falha
      * provoca rollback integral e a restauração do estado anterior de autoCommit.
@@ -115,10 +123,11 @@ public class ContaReceberService {
     /**
      * Executa o fluxo transacional do recebimento integral.
      *
-     * Revalida a conta persistida e, usando a mesma Connection, atualiza de forma
-     * protegida os status da conta e da venda antes de inserir a movimentação
-     * financeira correspondente. Assim, uma falha em qualquer etapa permite que
-     * o método público reverta todo o conjunto.
+     * Reconsulta e revalida o usuário executor persistido usando a mesma Connection
+     * antes de qualquer mutação. Somente após sua autorização, revalida a conta e
+     * atualiza de forma protegida os status da conta e da venda antes de inserir a
+     * movimentação financeira correspondente. Assim, uma falha em qualquer etapa
+     * permite que o método público reverta todo o conjunto.
      *
      * Este método não executa commit, rollback nem fecha a Connection recebida.
      */
@@ -128,6 +137,11 @@ public class ContaReceberService {
             FormaPagamento formaPagamento,
             Integer usuarioId
     ) {
+
+        buscarEValidarUsuarioAdministradorAtivo(
+                conn,
+                usuarioId
+        );
 
         ContaReceber contaReceber = buscarEValidarContaPendente(
                 conn,
@@ -174,6 +188,33 @@ public class ContaReceberService {
                 formaPagamento,
                 dataHoraRecebimento
         );
+    }
+
+    /**
+     * Busca e revalida o executor persistido antes de qualquer mutação.
+     */
+    private void buscarEValidarUsuarioAdministradorAtivo(
+            Connection conn,
+            Integer usuarioId
+    ) {
+
+        Usuario usuario = usuarioDAO.buscarPorId(
+                conn,
+                usuarioId
+        );
+
+        if (usuario == null
+                || usuario.getIdUsuario() == null
+                || usuario.getIdUsuario() <= 0
+                || !usuarioId.equals(usuario.getIdUsuario())
+                || !"ADMIN".equals(usuario.getPerfil())
+                || !"ATIVO".equals(usuario.getStatus())
+                || usuario.isTrocaSenhaObrigatoria()) {
+
+            throw new IllegalStateException(
+                    "Usuário não autorizado a receber contas a receber."
+            );
+        }
     }
 
     /**
@@ -338,7 +379,9 @@ public class ContaReceberService {
         }
 
         if (usuarioId == null || usuarioId <= 0) {
-            throw new IllegalArgumentException("Usuário inválido para recebimento.");
+            throw new IllegalStateException(
+                    "Usuário não autorizado a receber contas a receber."
+            );
         }
     }
 

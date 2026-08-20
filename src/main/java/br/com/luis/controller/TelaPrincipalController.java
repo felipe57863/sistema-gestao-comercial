@@ -88,6 +88,7 @@ public class TelaPrincipalController {
     @FXML private Button btnPrazosPagamento;
     @FXML private Button btnRelatorios;
     @FXML private Button btnUsuarios;
+    @FXML private Button btnContasReceber;
 
     @FXML private ComboBox<PeriodoDashboard> cmbPeriodoDashboard;
     @FXML private Button btnAtualizarDashboard;
@@ -185,10 +186,10 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Limita visualmente Produtos, Clientes, Prazos de Pagamento e Usuários ao
-     * administrador apto.
-     * As opções também são protegidas pelos respectivos métodos de abertura, e
-     * as operações de usuários permanecem autorizadas pelo Service.
+     * Limita visualmente Produtos, Clientes, Prazos de Pagamento, Contas a
+     * Receber e Usuários ao administrador apto.
+     * As respectivas proteções defensivas nos métodos de abertura e as
+     * autorizações dos Services permanecem independentes, quando aplicáveis.
      */
     private void configurarVisibilidadeOpcoesAdministrativas() {
         boolean administrador = usuarioAtualEhAdministrador();
@@ -208,6 +209,10 @@ public class TelaPrincipalController {
         btnUsuarios.setVisible(administrador);
         btnUsuarios.setManaged(administrador);
         btnUsuarios.setDisable(!administrador);
+
+        btnContasReceber.setVisible(administrador);
+        btnContasReceber.setManaged(administrador);
+        btnContasReceber.setDisable(!administrador);
     }
 
     /**
@@ -1539,6 +1544,15 @@ public class TelaPrincipalController {
      */
     @FXML
     public void abrirContasReceber() {
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "O acesso a Contas a Receber é exclusivo para administradores autorizados."
+            );
+            return;
+        }
+
         abrirTela(
                 "/br/com/luis/view/ContasReceber.fxml",
                 "Contas a Receber"

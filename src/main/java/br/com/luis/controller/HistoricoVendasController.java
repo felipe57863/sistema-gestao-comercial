@@ -214,6 +214,7 @@ public class HistoricoVendasController {
         configurarTabelaVendas();
         configurarTabelaItens();
         configurarSelecaoTabela();
+        configurarVisibilidadeAcaoEstorno();
         limparPainelDetalhes();
         definirPeriodoInicial();
         carregarHistorico();
@@ -1068,6 +1069,15 @@ public class HistoricoVendasController {
     @FXML
     private void onEstornarVenda() {
 
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Atenção",
+                    "Usuário não autorizado a estornar vendas."
+            );
+            return;
+        }
+
         VendaHistoricoListagemView vendaSelecionada =
                 tabelaVendas
                         .getSelectionModel()
@@ -1187,6 +1197,43 @@ public class HistoricoVendasController {
         } finally {
             bloquearAcoesConsulta(false);
         }
+    }
+
+    /**
+     * Configura a disponibilidade visual da ação de estorno conforme a sessão.
+     */
+    private void configurarVisibilidadeAcaoEstorno() {
+
+        boolean administrador = usuarioAtualEhAdministrador();
+
+        btnEstornarVenda.setVisible(administrador);
+        btnEstornarVenda.setManaged(administrador);
+
+        atualizarEstadoBotoesVendaSelecionada();
+    }
+
+    /**
+     * Verifica se a sessão atual possui um administrador apto.
+     */
+    private boolean usuarioAtualEhAdministrador() {
+
+        Usuario usuarioLogado =
+                SessaoUsuario
+                        .getInstance()
+                        .getUsuarioLogado();
+
+        if (usuarioLogado == null) {
+            return false;
+        }
+
+        Integer usuarioId =
+                usuarioLogado.getIdUsuario();
+
+        return usuarioId != null
+                && usuarioId > 0
+                && "ADMIN".equals(usuarioLogado.getPerfil())
+                && "ATIVO".equals(usuarioLogado.getStatus())
+                && !usuarioLogado.isTrocaSenhaObrigatoria();
     }
 
     /**
@@ -1495,7 +1542,8 @@ public class HistoricoVendasController {
         );
 
         btnEstornarVenda.setDisable(
-                vendaSelecionada == null
+                !usuarioAtualEhAdministrador()
+                        || vendaSelecionada == null
                         || vendaSelecionada.getStatusVenda()
                         == StatusVenda.ESTORNADA
         );
