@@ -1,8 +1,8 @@
 # Sistema de Gestão Comercial
 
-Sistema desktop de gestão comercial desenvolvido em Java, com foco em pequenos comércios que precisam controlar produtos, clientes, vendas, estoque, promoções e informações financeiras de forma simples e organizada.
+Sistema desktop de gestão comercial desenvolvido em Java, com foco em pequenos e médios comércios que precisam controlar produtos, clientes, vendas, estoque, promoções e informações financeiras de forma simples e organizada.
 
-Este projeto está sendo desenvolvido como parte do meu Trabalho de Conclusão de Curso em Análise e Desenvolvimento de Sistemas.
+Este projeto foi desenvolvido como parte do meu Trabalho de Conclusão de Curso em Análise e Desenvolvimento de Sistemas.
 
 ---
 
@@ -12,13 +12,12 @@ O objetivo do sistema é centralizar processos comerciais em uma aplicação des
 
 Entre os principais objetivos estão:
 
-- Cadastrar e gerenciar produtos;
-- Controlar clientes e seus dados comerciais;
-- Registrar vendas;
-- Aplicar regras de estoque;
-- Trabalhar com promoções e descontos;
-- Apoiar o controle financeiro;
-- Gerar informações úteis para tomada de decisão.
+- Cadastrar e gerenciar usuários, clientes e produtos;
+- Controlar estoque, promoções e prazos de pagamento;
+- Registrar vendas à vista e a prazo;
+- Controlar contas a receber e movimentações financeiras;
+- Emitir Nota de Venda em PDF;
+- Consultar histórico, relatórios e informações gerenciais.
 
 ---
 
@@ -30,7 +29,8 @@ Entre os principais objetivos estão:
 - SQLite
 - JDBC puro
 - Maven
-- BCrypt/jBCrypt
+- BCrypt / jBCrypt
+- Apache PDFBox
 - Scene Builder
 - Git e GitHub
 
@@ -38,7 +38,13 @@ Entre os principais objetivos estão:
 
 ## Arquitetura do projeto
 
-O sistema utiliza uma organização em camadas, separando responsabilidades entre interface, regras de negócio, acesso a dados e entidades do domínio. O fluxo principal segue a arquitetura `Controller → Service → DAO`.
+O sistema utiliza uma organização em camadas, separando interface, regras de negócio, acesso a dados e entidades do domínio.
+
+O fluxo principal segue a arquitetura:
+
+```text
+Controller → Service → DAO
+```
 
 Estrutura principal:
 
@@ -58,77 +64,54 @@ src/main/resources/database/
 └── scripts SQL
 ```
 
-### Camadas
-
-* `controller`: controla a interface e coordena as ações do usuário, delegando as regras aos Services;
-* `service`: concentra regras de negócio, validações, cálculos e controle transacional;
-* `dao`: realiza consultas e persistência com JDBC e `PreparedStatement`;
-* `model`: representa as entidades e os tipos do domínio;
-* `util`: reúne recursos auxiliares de conexão, banco, sessão, navegação e cabeçalho;
-* `viewmodel`: transporta dados preparados para apresentação nas telas;
-* `src/main/resources/br/com/luis/view`: contém as telas JavaFX definidas em FXML.
-
 Os valores monetários são tratados com `BigDecimal`, evitando perda de precisão em preços, descontos, totais, contas e movimentações financeiras.
-
-### Fluxo principal de inicialização
-
-```text
-Launcher
-→ Main
-→ preparação do banco e dos dados iniciais
-→ Login.fxml
-→ TelaPrincipal.fxml
-```
 
 ---
 
-## Funcionalidades
+## Funcionalidades implementadas
 
-### Recursos implementados
-
-* Autenticação e sessão de usuário;
-* Cadastro e consulta de usuários;
-* Cadastro e consulta de clientes e produtos;
-* Cadastro e consulta de prazos de pagamento e promoções;
-* Controle de estoque;
-* Carrinho de venda, alteração de quantidade e desconto global;
-* Venda à vista com pagamento em dinheiro, PIX ou cartão e cálculo de troco;
-* Venda a prazo com seleção de cliente e prazo e validação de limite de crédito;
-* Persistência transacional da venda e dos itens, com baixa de estoque na finalização;
-* Movimentação financeira para venda à vista;
-* Geração e consulta de contas a receber para vendas a prazo;
-* Recebimento integral de conta com geração da movimentação financeira correspondente;
-* Estorno total de vendas, com restauração de estoque e cancelamento da conta a receber;
-* Movimentação financeira de saída quando necessária no estorno;
-* Auditoria de estorno e bloqueio de estorno duplicado;
-* Histórico de Vendas com filtros, detalhes e estorno contextual pela própria tela;
-* Dashboard gerencial na Tela Principal com vendas válidas e valor total vendido no período, recebido líquido no período, posição atual das contas pendentes e vencidas e quantidade de produtos com estoque baixo;
-* Períodos Hoje, Últimos 7 dias, Mês atual e Mês anterior no dashboard, com carregamento assíncrono e atualização manual;
-* Logout funcional com encerramento da sessão e retorno ao Login no mesmo Stage.
-
-### Próximas evoluções
-
-* Relatórios;
-* Geração de documento ou nota de venda em PDF;
-* Refinamentos finais de interface;
-* Documentação e qualidade.
+- Autenticação e sessão de usuário;
+- Perfis de acesso `ADMIN` e `VENDEDOR`;
+- Cadastro, consulta, edição, ativação e inativação de usuários;
+- Cadastro e consulta de clientes Pessoa Física e Pessoa Jurídica;
+- Validação de CPF e CNPJ;
+- Situação financeira do cliente com saldo devedor e limite disponível;
+- Cadastro, consulta, edição e inativação de produtos;
+- Controle de estoque e estoque mínimo;
+- Cadastro e gerenciamento de promoções;
+- Cadastro e gerenciamento de prazos de pagamento;
+- Carrinho de venda com alteração de quantidade;
+- Promoções automáticas e desconto global por valor ou percentual;
+- Venda à vista com dinheiro, PIX ou cartão;
+- Cálculo de troco para pagamentos em dinheiro;
+- Venda a prazo com cliente, prazo e validação de limite de crédito;
+- Geração de contas a receber;
+- Recebimento integral de contas por usuário administrador;
+- Movimentações financeiras de entrada e saída;
+- Nota de Venda em PDF, segunda via e histórico;
+- Estorno total de vendas com restauração de estoque;
+- Histórico de Vendas com filtros e detalhes;
+- Relatórios e consultas gerenciais;
+- Dashboard com informações de vendas, recebimentos, pendências e estoque baixo;
+- Alertas de contas vencidas e próximas do vencimento;
+- Logout com encerramento da sessão.
 
 ---
 
 ## Regras de negócio trabalhadas
 
-O projeto busca simular regras reais de um sistema comercial, como:
+O projeto busca representar regras comuns de um sistema comercial, como:
 
-* Não permitir venda de produto sem estoque;
-* Controlar produtos ativos e inativos;
-* Validar dados obrigatórios antes de salvar registros;
-* Aplicar promoções ativas automaticamente;
-* Separar desconto promocional de desconto global;
-* Impedir inconsistências no cálculo de valores da venda;
-* Validar limite de crédito e prazo nas vendas a prazo;
-* Manter venda, itens, estoque, contas e movimentações consistentes em transações;
-* Impedir estorno duplicado e manter sua auditoria;
-* Organizar responsabilidades entre as camadas do sistema.
+- Não permitir venda de produto sem estoque suficiente;
+- Aplicar promoções ativas automaticamente;
+- Não aplicar desconto global sobre itens promocionais;
+- Validar limite de crédito em vendas a prazo;
+- Respeitar o prazo máximo definido para o cliente;
+- Manter venda, itens, estoque, contas, movimentações e Nota de Venda consistentes em transações;
+- Impedir recebimento duplicado de contas;
+- Impedir estorno duplicado;
+- Preservar registros financeiros e históricos;
+- Restringir operações administrativas conforme o perfil do usuário.
 
 ---
 
@@ -138,20 +121,23 @@ O sistema utiliza SQLite como banco de dados local.
 
 Alguns conceitos aplicados:
 
-* Tabelas relacionais;
-* Chaves primárias e estrangeiras;
-* Scripts SQL;
-* Persistência com JDBC;
-* Uso de `PreparedStatement`;
-* Separação entre regra de negócio e acesso ao banco.
+- Tabelas relacionais;
+- Chaves primárias e estrangeiras;
+- Scripts SQL;
+- Persistência com JDBC;
+- Uso de `PreparedStatement`;
+- Transações com commit e rollback;
+- Separação entre regra de negócio e acesso ao banco.
 
 ---
 
 ## Status do projeto
 
-O sistema já possui os módulos centrais de autenticação, cadastros, estoque, vendas à vista e a prazo, contas a receber, movimentação financeira, estorno, Histórico de Vendas, dashboard gerencial e logout funcional operacionais.
+O sistema está funcionalmente concluído para o escopo definido no TCC.
 
-As próximas evoluções previstas concentram-se em relatórios, geração de documento ou nota de venda em PDF, refinamentos finais de interface, documentação e qualidade.
+Os principais módulos de autenticação, usuários, clientes, produtos, estoque, promoções, prazos, vendas, contas a receber, movimentações financeiras, Nota de Venda, estorno, histórico, relatórios, dashboard e alertas estão implementados.
+
+A regressão final do projeto foi concluída sem defeitos funcionais bloqueantes reproduzidos.
 
 ---
 
@@ -159,10 +145,9 @@ As próximas evoluções previstas concentram-se em relatórios, geração de do
 
 ### Pré-requisitos
 
-* Java 17 instalado;
-* Maven instalado ou configurado pela IDE;
-* IntelliJ IDEA ou outra IDE compatível;
-* Scene Builder, caso deseje editar as telas FXML.
+- Java 17 instalado;
+- Maven instalado ou configurado pela IDE;
+- IntelliJ IDEA ou outra IDE compatível.
 
 ### Passos básicos
 
@@ -172,13 +157,13 @@ As próximas evoluções previstas concentram-se em relatórios, geração de do
 git clone https://github.com/felipe57863/sistema-gestao-comercial.git
 ```
 
-2. Abra o projeto em uma IDE Java, como IntelliJ IDEA.
+2. Abra o projeto em uma IDE Java.
 
 3. Aguarde o Maven baixar as dependências.
 
-4. Execute a classe `Launcher`, que inicia `Main`, prepara o banco e os dados iniciais e abre a tela de login.
+4. Execute a classe `Launcher`.
 
-5. Após a autenticação, utilize a Tela Principal para acessar os módulos disponíveis.
+5. Após a autenticação, utilize a Tela Principal para acessar os módulos disponíveis para o perfil do usuário.
 
 ---
 
@@ -186,24 +171,27 @@ git clone https://github.com/felipe57863/sistema-gestao-comercial.git
 
 Durante o desenvolvimento deste projeto, foram praticados conceitos como:
 
-* Programação orientada a objetos;
-* Desenvolvimento desktop com JavaFX;
-* Criação de interfaces com FXML;
-* Organização em camadas;
-* Validação de regras de negócio;
-* Integração com banco de dados SQLite;
-* Manipulação de dados com JDBC;
-* Versionamento com Git;
-* Modelagem de banco de dados;
-* Desenvolvimento incremental de funcionalidades.
+- Programação orientada a objetos;
+- Desenvolvimento desktop com JavaFX;
+- Criação de interfaces com FXML;
+- Organização em camadas;
+- Validação de regras de negócio;
+- Integração com banco de dados SQLite;
+- Manipulação de dados com JDBC;
+- Uso de transações;
+- Segurança de senhas com BCrypt;
+- Geração de arquivos PDF;
+- Versionamento com Git e GitHub;
+- Modelagem de banco de dados;
+- Desenvolvimento incremental e testes de regressão.
 
 ---
 
 ## Autor
 
-Luís Felipe Bueno
+**Luís Felipe Bueno**
 
 Estudante de Análise e Desenvolvimento de Sistemas.
 
-* LinkedIn: [linkedin.com/in/luis-felipe-bueno](https://www.linkedin.com/in/luis-felipe-bueno)
-* GitHub: [github.com/felipe57863](https://github.com/felipe57863)
+- LinkedIn: [linkedin.com/in/luis-felipe-bueno](https://www.linkedin.com/in/luis-felipe-bueno)
+- GitHub: [github.com/felipe57863](https://github.com/felipe57863)
