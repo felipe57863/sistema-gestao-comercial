@@ -8,6 +8,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Concentra as regras da gestão administrativa de usuários.
@@ -92,6 +93,148 @@ public class GestaoUsuarioService {
         }
 
         return novoUsuario;
+    }
+
+    /**
+     * Edita nome, login e perfil após revalidar, na mesma transação, o
+     * administrador executor, o usuário alvo e o snapshot apresentado pela UI.
+     */
+    public Usuario editarUsuario(
+            Integer administradorId,
+            Integer usuarioAlvoId,
+            String nomeOriginal,
+            String loginOriginal,
+            String perfilOriginal,
+            String novoNome,
+            String novoLogin,
+            String novoPerfil
+    ) {
+
+        validarAdministradorId(administradorId);
+        validarUsuarioAlvoId(usuarioAlvoId);
+
+        String nomeOriginalNormalizado = normalizarSnapshotNome(nomeOriginal);
+        String loginOriginalNormalizado = normalizarSnapshotLogin(loginOriginal);
+        String perfilOriginalNormalizado = normalizarSnapshotPerfil(perfilOriginal);
+        String novoNomeNormalizado = normalizarCampoObrigatorio(
+                novoNome,
+                "Nome é obrigatório."
+        );
+        String novoLoginNormalizado = normalizarCampoObrigatorio(
+                novoLogin,
+                "Login é obrigatório."
+        ).toLowerCase(Locale.ROOT);
+        String novoPerfilNormalizado = normalizarPerfil(novoPerfil);
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+            boolean autoCommitOriginal = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+            Usuario usuarioAlvoPersistido;
+
+            try {
+                conn.setAutoCommit(false);
+
+                Usuario administradorPersistido = usuarioDAO.buscarPorId(
+                        conn,
+                        administradorId
+                );
+                validarAdministradorPersistido(
+                        administradorPersistido,
+                        administradorId
+                );
+
+                usuarioAlvoPersistido = usuarioDAO.buscarPorId(
+                        conn,
+                        usuarioAlvoId
+                );
+                validarUsuarioAlvoPersistido(
+                        usuarioAlvoPersistido,
+                        usuarioAlvoId
+                );
+
+                validarSnapshot(
+                        usuarioAlvoPersistido,
+                        nomeOriginalNormalizado,
+                        loginOriginalNormalizado,
+                        perfilOriginalNormalizado
+                );
+
+                boolean autoedicao = administradorId.equals(usuarioAlvoId);
+
+                if (autoedicao
+                        && !novoPerfilNormalizado.equals(
+                                usuarioAlvoPersistido.getPerfil()
+                        )) {
+
+                    throw new IllegalStateException(
+                            "O administrador não pode alterar o próprio perfil."
+                    );
+                }
+
+                if (!autoedicao
+                        && "ADMIN".equals(usuarioAlvoPersistido.getPerfil())
+                        && "ATIVO".equals(usuarioAlvoPersistido.getStatus())
+                        && "VENDEDOR".equals(novoPerfilNormalizado)
+                        && usuarioDAO.contarAdministradoresAtivos(conn) <= 1) {
+
+                    throw new IllegalStateException(
+                            "Não é permitido alterar o perfil do último administrador ativo."
+                    );
+                }
+
+                if (usuarioDAO.existeLoginParaOutroUsuario(
+                        conn,
+                        novoLoginNormalizado,
+                        usuarioAlvoId
+                )) {
+
+                    throw new IllegalArgumentException(
+                            "Já existe outro usuário com esse login."
+                    );
+                }
+
+                int registrosAtualizados = usuarioDAO.atualizarDadosCadastrais(
+                        conn,
+                        usuarioAlvoId,
+                        nomeOriginalNormalizado,
+                        loginOriginalNormalizado,
+                        perfilOriginalNormalizado,
+                        novoNomeNormalizado,
+                        novoLoginNormalizado,
+                        novoPerfilNormalizado
+                );
+
+                if (registrosAtualizados != 1) {
+                    throw dadosDesatualizados();
+                }
+
+                conn.commit();
+
+            } catch (SQLException | RuntimeException e) {
+                RuntimeException falha = converterFalhaEdicao(e);
+                falhaOriginal = falha;
+                executarRollbackSeguro(conn, falha);
+                throw falha;
+
+            } finally {
+                restaurarAutoCommitSeguro(
+                        conn,
+                        autoCommitOriginal,
+                        falhaOriginal
+                );
+            }
+
+            usuarioAlvoPersistido.setNome(novoNomeNormalizado);
+            usuarioAlvoPersistido.setLogin(novoLoginNormalizado);
+            usuarioAlvoPersistido.setPerfil(novoPerfilNormalizado);
+            return usuarioAlvoPersistido;
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao controlar a transação de edição do usuário.",
+                    e
+            );
+        }
     }
 
     /**
@@ -305,6 +448,143 @@ public class GestaoUsuarioService {
         }
     }
 
+    private void validarAdministradorId(Integer administradorId) {
+        if (administradorId == null || administradorId <= 0) {
+            throw new IllegalStateException(
+                    "Usuário não autorizado a editar usuários."
+            );
+        }
+    }
+
+    private void validarUsuarioAlvoId(Integer usuarioAlvoId) {
+        if (usuarioAlvoId == null || usuarioAlvoId <= 0) {
+            throw new IllegalStateException(
+                    "Usuário não encontrado para edição."
+            );
+        }
+    }
+
+    private void validarAdministradorPersistido(
+            Usuario administrador,
+            Integer administradorId
+    ) {
+
+        if (administrador == null
+                || administrador.getIdUsuario() == null
+                || !administradorId.equals(administrador.getIdUsuario())
+                || !"ADMIN".equals(administrador.getPerfil())
+                || !"ATIVO".equals(administrador.getStatus())
+                || administrador.isTrocaSenhaObrigatoria()) {
+
+            throw new IllegalStateException(
+                    "Usuário não autorizado a editar usuários."
+            );
+        }
+    }
+
+    private void validarUsuarioAlvoPersistido(
+            Usuario usuarioAlvo,
+            Integer usuarioAlvoId
+    ) {
+
+        if (usuarioAlvo == null
+                || usuarioAlvo.getIdUsuario() == null
+                || !usuarioAlvoId.equals(usuarioAlvo.getIdUsuario())) {
+
+            throw new IllegalStateException(
+                    "Usuário não encontrado para edição."
+            );
+        }
+    }
+
+    private void validarSnapshot(
+            Usuario usuarioAlvo,
+            String nomeOriginal,
+            String loginOriginal,
+            String perfilOriginal
+    ) {
+
+        if (!nomeOriginal.equals(usuarioAlvo.getNome())
+                || !loginOriginal.equals(usuarioAlvo.getLogin())
+                || !perfilOriginal.equals(usuarioAlvo.getPerfil())) {
+
+            throw dadosDesatualizados();
+        }
+    }
+
+    private String normalizarSnapshotNome(String nome) {
+        return normalizarSnapshotObrigatorio(nome).trim();
+    }
+
+    private String normalizarSnapshotLogin(String login) {
+        return normalizarSnapshotObrigatorio(login)
+                .trim()
+                .toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizarSnapshotPerfil(String perfil) {
+        String perfilNormalizado = normalizarSnapshotObrigatorio(perfil)
+                .trim()
+                .toUpperCase(Locale.ROOT);
+
+        if (!"ADMIN".equals(perfilNormalizado)
+                && !"VENDEDOR".equals(perfilNormalizado)) {
+            throw dadosDesatualizados();
+        }
+
+        return perfilNormalizado;
+    }
+
+    private String normalizarSnapshotObrigatorio(String valor) {
+        if (valor == null || valor.isBlank()) {
+            throw dadosDesatualizados();
+        }
+
+        return valor;
+    }
+
+    private IllegalStateException dadosDesatualizados() {
+        return new IllegalStateException(
+                "Não foi possível salvar. Os dados do usuário foram alterados; "
+                        + "atualize a lista e tente novamente."
+        );
+    }
+
+    private RuntimeException converterFalhaEdicao(Throwable falha) {
+        if (causadaPorRestricaoUnique(falha)) {
+            return new IllegalArgumentException(
+                    "Já existe outro usuário com esse login.",
+                    falha
+            );
+        }
+
+        if (falha instanceof RuntimeException runtimeException) {
+            return runtimeException;
+        }
+
+        return new IllegalStateException(
+                "Erro ao editar os dados cadastrais do usuário.",
+                falha
+        );
+    }
+
+    private boolean causadaPorRestricaoUnique(Throwable falha) {
+        Throwable causa = falha;
+
+        while (causa != null) {
+            String mensagem = causa.getMessage();
+
+            if (mensagem != null
+                    && mensagem.toUpperCase(Locale.ROOT).contains("UNIQUE")) {
+                return true;
+            }
+
+            causa = causa.getCause();
+        }
+
+        return false;
+    }
+
     private void validarUsuarioAlvo(Usuario usuarioAlvo) {
         if (usuarioAlvo == null) {
             throw new IllegalArgumentException(
@@ -336,7 +616,7 @@ public class GestaoUsuarioService {
         String perfilNormalizado = normalizarCampoObrigatorio(
                 perfil,
                 "Perfil é obrigatório."
-        ).toUpperCase();
+        ).toUpperCase(Locale.ROOT);
 
         if (!"ADMIN".equals(perfilNormalizado)
                 && !"VENDEDOR".equals(perfilNormalizado)) {

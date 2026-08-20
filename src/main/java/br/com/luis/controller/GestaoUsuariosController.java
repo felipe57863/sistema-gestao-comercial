@@ -68,6 +68,7 @@ public class GestaoUsuariosController {
     @FXML private Label lblTotalUsuarios;
 
     @FXML private Button btnAtualizarLista;
+    @FXML private Button btnEditarUsuario;
     @FXML private Button btnAlterarStatus;
     @FXML private Button btnRedefinirSenha;
 
@@ -509,6 +510,85 @@ public class GestaoUsuariosController {
         }
     }
 
+    @FXML
+    private void abrirEdicaoUsuario() {
+        Usuario usuarioAlvo = tabelaUsuarios
+                .getSelectionModel()
+                .getSelectedItem();
+
+        if (usuarioAlvo == null) {
+            mostrarSelecaoObrigatoria();
+            return;
+        }
+
+        try {
+            if (administradorLogado == null
+                    || administradorLogado.getIdUsuario() == null) {
+                throw new IllegalStateException(
+                        "Administrador logado não foi informado."
+                );
+            }
+
+            URL fxmlLocation = getClass().getResource(
+                    "/br/com/luis/view/EditarUsuario.fxml"
+            );
+
+            if (fxmlLocation == null) {
+                throw new IllegalStateException(
+                        "EditarUsuario.fxml não encontrado."
+                );
+            }
+
+            FXMLLoader loader = new FXMLLoader(fxmlLocation);
+            Parent root = loader.load();
+
+            EditarUsuarioController controller = loader.getController();
+            controller.definirContexto(
+                    administradorLogado.getIdUsuario(),
+                    usuarioAlvo
+            );
+
+            Stage modal = new Stage();
+            modal.initOwner(obterStageAtual());
+            modal.initModality(Modality.WINDOW_MODAL);
+            modal.setTitle("ERP Comercial - Editar Usuário");
+            modal.setScene(new Scene(root));
+            modal.setResizable(false);
+            modal.showAndWait();
+
+            if (!controller.isEdicaoConcluida()) {
+                return;
+            }
+
+            Usuario usuarioAtualizado = controller.getUsuarioAtualizado();
+
+            if (usuarioAtualizado == null
+                    || usuarioAtualizado.getIdUsuario() == null) {
+                throw new IllegalStateException(
+                        "A edição foi concluída sem retornar o usuário atualizado."
+                );
+            }
+
+            sincronizarAutoedicao(usuarioAtualizado);
+            carregarUsuarios();
+            selecionarUsuarioPorId(usuarioAtualizado.getIdUsuario());
+
+            mostrarAlerta(
+                    Alert.AlertType.INFORMATION,
+                    "Usuário atualizado",
+                    "Dados cadastrais do usuário atualizados com sucesso."
+            );
+
+        } catch (IOException | RuntimeException e) {
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível concluir a edição do usuário. "
+                            + mensagemErro(e)
+            );
+        }
+    }
+
     /**
      * Abre o fluxo voluntário já existente para o próprio administrador logado.
      */
@@ -594,6 +674,7 @@ public class GestaoUsuariosController {
         boolean proprioAdministrador = !semSelecao
                 && mesmoUsuario(selecionado);
 
+        btnEditarUsuario.setDisable(semSelecao);
         btnAlterarStatus.setDisable(
                 semSelecao || proprioAdministrador
         );
@@ -607,6 +688,53 @@ public class GestaoUsuariosController {
             btnAlterarStatus.setText("Inativar");
         } else {
             btnAlterarStatus.setText("Ativar");
+        }
+    }
+
+    private void sincronizarAutoedicao(Usuario usuarioAtualizado) {
+        if (!mesmoUsuario(usuarioAtualizado)) {
+            return;
+        }
+
+        Usuario usuarioSessao = SessaoUsuario
+                .getInstance()
+                .getUsuarioLogado();
+
+        if (usuarioSessao == null
+                || usuarioSessao.getIdUsuario() == null
+                || !usuarioAtualizado.getIdUsuario().equals(
+                        usuarioSessao.getIdUsuario()
+                )) {
+
+            throw new IllegalStateException(
+                    "Não foi possível sincronizar a sessão do administrador."
+            );
+        }
+
+        usuarioSessao.setNome(usuarioAtualizado.getNome());
+        usuarioSessao.setLogin(usuarioAtualizado.getLogin());
+
+        if (administradorLogado != usuarioSessao) {
+            administradorLogado.setNome(usuarioAtualizado.getNome());
+            administradorLogado.setLogin(usuarioAtualizado.getLogin());
+        }
+
+        lblUsuario.setText(
+                "Usuário: " + usuarioAtualizado.getNome().trim()
+        );
+    }
+
+    private void selecionarUsuarioPorId(Integer usuarioId) {
+        if (usuarioId == null) {
+            return;
+        }
+
+        for (Usuario usuario : tabelaUsuarios.getItems()) {
+            if (usuarioId.equals(usuario.getIdUsuario())) {
+                tabelaUsuarios.getSelectionModel().select(usuario);
+                tabelaUsuarios.scrollTo(usuario);
+                return;
+            }
         }
     }
 

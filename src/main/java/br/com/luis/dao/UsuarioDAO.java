@@ -287,6 +287,48 @@ public class UsuarioDAO {
     }
 
     /**
+     * Verifica se o login pertence a outro usuário dentro da Connection
+     * transacional recebida.
+     */
+    public boolean existeLoginParaOutroUsuario(
+            Connection conn,
+            String login,
+            Integer usuarioIdExcluido
+    ) {
+
+        validarConexaoEUsuarioId(conn, usuarioIdExcluido);
+
+        if (login == null || login.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Login é obrigatório para consulta."
+            );
+        }
+
+        String sql = """
+            SELECT 1
+            FROM Usuario
+            WHERE login COLLATE NOCASE = ?
+              AND id_usuario <> ?
+            LIMIT 1
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, login.trim().toLowerCase());
+            stmt.setInt(2, usuarioIdExcluido);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao verificar a disponibilidade do login.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Verifica se existe qualquer usuário com perfil administrativo.
      *
      * O status não participa da consulta, pois um administrador inativo ainda
@@ -357,6 +399,55 @@ public class UsuarioDAO {
         } catch (SQLException e) {
             throw new IllegalStateException(
                     "Erro ao atualizar o status do usuário.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Atualiza somente os dados cadastrais quando o snapshot anterior ainda
+     * corresponde ao registro persistido.
+     *
+     * @return quantidade de registros atualizados.
+     */
+    public int atualizarDadosCadastrais(
+            Connection conn,
+            Integer usuarioId,
+            String nomeAtual,
+            String loginAtual,
+            String perfilAtual,
+            String novoNome,
+            String novoLogin,
+            String novoPerfil
+    ) {
+
+        validarConexaoEUsuarioId(conn, usuarioId);
+
+        String sql = """
+            UPDATE Usuario
+            SET nome = ?,
+                login = ?,
+                perfil = ?
+            WHERE id_usuario = ?
+              AND nome = ?
+              AND login COLLATE NOCASE = ?
+              AND perfil = ?
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, novoNome);
+            stmt.setString(2, novoLogin);
+            stmt.setString(3, novoPerfil);
+            stmt.setInt(4, usuarioId);
+            stmt.setString(5, nomeAtual);
+            stmt.setString(6, loginAtual);
+            stmt.setString(7, perfilAtual);
+
+            return stmt.executeUpdate();
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao atualizar os dados cadastrais do usuário.",
                     e
             );
         }

@@ -197,6 +197,12 @@
                                             prefHeight="35.0"
                                             prefWidth="125.0"
                                             text="Atualizar Lista" />
+                                    <Button fx:id="btnEditarUsuario"
+                                            disable="true"
+                                            onAction="#abrirEdicaoUsuario"
+                                            prefHeight="35.0"
+                                            prefWidth="100.0"
+                                            text="Editar" />
                                     <Button fx:id="btnAlterarStatus"
                                             disable="true"
                                             onAction="#alterarStatusSelecionado"
