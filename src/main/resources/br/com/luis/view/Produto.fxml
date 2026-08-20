@@ -244,10 +244,11 @@
                                 text="Novo" />
 
                         <Button fx:id="btnExcluir"
+                                disable="true"
                                 onAction="#acaoExcluir"
                                 prefHeight="35.0"
                                 prefWidth="90.0"
-                                text="Excluir" />
+                                text="Inativar" />
                     </children>
                 </HBox>
 

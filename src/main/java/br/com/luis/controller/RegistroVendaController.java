@@ -93,6 +93,10 @@ public class RegistroVendaController {
     @FXML private TableColumn<ItemCarrinhoView, String> colPromocao;
     @FXML private TableColumn<ItemCarrinhoView, Integer> colQuantidade;
     @FXML private TableColumn<ItemCarrinhoView, String> colSubtotal;
+    @FXML private Button btnRemoverProduto;
+    @FXML private Button btnLimparVenda;
+    @FXML private Button btnAplicarDesconto;
+    @FXML private Button btnFinalizarVenda;
 
     @FXML private TextField txtBuscaCliente;
     @FXML private Label lblNomeCliente;
@@ -280,6 +284,11 @@ public class RegistroVendaController {
         colQuantidade.setCellFactory(coluna -> criarCelulaQuantidadeEditavel());
 
         tblItensVenda.setItems(itensCarrinhoView);
+        tblItensVenda.getSelectionModel()
+                .selectedItemProperty()
+                .addListener((observable, anterior, atual) ->
+                        atualizarEstadoAcoesVenda()
+                );
     }
 
     /**
@@ -479,12 +488,27 @@ public class RegistroVendaController {
         itensCarrinhoView.clear();
 
         if (vendaAtual == null || vendaAtual.getItens() == null) {
+            atualizarEstadoAcoesVenda();
             return;
         }
 
         for (ItemVenda itemVenda : vendaAtual.getItens()) {
             itensCarrinhoView.add(converterParaItemCarrinhoView(itemVenda));
         }
+
+        atualizarEstadoAcoesVenda();
+    }
+
+    private void atualizarEstadoAcoesVenda() {
+        boolean carrinhoVazio = itensCarrinhoView.isEmpty();
+        boolean semSelecao = tblItensVenda
+                .getSelectionModel()
+                .getSelectedItem() == null;
+
+        btnRemoverProduto.setDisable(carrinhoVazio || semSelecao);
+        btnLimparVenda.setDisable(carrinhoVazio);
+        btnAplicarDesconto.setDisable(carrinhoVazio);
+        btnFinalizarVenda.setDisable(carrinhoVazio);
     }
 
     /**
@@ -737,6 +761,9 @@ public class RegistroVendaController {
      */
     @FXML
     private void onLimparVenda() {
+        if (!confirmarLimpezaVenda()) {
+            return;
+        }
 
         try {
             vendaService.limparCarrinho(vendaAtual);
@@ -754,6 +781,36 @@ public class RegistroVendaController {
             System.err.println("[ERRO] Falha inesperada ao limpar venda.");
             e.printStackTrace();
         }
+    }
+
+    private boolean confirmarLimpezaVenda() {
+        if (itensCarrinhoView.isEmpty()) {
+            return true;
+        }
+
+        Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+        alerta.setTitle("Limpar venda");
+        alerta.setHeaderText(null);
+        alerta.setContentText(
+                "Todos os itens e dados da venda atual serão descartados.\n"
+                        + "Deseja realmente limpar a venda?"
+        );
+
+        ButtonType botaoLimpar = new ButtonType(
+                "Limpar venda",
+                ButtonBar.ButtonData.OK_DONE
+        );
+        ButtonType botaoContinuar = new ButtonType(
+                "Continuar na venda",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        alerta.getButtonTypes().setAll(
+                botaoLimpar,
+                botaoContinuar
+        );
+
+        return alerta.showAndWait().orElse(botaoContinuar) == botaoLimpar;
     }
 
     /**
@@ -902,6 +959,9 @@ public class RegistroVendaController {
      */
     @FXML
     private void onCancelarVenda() {
+        if (!confirmarCancelamentoVenda()) {
+            return;
+        }
 
         try {
             inicializarVenda();
@@ -919,6 +979,37 @@ public class RegistroVendaController {
             System.err.println("[ERRO] Falha inesperada ao cancelar venda.");
             e.printStackTrace();
         }
+    }
+
+    private boolean confirmarCancelamentoVenda() {
+        if (itensCarrinhoView.isEmpty()) {
+            return true;
+        }
+
+        Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+        alerta.setTitle("Cancelar venda");
+        alerta.setHeaderText(null);
+        alerta.setContentText(
+                "A venda atual ainda não foi finalizada.\n"
+                        + "Todos os dados da venda serão descartados.\n"
+                        + "Deseja realmente cancelar?"
+        );
+
+        ButtonType botaoCancelar = new ButtonType(
+                "Cancelar venda",
+                ButtonBar.ButtonData.OK_DONE
+        );
+        ButtonType botaoContinuar = new ButtonType(
+                "Continuar na venda",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        alerta.getButtonTypes().setAll(
+                botaoCancelar,
+                botaoContinuar
+        );
+
+        return alerta.showAndWait().orElse(botaoContinuar) == botaoCancelar;
     }
 
     /**

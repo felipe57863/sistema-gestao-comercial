@@ -92,6 +92,7 @@ public class ProdutoController implements Initializable {
 
     // Controle de edição
     private Produto produtoSelecionado;
+    private Task<DadosProdutosTela> tarefaCarregamentoProdutosAtual;
 
     // Guarda a promoção ativa carregada ao selecionar um produto na tabela
     private Promocao promocaoAtivaProdutoSelecionado;
@@ -106,6 +107,7 @@ public class ProdutoController implements Initializable {
         configurarComportamentoPromocao();
         configurarColunas();
         configurarTabelaListener();
+        atualizarEstadoBotaoInativar();
         carregarTabela();
     }
 
@@ -228,6 +230,8 @@ public class ProdutoController implements Initializable {
                         preencherFormulario(novo);
                         btnSalvar.setText("Atualizar");
                     }
+
+                    atualizarEstadoBotaoInativar();
                 }
         );
     }
@@ -251,8 +255,14 @@ public class ProdutoController implements Initializable {
 
         String termo = termoBusca == null ? "" : termoBusca.trim();
 
-        tabelaProdutos.setPlaceholder(new Label("Carregando produtos..."));
-        btnFiltrar.setDisable(true);
+        Task<DadosProdutosTela> tarefaAnterior =
+                tarefaCarregamentoProdutosAtual;
+
+        tarefaCarregamentoProdutosAtual = null;
+
+        if (tarefaAnterior != null) {
+            tarefaAnterior.cancel();
+        }
 
         Task<DadosProdutosTela> task = new Task<>() {
             @Override
@@ -281,7 +291,16 @@ public class ProdutoController implements Initializable {
             }
         };
 
+        tarefaCarregamentoProdutosAtual = task;
+        tabelaProdutos.setPlaceholder(new Label("Carregando produtos..."));
+        btnFiltrar.setDisable(true);
+        atualizarEstadoBotaoInativar();
+
         task.setOnSucceeded(event -> {
+            if (tarefaCarregamentoProdutosAtual != task) {
+                return;
+            }
+
             DadosProdutosTela dados = task.getValue();
 
             promocaoPorProduto.clear();
@@ -301,17 +320,36 @@ public class ProdutoController implements Initializable {
                 }
             }
 
+            tarefaCarregamentoProdutosAtual = null;
             btnFiltrar.setDisable(false);
+            atualizarEstadoBotaoInativar();
         });
 
         task.setOnFailed(event -> {
+            if (tarefaCarregamentoProdutosAtual != task) {
+                return;
+            }
+
+            tarefaCarregamentoProdutosAtual = null;
+
             System.err.println("[ERRO] Falha ao carregar produtos.");
             task.getException().printStackTrace();
 
             tabelaProdutos.setPlaceholder(new Label("Não foi possível carregar os produtos."));
             btnFiltrar.setDisable(false);
+            atualizarEstadoBotaoInativar();
 
             mostrarErroAmigavel("Não foi possível carregar os produtos.");
+        });
+
+        task.setOnCancelled(event -> {
+            if (tarefaCarregamentoProdutosAtual != task) {
+                return;
+            }
+
+            tarefaCarregamentoProdutosAtual = null;
+            btnFiltrar.setDisable(false);
+            atualizarEstadoBotaoInativar();
         });
 
         Thread thread = new Thread(task, "carregar-produtos");
@@ -340,6 +378,8 @@ public class ProdutoController implements Initializable {
         if (!confirmarSaidaComAlteracoesNaoSalvas()) {
             return;
         }
+
+        invalidarCarregamentoProdutos();
 
         try {
             NavegacaoUtil.abrirTela(
@@ -581,7 +621,11 @@ public class ProdutoController implements Initializable {
             carregarTabela();
             prepararNovoCadastro();
 
-            mostrarInformacao("Operação realizada com sucesso!");
+            mostrarInformacao(
+                    estavaEditando
+                            ? "Produto atualizado com sucesso."
+                            : "Produto cadastrado com sucesso."
+            );
 
         } catch (NumberFormatException e) {
 
@@ -732,7 +776,7 @@ public class ProdutoController implements Initializable {
         }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirmação");
+        confirm.setTitle("Confirmar inativação");
         confirm.setHeaderText("Deseja inativar este produto?");
         confirm.setContentText(selecionado.getDescricao());
 
@@ -742,7 +786,7 @@ public class ProdutoController implements Initializable {
                 carregarTabela();
                 prepararNovoCadastro();
 
-                mostrarInformacao("Produto inativado com sucesso!");
+                mostrarInformacao("Produto inativado com sucesso.");
 
             } catch (RuntimeException e) {
                 System.err.println("[ERRO] Falha ao inativar produto.");
@@ -822,7 +866,34 @@ public class ProdutoController implements Initializable {
         tabelaProdutos.getSelectionModel().clearSelection();
 
         btnSalvar.setText("Salvar");
+        atualizarEstadoBotaoInativar();
         txtDescricao.requestFocus();
+    }
+
+    private void atualizarEstadoBotaoInativar() {
+        Produto selecionado = tabelaProdutos == null
+                ? null
+                : tabelaProdutos.getSelectionModel().getSelectedItem();
+
+        btnExcluir.setDisable(
+                selecionado == null
+                        || !selecionado.isAtivo()
+                        || tarefaCarregamentoProdutosAtual != null
+        );
+    }
+
+    private void invalidarCarregamentoProdutos() {
+        Task<DadosProdutosTela> taskAtual =
+                tarefaCarregamentoProdutosAtual;
+
+        tarefaCarregamentoProdutosAtual = null;
+
+        if (taskAtual != null) {
+            taskAtual.cancel();
+        }
+
+        btnFiltrar.setDisable(false);
+        atualizarEstadoBotaoInativar();
     }
 
     private void limparSomenteCamposFormulario() {

@@ -380,6 +380,10 @@ public class PrazoPagamentoController {
 
     @FXML
     private void onVoltar() {
+        if (!confirmarSaidaComAlteracoesNaoSalvas()) {
+            return;
+        }
+
         try {
             NavegacaoUtil.abrirTela(
                     btnVoltar,
@@ -393,6 +397,78 @@ public class PrazoPagamentoController {
 
             mostrarErro("Não foi possível retornar para a Tela Principal.");
         }
+    }
+
+    private boolean confirmarSaidaComAlteracoesNaoSalvas() {
+        if (!existemAlteracoesPrazoNaoSalvas()) {
+            return true;
+        }
+
+        Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+        alerta.setTitle("Alterações não salvas");
+        alerta.setHeaderText(null);
+        alerta.setContentText(
+                "Existem dados de prazo ainda não salvos.\n"
+                        + "Ao voltar, essas alterações serão descartadas.\n"
+                        + "Deseja realmente sair desta tela?"
+        );
+
+        ButtonType botaoSair = new ButtonType(
+                "Sair sem salvar",
+                ButtonBar.ButtonData.OK_DONE
+        );
+        ButtonType botaoContinuar = new ButtonType(
+                "Continuar editando",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        alerta.getButtonTypes().setAll(
+                botaoSair,
+                botaoContinuar
+        );
+
+        return alerta.showAndWait().orElse(botaoContinuar) == botaoSair;
+    }
+
+    private boolean existemAlteracoesPrazoNaoSalvas() {
+        String descricaoAtual = normalizarTextoComparacao(
+                txtDescricao.getText()
+        );
+        String quantidadeDiasAtual = normalizarTextoComparacao(
+                txtQuantidadeDias.getText()
+        );
+
+        if (prazoSelecionado == null) {
+            return !descricaoAtual.isEmpty()
+                    || !quantidadeDiasAtual.isEmpty();
+        }
+
+        if (!descricaoAtual.equals(
+                normalizarTextoComparacao(
+                        prazoSelecionado.getDescricao()
+                )
+        )) {
+            return true;
+        }
+
+        try {
+            Integer quantidadeDiasOriginal =
+                    prazoSelecionado.getQuantidadeDias();
+            int quantidadeDiasInformada =
+                    Integer.parseInt(quantidadeDiasAtual);
+
+            return quantidadeDiasAtual.isEmpty()
+                    || quantidadeDiasOriginal == null
+                    || quantidadeDiasInformada
+                    != quantidadeDiasOriginal;
+
+        } catch (NumberFormatException e) {
+            return true;
+        }
+    }
+
+    private String normalizarTextoComparacao(String texto) {
+        return texto == null ? "" : texto.trim();
     }
 
     private void tratarFalhaOperacao(

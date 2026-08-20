@@ -614,6 +614,7 @@ public class ClienteController {
     public void salvar() {
 
         try {
+            boolean cadastrando = clienteSelecionado == null;
             Integer clienteIdParaReselecionar = clienteSelecionado != null
                     ? clienteSelecionado.getIdCliente()
                     : null;
@@ -634,7 +635,7 @@ public class ClienteController {
                 throw new IllegalArgumentException("Selecione um prazo de pagamento.");
             }
 
-            if (clienteSelecionado == null) {
+            if (cadastrando) {
 
                 Cliente cliente = new Cliente(
                         null,
@@ -672,7 +673,9 @@ public class ClienteController {
 
             mostrarAlerta(Alert.AlertType.INFORMATION,
                     "Sucesso",
-                    "Operação realizada com sucesso!");
+                    cadastrando
+                            ? "Cliente cadastrado com sucesso."
+                            : "Cliente atualizado com sucesso.");
 
             limparCamposFormulario();
             voltarModoCadastro();

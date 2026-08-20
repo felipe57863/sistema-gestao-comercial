@@ -144,6 +144,10 @@
                                          text="Subtotal" />
                         </columns>
 
+                        <placeholder>
+                            <Label text="Nenhum produto adicionado à venda." />
+                        </placeholder>
+
                         <columnResizePolicy>
                             <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                         </columnResizePolicy>
@@ -151,6 +155,7 @@
 
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <Button fx:id="btnRemoverProduto"
+                                disable="true"
                                 onAction="#onRemoverProduto"
                                 prefHeight="35.0"
                                 prefWidth="170.0"
@@ -159,6 +164,7 @@
                         <Region HBox.hgrow="ALWAYS" />
 
                         <Button fx:id="btnLimparVenda"
+                                disable="true"
                                 onAction="#onLimparVenda"
                                 prefHeight="35.0"
                                 prefWidth="145.0"
@@ -217,6 +223,7 @@
                         <Region GridPane.columnIndex="4" />
 
                         <Button fx:id="btnAplicarDesconto"
+                                disable="true"
                                 onAction="#onAplicarDesconto"
                                 prefHeight="35.0"
                                 prefWidth="150.0"
@@ -396,6 +403,7 @@
             </BorderPane.margin>
 
             <Button fx:id="btnFinalizarVenda"
+                    disable="true"
                     onAction="#onFinalizarVenda"
                     prefHeight="40.0"
                     prefWidth="170.0"

@@ -14,6 +14,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -759,6 +760,10 @@ public class GestaoUsuariosController {
      */
     @FXML
     private void onVoltar() {
+        if (!confirmarSaidaComAlteracoesNaoSalvas()) {
+            return;
+        }
+
         try {
             NavegacaoUtil.abrirTela(
                     btnVoltar,
@@ -778,6 +783,49 @@ public class GestaoUsuariosController {
                     "Não foi possível retornar para a Tela Principal."
             );
         }
+    }
+
+    private boolean confirmarSaidaComAlteracoesNaoSalvas() {
+        if (!formularioCadastroUsuarioFoiAlterado()) {
+            return true;
+        }
+
+        Alert alerta = new Alert(Alert.AlertType.CONFIRMATION);
+        alerta.setTitle("Alterações não salvas");
+        alerta.setHeaderText(null);
+        alerta.setContentText(
+                "Existem dados de novo usuário ainda não salvos.\n"
+                        + "Ao voltar, essas alterações serão descartadas.\n"
+                        + "Deseja realmente sair desta tela?"
+        );
+
+        ButtonType botaoSair = new ButtonType(
+                "Sair sem salvar",
+                ButtonBar.ButtonData.OK_DONE
+        );
+        ButtonType botaoContinuar = new ButtonType(
+                "Continuar editando",
+                ButtonBar.ButtonData.CANCEL_CLOSE
+        );
+
+        alerta.getButtonTypes().setAll(
+                botaoSair,
+                botaoContinuar
+        );
+
+        return alerta.showAndWait().orElse(botaoContinuar) == botaoSair;
+    }
+
+    private boolean formularioCadastroUsuarioFoiAlterado() {
+        return campoFoiPreenchido(txtNome.getText())
+                || campoFoiPreenchido(txtLogin.getText())
+                || !"VENDEDOR".equals(cmbPerfil.getValue())
+                || campoFoiPreenchido(txtSenhaTemporaria.getText())
+                || campoFoiPreenchido(txtConfirmacao.getText());
+    }
+
+    private boolean campoFoiPreenchido(String texto) {
+        return texto != null && !texto.isEmpty();
     }
 
     private Stage obterStageAtual() {
