@@ -262,6 +262,85 @@ public class VendaService {
     }
 
     /**
+     * Verifica se a venda possui ao menos um item elegível ao desconto global.
+     *
+     * A consulta atua somente sobre a venda em memória e reutiliza o mesmo
+     * critério aplicado pela RN04 durante a aplicação do desconto global.
+     *
+     * @param venda venda em memória que será consultada.
+     * @return true quando existe ao menos um item sem promoção; false caso contrário.
+     */
+    public boolean possuiItemElegivelParaDescontoGlobal(Venda venda) {
+        if (venda == null || venda.getItens() == null || venda.getItens().isEmpty()) {
+            return false;
+        }
+
+        return !listarItensElegiveisParaDescontoGlobal(venda).isEmpty();
+    }
+
+    /**
+     * Calcula o valor bruto dos produtos antes de qualquer desconto.
+     *
+     * @param venda venda em memória que será consultada.
+     * @return soma de preço unitário multiplicado pela quantidade de cada item.
+     */
+    public BigDecimal calcularSubtotalBruto(Venda venda) {
+        BigDecimal subtotalBruto = BigDecimal.ZERO;
+
+        if (venda == null || venda.getItens() == null) {
+            return subtotalBruto.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+        }
+
+        for (ItemVenda item : venda.getItens()) {
+            if (item != null) {
+                subtotalBruto = subtotalBruto.add(calcularValorBrutoItem(item));
+            }
+        }
+
+        return subtotalBruto.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calcula o total dos descontos promocionais dos itens da venda.
+     *
+     * @param venda venda em memória que será consultada.
+     * @return soma dos descontos promocionais dos itens.
+     */
+    public BigDecimal calcularDescontoPromocionalTotal(Venda venda) {
+        BigDecimal descontoPromocionalTotal = BigDecimal.ZERO;
+
+        if (venda == null || venda.getItens() == null) {
+            return descontoPromocionalTotal.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+        }
+
+        for (ItemVenda item : venda.getItens()) {
+            if (item != null && item.getDescontoPromocional() != null) {
+                descontoPromocionalTotal = descontoPromocionalTotal.add(
+                        item.getDescontoPromocional()
+                );
+            }
+        }
+
+        return descontoPromocionalTotal.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calcula o total de descontos promocionais e global concedidos na venda.
+     *
+     * @param venda venda em memória que será consultada.
+     * @return soma do desconto promocional total com o desconto global.
+     */
+    public BigDecimal calcularDescontoTotal(Venda venda) {
+        BigDecimal descontoGlobal = venda != null && venda.getValorDescontoGlobal() != null
+                ? venda.getValorDescontoGlobal()
+                : BigDecimal.ZERO;
+
+        return calcularDescontoPromocionalTotal(venda)
+                .add(descontoGlobal)
+                .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
      * Remove um item do carrinho da venda.
      *
      * Após remover o item, qualquer desconto global aplicado anteriormente

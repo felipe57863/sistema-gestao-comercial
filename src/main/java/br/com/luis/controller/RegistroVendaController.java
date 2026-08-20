@@ -507,8 +507,32 @@ public class RegistroVendaController {
 
         btnRemoverProduto.setDisable(carrinhoVazio || semSelecao);
         btnLimparVenda.setDisable(carrinhoVazio);
-        btnAplicarDesconto.setDisable(carrinhoVazio);
         btnFinalizarVenda.setDisable(carrinhoVazio);
+
+        atualizarEstadoAreaDescontoGlobal();
+    }
+
+    /**
+     * Atualiza exclusivamente o estado visual da área de desconto global.
+     *
+     * A elegibilidade dos itens é consultada no VendaService. Quando não existe
+     * item elegível, toda a área é desabilitada, limpa e fica sem seleção.
+     */
+    private void atualizarEstadoAreaDescontoGlobal() {
+        boolean possuiItemElegivel = vendaService
+                .possuiItemElegivelParaDescontoGlobal(vendaAtual);
+
+        rbDescontoValor.setDisable(!possuiItemElegivel);
+        rbDescontoPercentual.setDisable(!possuiItemElegivel);
+        btnAplicarDesconto.setDisable(!possuiItemElegivel);
+
+        if (!possuiItemElegivel) {
+            limparCamposDescontoGlobal();
+            return;
+        }
+
+        txtDescontoValor.setDisable(!rbDescontoValor.isSelected());
+        txtDescontoPercentual.setDisable(!rbDescontoPercentual.isSelected());
     }
 
     /**
@@ -538,17 +562,16 @@ public class RegistroVendaController {
             return;
         }
 
-        BigDecimal descontoGlobal = vendaAtual.getValorDescontoGlobal();
+        BigDecimal subtotal = vendaService.calcularSubtotalBruto(vendaAtual);
+        BigDecimal descontoTotal = vendaService.calcularDescontoTotal(vendaAtual);
         BigDecimal total = vendaAtual.getValorTotal();
-
-        BigDecimal subtotal = total.add(descontoGlobal);
 
         if (lblSubtotalVenda != null) {
             lblSubtotalVenda.setText(formatarMoeda(subtotal));
         }
 
         if (lblDescontoGlobal != null) {
-            lblDescontoGlobal.setText(formatarMoeda(descontoGlobal));
+            lblDescontoGlobal.setText(formatarMoeda(descontoTotal));
         }
 
         if (lblTotalVenda != null) {
@@ -829,23 +852,33 @@ public class RegistroVendaController {
 
         rbDescontoValor.selectedProperty().addListener((observable, valorAntigo, selecionado) -> {
             if (selecionado) {
-                txtDescontoValor.setDisable(false);
+                boolean possuiItemElegivel = vendaService
+                        .possuiItemElegivelParaDescontoGlobal(vendaAtual);
+
+                txtDescontoValor.setDisable(!possuiItemElegivel);
 
                 txtDescontoPercentual.clear();
                 txtDescontoPercentual.setDisable(true);
 
-                txtDescontoValor.requestFocus();
+                if (possuiItemElegivel) {
+                    txtDescontoValor.requestFocus();
+                }
             }
         });
 
         rbDescontoPercentual.selectedProperty().addListener((observable, valorAntigo, selecionado) -> {
             if (selecionado) {
-                txtDescontoPercentual.setDisable(false);
+                boolean possuiItemElegivel = vendaService
+                        .possuiItemElegivelParaDescontoGlobal(vendaAtual);
+
+                txtDescontoPercentual.setDisable(!possuiItemElegivel);
 
                 txtDescontoValor.clear();
                 txtDescontoValor.setDisable(true);
 
-                txtDescontoPercentual.requestFocus();
+                if (possuiItemElegivel) {
+                    txtDescontoPercentual.requestFocus();
+                }
             }
         });
     }
