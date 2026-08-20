@@ -126,8 +126,8 @@
                 <Label style="-fx-background-color: white; -fx-translate-y: -23; -fx-padding: 0 5 0 5;" text="Situação Financeira" />
 
                 <VBox spacing="10" style="-fx-translate-y: -10;">
-                    <Label text="Saldo devedor: —" />
-                    <Label text="Limite disponível: —" />
+                    <Label fx:id="lblSaldoDevedor" text="Saldo devedor: —" />
+                    <Label fx:id="lblLimiteDisponivel" text="Limite disponível: —" />
                 </VBox>
             </VBox>
 

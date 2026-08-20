@@ -28,6 +28,7 @@ import br.com.luis.model.StatusContaReceber;
 import br.com.luis.model.Usuario;
 import br.com.luis.model.NotaVenda;
 import br.com.luis.viewmodel.ResultadoFinalizacaoVenda;
+import br.com.luis.viewmodel.SituacaoFinanceiraClienteView;
 import br.com.luis.util.ConnectionFactory;
 
 import java.math.BigDecimal;
@@ -1144,6 +1145,77 @@ public class VendaService {
         return contaReceberId;
     }
 
+    /**
+     * Consulta uma fotografia consistente da situação financeira persistida do cliente.
+     *
+     * A busca do cliente e a soma das contas pendentes são executadas na mesma
+     * Connection e em uma transação curta de leitura. O estado anterior de
+     * autoCommit é restaurado ao final, com rollback seguro em caso de falha.
+     *
+     * @param clienteId ID do cliente consultado.
+     * @return saldo devedor e limite disponível com escala monetária.
+     */
+    public SituacaoFinanceiraClienteView consultarSituacaoFinanceiraCliente(
+            Integer clienteId
+    ) {
+
+        if (clienteId == null || clienteId <= 0) {
+            throw new IllegalArgumentException(
+                    "Cliente inválido para consultar situação financeira."
+            );
+        }
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+
+            boolean autoCommitAnterior = conn.getAutoCommit();
+            Exception erroOriginal = null;
+
+            try {
+                conn.setAutoCommit(false);
+
+                Cliente cliente = clienteDAO.buscarPorIdComPrazo(conn, clienteId);
+
+                if (cliente == null) {
+                    throw new IllegalArgumentException(
+                            "Cliente não encontrado para consultar situação financeira."
+                    );
+                }
+
+                SituacaoFinanceiraClienteView situacaoFinanceira =
+                        consultarSituacaoFinanceiraCliente(conn, cliente);
+
+                conn.commit();
+                return situacaoFinanceira;
+
+            } catch (Exception erro) {
+                erroOriginal = erro;
+                executarRollbackSeguro(conn, erroOriginal);
+
+                if (erro instanceof IllegalArgumentException) {
+                    throw (IllegalArgumentException) erro;
+                }
+
+                if (erro instanceof IllegalStateException) {
+                    throw (IllegalStateException) erro;
+                }
+
+                throw new IllegalStateException(
+                        "Erro ao consultar situação financeira do cliente.",
+                        erro
+                );
+
+            } finally {
+                restaurarAutoCommitSeguro(conn, autoCommitAnterior, erroOriginal);
+            }
+
+        } catch (SQLException erro) {
+            throw new IllegalStateException(
+                    "Erro ao consultar situação financeira do cliente.",
+                    erro
+            );
+        }
+    }
+
     private Usuario buscarEValidarUsuarioFinalizacao(
             Connection conn,
             Integer usuarioId
@@ -1373,16 +1445,39 @@ public class VendaService {
             Cliente cliente
     ) {
 
+        return consultarSituacaoFinanceiraCliente(
+                conn,
+                cliente
+        ).getLimiteDisponivel();
+    }
+
+    /**
+     * Consulta e calcula uma fotografia financeira usando uma Connection externa.
+     *
+     * Este é o ponto interno comum para o saldo devedor e o limite disponível.
+     * Não abre nem fecha a Connection e consulta o total pendente uma única vez.
+     */
+    private SituacaoFinanceiraClienteView consultarSituacaoFinanceiraCliente(
+            Connection conn,
+            Cliente cliente
+    ) {
+
         if (conn == null) {
-            throw new IllegalArgumentException("Conexão é obrigatória para calcular limite de crédito disponível.");
+            throw new IllegalArgumentException(
+                    "Conexão é obrigatória para consultar situação financeira."
+            );
         }
 
         if (cliente == null) {
-            throw new IllegalArgumentException("Cliente é obrigatório para calcular limite de crédito disponível.");
+            throw new IllegalArgumentException(
+                    "Cliente é obrigatório para consultar situação financeira."
+            );
         }
 
         if (cliente.getIdCliente() == null || cliente.getIdCliente() <= 0) {
-            throw new IllegalArgumentException("Cliente inválido para calcular limite de crédito disponível.");
+            throw new IllegalArgumentException(
+                    "Cliente inválido para consultar situação financeira."
+            );
         }
 
         BigDecimal limiteCredito = cliente.getLimiteCredito() != null
@@ -1402,9 +1497,14 @@ public class VendaService {
 
         totalPendente = totalPendente.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
 
-        return limiteCredito
+        BigDecimal limiteDisponivel = limiteCredito
                 .subtract(totalPendente)
                 .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+
+        return new SituacaoFinanceiraClienteView(
+                totalPendente,
+                limiteDisponivel
+        );
     }
 
     /**

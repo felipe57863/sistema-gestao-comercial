@@ -4,8 +4,10 @@ import br.com.luis.model.Cliente;
 import br.com.luis.model.PrazoPagamento;
 import br.com.luis.service.ClienteService;
 import br.com.luis.service.PrazoPagamentoService;
+import br.com.luis.service.VendaService;
 import br.com.luis.util.CabecalhoUtil;
 import br.com.luis.util.NavegacaoUtil;
+import br.com.luis.viewmodel.SituacaoFinanceiraClienteView;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -55,6 +57,10 @@ public class ClienteController {
 
     @FXML private ComboBox<PrazoPagamento> cbPrazoPagamento;
 
+    // --- SITUAÇÃO FINANCEIRA ---
+    @FXML private Label lblSaldoDevedor;
+    @FXML private Label lblLimiteDisponivel;
+
     // --- BOTÕES ---
     @FXML private Button btnNovo;
     @FXML private Button btnSalvar;
@@ -75,6 +81,12 @@ public class ClienteController {
     // --- SERVICES ---
     private ClienteService clienteService;
     private PrazoPagamentoService prazoService;
+    private VendaService vendaService;
+
+    private final NumberFormat formatadorMoeda =
+            NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
+    private Task<SituacaoFinanceiraClienteView> tarefaSituacaoFinanceiraAtual;
 
     // Variável para controlar se estamos criando (null) ou editando (com dados)
     private Cliente clienteSelecionado;
@@ -84,12 +96,14 @@ public class ClienteController {
 
         this.clienteService = new ClienteService();
         this.prazoService = new PrazoPagamentoService();
+        this.vendaService = new VendaService();
 
         configurarRadioButtons();
         configurarCabecalho();
         configurarMascaraDocumento();
         configurarTabela();
         configurarBusca();
+        exibirSituacaoFinanceiraIndisponivel();
 
         carregarPrazosPagamento();
         atualizarTabela();
@@ -136,6 +150,8 @@ public class ClienteController {
         if (!confirmarSaidaComAlteracoesNaoSalvas()) {
             return;
         }
+
+        invalidarConsultaSituacaoFinanceira();
 
         try {
             NavegacaoUtil.abrirTela(
@@ -491,8 +507,6 @@ public class ClienteController {
                 )
         );
 
-        NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
-
         colLimite.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
@@ -501,7 +515,7 @@ public class ClienteController {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(nf.format(item));
+                    setText(formatadorMoeda.format(item));
                 }
             }
         });
@@ -511,6 +525,9 @@ public class ClienteController {
                     if (newValue != null) {
                         preencherFormulario(newValue);
                         btnSalvar.setText("Atualizar");
+                        consultarSituacaoFinanceira(newValue);
+                    } else {
+                        invalidarConsultaSituacaoFinanceira();
                     }
                 }
         );
@@ -597,6 +614,10 @@ public class ClienteController {
     public void salvar() {
 
         try {
+            Integer clienteIdParaReselecionar = clienteSelecionado != null
+                    ? clienteSelecionado.getIdCliente()
+                    : null;
+
             String nome = txtNome.getText();
             String documento = txtDocumento.getText();
             String telefone = txtTelefone.getText();
@@ -649,14 +670,13 @@ public class ClienteController {
                 System.out.println("[LOG] Cliente atualizado: " + clienteAtualizado.getNome());
             }
 
-            atualizarTabela();
-
             mostrarAlerta(Alert.AlertType.INFORMATION,
                     "Sucesso",
                     "Operação realizada com sucesso!");
 
             limparCamposFormulario();
             voltarModoCadastro();
+            atualizarTabela(clienteIdParaReselecionar);
 
         } catch (NumberFormatException e) {
 
@@ -739,6 +759,7 @@ public class ClienteController {
      */
     @FXML
     public void limpar() {
+        invalidarConsultaSituacaoFinanceira();
         limparCamposFormulario();
 
         if (clienteSelecionado != null) {
@@ -799,6 +820,8 @@ public class ClienteController {
      */
     private void voltarModoCadastro() {
 
+        invalidarConsultaSituacaoFinanceira();
+
         this.clienteSelecionado = null;
 
         tabelaClientes.getSelectionModel().clearSelection();
@@ -810,6 +833,13 @@ public class ClienteController {
      * Atualiza dados da tabela usando Task para evitar travamento da interface.
      */
     private void atualizarTabela() {
+        atualizarTabela(null);
+    }
+
+    /**
+     * Atualiza dados da tabela e, quando solicitado, reseleciona o cliente pelo ID.
+     */
+    private void atualizarTabela(Integer clienteIdParaReselecionar) {
 
         tabelaClientes.setPlaceholder(new Label("Carregando clientes..."));
 
@@ -827,6 +857,22 @@ public class ClienteController {
             if (listaClientesMaster.isEmpty()) {
                 tabelaClientes.setPlaceholder(new Label("Nenhum cliente cadastrado."));
             }
+
+            if (clienteIdParaReselecionar != null) {
+                Cliente clienteAtualizado = listaClientesMaster.stream()
+                        .filter(cliente -> clienteIdParaReselecionar.equals(cliente.getIdCliente()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (clienteAtualizado != null) {
+                    if (!tabelaClientes.getItems().contains(clienteAtualizado)) {
+                        txtBusca.clear();
+                    }
+
+                    tabelaClientes.getSelectionModel().select(clienteAtualizado);
+                    tabelaClientes.scrollTo(clienteAtualizado);
+                }
+            }
         });
 
         task.setOnFailed(event -> {
@@ -843,6 +889,115 @@ public class ClienteController {
         Thread thread = new Thread(task, "carregar-clientes");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /**
+     * Consulta em segundo plano a situação financeira persistida do cliente.
+     */
+    private void consultarSituacaoFinanceira(Cliente cliente) {
+
+        invalidarConsultaSituacaoFinanceira();
+
+        if (cliente == null
+                || cliente.getIdCliente() == null
+                || cliente.getIdCliente() <= 0) {
+            return;
+        }
+
+        Integer clienteId = cliente.getIdCliente();
+
+        Task<SituacaoFinanceiraClienteView> task = new Task<>() {
+            @Override
+            protected SituacaoFinanceiraClienteView call() {
+                return vendaService.consultarSituacaoFinanceiraCliente(clienteId);
+            }
+        };
+
+        tarefaSituacaoFinanceiraAtual = task;
+
+        task.setOnSucceeded(event -> {
+            if (tarefaSituacaoFinanceiraAtual != task || task.isCancelled()) {
+                return;
+            }
+
+            tarefaSituacaoFinanceiraAtual = null;
+            exibirSituacaoFinanceira(task.getValue());
+        });
+
+        task.setOnFailed(event -> {
+            if (tarefaSituacaoFinanceiraAtual != task) {
+                return;
+            }
+
+            tarefaSituacaoFinanceiraAtual = null;
+            exibirSituacaoFinanceiraIndisponivel();
+
+            System.err.println("[ERRO] Falha ao consultar situação financeira do cliente.");
+            task.getException().printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível consultar a situação financeira do cliente."
+            );
+        });
+
+        task.setOnCancelled(event -> {
+            if (tarefaSituacaoFinanceiraAtual != task) {
+                return;
+            }
+
+            tarefaSituacaoFinanceiraAtual = null;
+            exibirSituacaoFinanceiraIndisponivel();
+        });
+
+        Thread thread = new Thread(
+                task,
+                "consultar-situacao-financeira-cliente"
+        );
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Invalida a consulta atual e remove qualquer fotografia financeira exibida.
+     */
+    private void invalidarConsultaSituacaoFinanceira() {
+
+        Task<SituacaoFinanceiraClienteView> taskAtual =
+                tarefaSituacaoFinanceiraAtual;
+
+        tarefaSituacaoFinanceiraAtual = null;
+
+        if (taskAtual != null) {
+            taskAtual.cancel();
+        }
+
+        exibirSituacaoFinanceiraIndisponivel();
+    }
+
+    /**
+     * Exibe a fotografia financeira usando o formato monetário pt-BR.
+     */
+    private void exibirSituacaoFinanceira(
+            SituacaoFinanceiraClienteView situacaoFinanceira
+    ) {
+        lblSaldoDevedor.setText(
+                "Saldo devedor: "
+                        + formatadorMoeda.format(situacaoFinanceira.getSaldoDevedor())
+        );
+        lblLimiteDisponivel.setText(
+                "Limite disponível: "
+                        + formatadorMoeda.format(situacaoFinanceira.getLimiteDisponivel())
+        );
+    }
+
+    /**
+     * Exibe os placeholders quando não há fotografia financeira válida.
+     */
+    private void exibirSituacaoFinanceiraIndisponivel() {
+        lblSaldoDevedor.setText("Saldo devedor: —");
+        lblLimiteDisponivel.setText("Limite disponível: —");
     }
 
     /**
