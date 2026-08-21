@@ -37,18 +37,12 @@ public class GestaoUsuarioService {
     }
 
     /**
-     * Cadastra um usuário ativo com senha temporária e troca obrigatória.
-     * O executor deve representar um administrador ativo, autorizado e sem troca
-     * obrigatória pendente. Nome, login e perfil são normalizados, a senha é
-     * armazenada como hash e o novo usuário inicia com status ATIVO.
+     * Cadastra um usuário ATIVO com senha temporária e troca obrigatória.
      *
-     * @param administrador administrador executor da operação.
-     * @param nome nome do novo usuário.
-     * @param login login único do novo usuário.
-     * @param perfil perfil ADMIN ou VENDEDOR.
-     * @param senhaTemporaria senha inicial que deverá ser trocada no próximo acesso.
-     * @param confirmacao confirmação da senha temporária.
-     * @return usuário cadastrado com o identificador gerado.
+     * Exige administrador ativo, autorizado e sem troca obrigatória pendente,
+     * normaliza os dados e armazena somente o hash da senha. O usuário retornado
+     * já contém o identificador persistido.
+     *
      * @throws IllegalArgumentException se os dados cadastrais, o perfil, a senha ou
      *                                  sua confirmação forem inválidos, ou se o login já existir.
      * @throws IllegalStateException se o executor não estiver autorizado ou se o

@@ -4,8 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Entidade que representa um Produto no sistema.
- * Aplica validações (Fail-Fast) para garantir integridade dos dados.
+ * Dados de um produto e suas validações básicas de integridade.
  */
 public class Produto {
 
@@ -14,17 +13,11 @@ public class Produto {
     private BigDecimal preco;
     private Integer quantidadeEstoque;
     private Integer estoqueMinimo;
-    private boolean ativo; // No banco: 1 (true) / 0 (false)
+    private boolean ativo;
 
-    /**
-     * Construtor vazio usado para criação gradual e mapeamento manual dos dados.
-     */
     public Produto() {
     }
 
-    /**
-     * Construtor completo com validação via setters (padrão seguro)
-     */
     public Produto(Integer idProduto, String descricao, BigDecimal preco,
                    Integer quantidadeEstoque, Integer estoqueMinimo, boolean ativo) {
 
@@ -35,8 +28,6 @@ public class Produto {
         setEstoqueMinimo(estoqueMinimo);
         setAtivo(ativo);
     }
-
-    // --- GETTERS E SETTERS COM VALIDAÇÃO (FAIL-FAST) ---
 
     public Integer getIdProduto() {
         return idProduto;
@@ -102,8 +93,7 @@ public class Produto {
     }
 
     /**
-     * equals e hashCode baseados no ID.
-     * Essencial para funcionamento correto em TableView (seleção e atualização).
+     * A identidade do produto é definida pelo ID persistido.
      */
     @Override
     public boolean equals(Object o) {
@@ -120,9 +110,6 @@ public class Produto {
         return idProduto != null ? idProduto.hashCode() : 0;
     }
 
-    /**
-     * toString útil para ComboBox e logs
-     */
     @Override
     public String toString() {
         if (descricao == null || preco == null) {

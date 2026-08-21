@@ -3,17 +3,9 @@ package br.com.luis.viewmodel;
 import br.com.luis.model.ItemVenda;
 
 /**
- * Classe auxiliar usada para representar visualmente uma linha
- * da tabela de itens do carrinho na tela de Registro de Venda.
+ * Linha visual do carrinho com valores já formatados e referência ao ItemVenda original.
  *
- * Esta classe não é entidade de domínio, não representa tabela do banco
- * e não deve ser persistida.
- *
- * Responsabilidades:
- * - armazenar dados já preparados para exibição na TableView;
- * - facilitar a apresentação de informações amigáveis ao usuário;
- * - manter uma referência ao ItemVenda original para edição de quantidade e
- *   remoção do item do carrinho.
+ * Não representa entidade persistida.
  */
 public class ItemCarrinhoView {
 
@@ -25,25 +17,9 @@ public class ItemCarrinhoView {
     private String subtotalFormatado;
     private ItemVenda itemVenda;
 
-    /**
-     * Construtor padrão.
-     *
-     * Útil para criação manual e preenchimento gradual dos dados.
-     */
     public ItemCarrinhoView() {
     }
 
-    /**
-     * Construtor completo para criar uma linha visual do carrinho.
-     *
-     * @param produtoId ID do produto.
-     * @param nomeProduto nome/descrição do produto.
-     * @param precoFormatado preço já formatado para exibição.
-     * @param promocaoFormatada informação de promoção já formatada.
-     * @param quantidade quantidade do item.
-     * @param subtotalFormatado subtotal já formatado para exibição.
-     * @param itemVenda referência ao ItemVenda original.
-     */
     public ItemCarrinhoView(
             Integer produtoId,
             String nomeProduto,

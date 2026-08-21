@@ -4,13 +4,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Entidade que representa um Cliente no sistema.
+ * Dados cadastrais, financeiros e de prazo de um cliente.
  */
 public class Cliente {
 
-    /**
-     * Enum para diferenciar Pessoa Física e Jurídica.
-     */
     public enum TipoCliente {
         PF("Pessoa Física"), PJ("Pessoa Jurídica");
 
@@ -25,9 +22,6 @@ public class Cliente {
         }
     }
 
-    /**
-     * Enum para controle de status do cliente.
-     */
     public enum StatusCliente {
         ATIVO, BLOQUEADO
     }
@@ -45,17 +39,11 @@ public class Cliente {
     public Cliente() {
     }
 
-    /**
-     * Construtor completo com validação.
-     */
     public Cliente(Integer idCliente, String nome, String documento, TipoCliente tipo,
                    BigDecimal limiteCredito, StatusCliente status, PrazoPagamento prazoPagamento) {
         this(idCliente, nome, documento, null, null, tipo, limiteCredito, status, prazoPagamento);
     }
 
-    /**
-     * Construtor completo com telefone e e-mail opcionais.
-     */
     public Cliente(Integer idCliente, String nome, String documento, String telefone, String email,
                    TipoCliente tipo, BigDecimal limiteCredito, StatusCliente status,
                    PrazoPagamento prazoPagamento) {
@@ -85,9 +73,6 @@ public class Cliente {
         return nome;
     }
 
-    /**
-     * Valida nome do cliente.
-     */
     public void setNome(String nome) {
         if (nome == null || nome.isBlank() || nome.trim().length() < 3) {
             throw new IllegalArgumentException("Nome deve ter pelo menos 3 caracteres.");
@@ -171,7 +156,7 @@ public class Cliente {
     }
 
     /**
-     * Regra financeira: valor não pode ser negativo e deve ter 2 casas decimais.
+     * Normaliza o limite de crédito para duas casas e rejeita valores negativos.
      */
     public void setLimiteCredito(BigDecimal limiteCredito) {
         if (limiteCredito == null || limiteCredito.compareTo(BigDecimal.ZERO) < 0) {
@@ -197,7 +182,7 @@ public class Cliente {
     }
 
     /**
-     * Regra: cliente deve ter um prazo de pagamento vinculado.
+     * Mantém obrigatório o prazo de pagamento vinculado ao cliente.
      */
     public void setPrazoPagamento(PrazoPagamento prazoPagamento) {
         if (prazoPagamento == null) {
@@ -206,9 +191,6 @@ public class Cliente {
         this.prazoPagamento = prazoPagamento;
     }
 
-    /**
-     * Exibição amigável para ComboBox e listas.
-     */
     @Override
     public String toString() {
         if (nome == null || documento == null) {

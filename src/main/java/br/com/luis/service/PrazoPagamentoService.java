@@ -18,10 +18,8 @@ public class PrazoPagamentoService {
     }
 
     /**
-     * Valida e cadastra um novo prazo de pagamento.
-     *
-     * @implNote Impede descrição duplicada e garante que todo novo prazo seja
-     * criado como ativo.
+     * Valida e cadastra um prazo novo, impedindo descrição duplicada e
+     * definindo-o como ativo.
      */
     public void cadastrar(PrazoPagamento prazo) {
 
@@ -38,10 +36,8 @@ public class PrazoPagamentoService {
     }
 
     /**
-     * Valida e atualiza um prazo de pagamento existente.
-     *
-     * @implNote Impede atualização sem ID e bloqueia descrição duplicada em
-     * outro registro.
+     * Valida e atualiza um prazo existente, exigindo ID válido e descrição
+     * única entre os demais registros.
      */
     public void atualizar(PrazoPagamento prazo) {
 
@@ -59,9 +55,7 @@ public class PrazoPagamentoService {
     }
 
     /**
-     * Inativa um prazo de pagamento existente.
-     *
-     * @implNote Evita exclusão física e mantém o histórico do cadastro.
+     * Inativa o prazo sem exclusão física, preservando o histórico cadastral.
      */
     public void inativar(Integer idPrazo) {
 
@@ -112,9 +106,7 @@ public class PrazoPagamentoService {
     }
 
     /**
-     * Valida se já existe outro prazo de pagamento com a mesma descrição.
-     *
-     * @implNote Impede duplicidade lógica de descrição no cadastro de prazos.
+     * Impede duplicidade de descrição entre os prazos cadastrados.
      */
     private void validarDescricaoDuplicada(String descricao, Integer idAtual) {
 
@@ -131,10 +123,7 @@ public class PrazoPagamentoService {
         }
     }
     /**
-     * Inicializa os prazos padrão do sistema.
-     *
-     * @implNote Garante que os prazos básicos estejam disponíveis para o cadastro
-     * de clientes, já que PrazoPagamento não possui tela própria de cadastro.
+     * Garante a disponibilidade dos prazos padrão usados pelo sistema.
      */
     public void inicializarPrazosPadrao() {
 
@@ -159,9 +148,7 @@ public class PrazoPagamentoService {
     }
 
     /**
-     * Verifica se já existe um prazo cadastrado com a mesma quantidade de dias.
-     *
-     * @implNote Evita duplicidade dos prazos padrão na inicialização do sistema.
+     * Verifica se a quantidade de dias de um prazo padrão já está cadastrada.
      */
     private boolean existePrazoComQuantidadeDias(int quantidadeDias) {
 

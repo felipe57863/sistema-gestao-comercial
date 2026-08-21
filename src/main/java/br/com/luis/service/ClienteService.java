@@ -23,10 +23,7 @@ public class ClienteService {
     }
 
     /**
-     * Valida regras cadastrais e cadastra um novo cliente.
-     *
-     * @implNote Impede documento duplicado e garante que todo novo cliente seja
-     * criado como ATIVO.
+     * Valida o cadastro, impede documento duplicado e cria o cliente como ATIVO.
      */
     public void cadastrar(Cliente cliente) {
 
@@ -51,10 +48,8 @@ public class ClienteService {
     }
 
     /**
-     * Valida regras cadastrais e atualiza os dados de um cliente existente.
-     *
-     * @implNote Exige ID para atualização e bloqueia documento duplicado em
-     * outro cliente.
+     * Valida e atualiza um cliente existente, exigindo ID válido e documento
+     * único entre os demais cadastros.
      */
     public void atualizar(Cliente cliente) {
 
@@ -73,10 +68,7 @@ public class ClienteService {
     }
 
     /**
-     * Fail-fast: validação básica e reutilizável para cadastro e atualização.
-     *
-     * @implNote Garante que os dados mínimos do cliente estejam preenchidos
-     * antes da persistência.
+     * Valida os dados mínimos compartilhados pelo cadastro e pela atualização.
      */
     private void validarCliente(Cliente cliente) {
 
@@ -112,10 +104,7 @@ public class ClienteService {
     }
 
     /**
-     * Valida o documento normalizado conforme o tipo real do cliente.
-     *
-     * @implNote A regra fica no Service para proteger cadastro e atualização
-     * antes de qualquer consulta de duplicidade ou persistência.
+     * Valida CPF ou CNPJ antes da consulta de duplicidade e da persistência.
      */
     private void validarDocumento(String documento, Cliente.TipoCliente tipo) {
         if (tipo == Cliente.TipoCliente.PF) {
@@ -196,9 +185,7 @@ public class ClienteService {
     }
 
     /**
-     * Valida se já existe outro cliente com o mesmo documento.
-     *
-     * @implNote Impede duplicidade lógica de documento no cadastro de clientes.
+     * Impede que outro cliente use o mesmo documento.
      */
     private void validarDocumentoDuplicado(String documento, Integer idAtual) {
 

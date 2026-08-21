@@ -133,23 +133,13 @@ public class AuthService {
     }
 
     /**
-     * Realiza a autenticação do usuário no sistema.
+     * Autentica o usuário com BCrypt e rejeita credenciais inválidas ou usuários
+     * inativos.
      *
-     * Fluxo:
-     * 1. Valida entrada (login e senha)
-     * 2. Busca usuário no banco
-     * 3. Compara senha usando BCrypt
-     * 4. Verifica status do usuário
-     * 5. Informa se o acesso normal está liberado ou se a troca é obrigatória
+     * O resultado informa se o acesso normal está liberado ou se a troca de senha
+     * é obrigatória. A sessão só é criada pelo Controller depois dessa decisão.
      *
-     * @param login Login digitado
-     * @param senhaLimpa Senha digitada (texto puro)
-     * @return resultado explícito de uma autenticação bem-sucedida
-     * @throws RuntimeException se login/senha inválidos ou usuário inativo
-     *
-     * @implNote Autentica o usuário usando BCrypt e bloqueia usuários inativos.
-     * A criação da sessão permanece sob responsabilidade do Controller, depois
-     * da decisão sobre a troca obrigatória de senha.
+     * @throws RuntimeException se login/senha forem inválidos ou o usuário estiver inativo.
      */
     public ResultadoAutenticacao autenticar(String login, String senhaLimpa) {
 

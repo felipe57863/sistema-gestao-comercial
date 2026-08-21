@@ -264,11 +264,7 @@ public class VendaService {
     /**
      * Verifica se a venda possui ao menos um item elegível ao desconto global.
      *
-     * A consulta atua somente sobre a venda em memória e reutiliza o mesmo
-     * critério aplicado pela RN04 durante a aplicação do desconto global.
-     *
-     * @param venda venda em memória que será consultada.
-     * @return true quando existe ao menos um item sem promoção; false caso contrário.
+     * Usa o mesmo critério da RN04 aplicado pelo fluxo de desconto global.
      */
     public boolean possuiItemElegivelParaDescontoGlobal(Venda venda) {
         if (venda == null || venda.getItens() == null || venda.getItens().isEmpty()) {
@@ -279,10 +275,7 @@ public class VendaService {
     }
 
     /**
-     * Calcula o valor bruto dos produtos antes de qualquer desconto.
-     *
-     * @param venda venda em memória que será consultada.
-     * @return soma de preço unitário multiplicado pela quantidade de cada item.
+     * Calcula o subtotal bruto da venda antes de qualquer desconto.
      */
     public BigDecimal calcularSubtotalBruto(Venda venda) {
         BigDecimal subtotalBruto = BigDecimal.ZERO;
@@ -302,9 +295,6 @@ public class VendaService {
 
     /**
      * Calcula o total dos descontos promocionais dos itens da venda.
-     *
-     * @param venda venda em memória que será consultada.
-     * @return soma dos descontos promocionais dos itens.
      */
     public BigDecimal calcularDescontoPromocionalTotal(Venda venda) {
         BigDecimal descontoPromocionalTotal = BigDecimal.ZERO;
@@ -325,10 +315,7 @@ public class VendaService {
     }
 
     /**
-     * Calcula o total de descontos promocionais e global concedidos na venda.
-     *
-     * @param venda venda em memória que será consultada.
-     * @return soma do desconto promocional total com o desconto global.
+     * Calcula a soma dos descontos promocionais e do desconto global da venda.
      */
     public BigDecimal calcularDescontoTotal(Venda venda) {
         BigDecimal descontoGlobal = venda != null && venda.getValorDescontoGlobal() != null

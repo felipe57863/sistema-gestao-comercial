@@ -46,9 +46,6 @@ public class NotaVenda {
 
     private List<ItemNotaVenda> itens;
 
-    /**
-     * Construtor padrão para montagem gradual da fotografia antes da persistência.
-     */
     public NotaVenda() {
         this.status = StatusNotaVenda.ATIVA;
         this.valorTotal = BigDecimal.ZERO.setScale(
@@ -62,9 +59,6 @@ public class NotaVenda {
         this.itens = new ArrayList<>();
     }
 
-    /**
-     * Construtor completo usado quando a fotografia principal já está definida.
-     */
     public NotaVenda(
             Integer idNota,
             Integer vendaId,

@@ -55,24 +55,14 @@ public class ContaReceberService {
     }
 
     /**
-     * Recebe integralmente uma conta a receber.
+     * Recebe integralmente uma conta PENDENTE em uma única transação.
      *
-     * Valida a identificação da conta, a forma de pagamento e o usuário responsável
-     * antes de abrir a conexão. Dentro da transação, reconsulta e revalida o usuário
-     * executor persistido usando a mesma Connection e exige sua autorização antes
-     * de qualquer mutação. Somente depois, busca e revalida a conta persistida,
-     * utiliza seu valor integral, atualiza de forma protegida a conta de PENDENTE
-     * para PAGA e a venda vinculada de PENDENTE para PAGA, além de registrar a
-     * movimentação financeira de entrada correspondente.
+     * Revalida no banco o administrador executor antes da primeira mutação, usa o
+     * valor integral persistido na conta, atualiza conta e venda com proteção de
+     * estado e registra a movimentação financeira de entrada.
      *
-     * O commit ocorre somente após a conclusão de todas as etapas. Qualquer falha
-     * provoca rollback integral e a restauração do estado anterior de autoCommit.
-     * Após o commit, retorna ao Controller os dados consolidados do recebimento.
-     *
-     * @param contaReceberId ID da conta a receber.
-     * @param formaPagamento forma de pagamento usada no recebimento.
-     * @param usuarioId ID do usuário responsável pelo recebimento.
-     * @return resultado do recebimento integral da conta.
+     * O resultado é devolvido somente após o commit. Falhas provocam rollback
+     * integral e o autoCommit anterior é restaurado.
      */
     public ResultadoRecebimentoConta receberConta(
             Integer contaReceberId,
@@ -121,15 +111,11 @@ public class ContaReceberService {
     }
 
     /**
-     * Executa o fluxo transacional do recebimento integral.
+     * Executa as validações e mutações usando a Connection da transação.
      *
-     * Reconsulta e revalida o usuário executor persistido usando a mesma Connection
-     * antes de qualquer mutação. Somente após sua autorização, revalida a conta e
-     * atualiza de forma protegida os status da conta e da venda antes de inserir a
-     * movimentação financeira correspondente. Assim, uma falha em qualquer etapa
-     * permite que o método público reverta todo o conjunto.
-     *
-     * Este método não executa commit, rollback nem fecha a Connection recebida.
+     * Revalida o administrador antes da primeira escrita, atualiza conta e venda
+     * com proteção de estado e registra a entrada financeira. Não executa commit,
+     * rollback nem fecha a Connection recebida.
      */
     private DadosRecebimentoConta receberContaTransacional(
             Connection conn,

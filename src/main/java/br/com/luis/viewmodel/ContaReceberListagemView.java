@@ -7,23 +7,9 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 
 /**
- * ViewModel usada para representar uma linha da TableView de contas a receber
- * pendentes.
+ * Dados de uma conta pendente combinados com o cliente para exibição.
  *
- * Esta classe não representa uma entidade persistida no banco de dados.
- * Ela não acessa DAO, Service, SQL ou qualquer recurso de persistência.
- *
- * Responsabilidades:
- * - transportar dados brutos da conta a receber para a interface;
- * - manter dados combinados de ContaReceber e Cliente para exibição;
- * - informar se a conta deve ser tratada visualmente como vencida.
- *
- * Não realiza:
- * - formatação de moeda;
- * - formatação de data;
- * - definição de cores;
- * - definição de estilos;
- * - cálculo de vencimento.
+ * O indicador de vencimento é recebido pronto; formatação e cálculo visual ficam fora deste ViewModel.
  */
 public class ContaReceberListagemView {
 
@@ -36,28 +22,11 @@ public class ContaReceberListagemView {
     private StatusContaReceber status;
     private boolean vencida;
 
-    /**
-     * Construtor padrão.
-     *
-     * Define valores iniciais seguros para criação gradual do objeto.
-     */
     public ContaReceberListagemView() {
         this.valor = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         this.vencida = false;
     }
 
-    /**
-     * Construtor completo.
-     *
-     * @param contaReceberId ID da conta a receber.
-     * @param clienteId ID do cliente devedor.
-     * @param nomeCliente nome do cliente devedor.
-     * @param vendaId ID da venda que gerou a conta.
-     * @param valor valor bruto da conta.
-     * @param dataVencimento data de vencimento da conta.
-     * @param status status atual da conta.
-     * @param vencida indicação visual de conta vencida.
-     */
     public ContaReceberListagemView(
             Integer contaReceberId,
             Integer clienteId,

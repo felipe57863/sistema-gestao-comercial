@@ -29,12 +29,10 @@ public class PromocaoService {
     /**
      * Valida e cadastra uma nova promoção em uma transação controlada pelo Service.
      *
-     * Antes de abrir a conexão, valida os dados e define a nova promoção como
-     * ativa. Na mesma Connection, inativa promoções anteriores do produto e
-     * persiste o novo registro. O commit ocorre somente após as duas operações;
-     * qualquer falha provoca rollback e o autoCommit é restaurado ao final.
-     *
-     * @implNote Implementa a RN22 - Nova Promoção
+     * Os dados são validados antes da abertura da conexão. Pela RN22, a mesma
+     * Connection inativa as promoções anteriores do produto e persiste o novo
+     * registro. O commit ocorre somente após as duas operações; qualquer falha
+     * provoca rollback e o autoCommit é restaurado.
      */
     public void cadastrarPromocaoNova(Promocao promocao) {
 
@@ -94,13 +92,8 @@ public class PromocaoService {
     /**
      * Inativa a promoção ativa de um produto em uma transação própria.
      *
-     * Valida o identificador do produto, abre e controla a Connection, solicita ao
-     * DAO a inativação e confirma a alteração somente após o sucesso. Em falha,
-     * executa rollback e restaura o autoCommit ao final. O DAO não decide se a
-     * promoção deve ser inativada.
-     *
-     * @implNote Garante que a remoção da promoção ativa seja coordenada pela
-     * camada Service dentro de uma transação.
+     * O Service controla a Connection, o commit, o rollback e a restauração do
+     * autoCommit; o DAO apenas executa a atualização solicitada.
      */
     public void inativarPromocaoAtivaDoProduto(Produto produto) {
 
@@ -165,9 +158,7 @@ public class PromocaoService {
     }
 
     /**
-     * Valida os dados necessários para cadastrar uma promoção.
-     *
-     * @implNote Garante tipo, valor e produto válidos antes da aplicação da RN22.
+     * Valida tipo, valor e produto antes da aplicação da RN22.
      */
     private void validarPromocao(Promocao promocao) {
 
@@ -205,9 +196,7 @@ public class PromocaoService {
     }
 
     /**
-     * Valida se o desconto percentual está dentro do limite permitido.
-     *
-     * @implNote O desconto percentual não pode ser maior que 100%.
+     * Valida se o desconto percentual não ultrapassa 100%.
      */
     private void validarDescontoPercentual(BigDecimal valorDesconto) {
 
@@ -220,8 +209,6 @@ public class PromocaoService {
 
     /**
      * Valida se o desconto fixo não ultrapassa o preço do produto.
-     *
-     * @implNote O desconto em valor fixo não pode ser maior que o preço do produto.
      */
     private void validarDescontoValorFixo(Promocao promocao) {
 

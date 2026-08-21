@@ -18,9 +18,7 @@ public class ProdutoService {
     }
 
     /**
-     * Valida regras cadastrais e cadastra um novo produto.
-     *
-     * @implNote Garante dados mínimos válidos e define todo novo produto como ativo.
+     * Valida os dados mínimos, cadastra o produto e o define como ativo.
      */
     public void cadastrar(Produto produto) {
 
@@ -43,10 +41,7 @@ public class ProdutoService {
     }
 
     /**
-     * Valida e persiste as alterações de um produto existente.
-     * Utilizado pelo fluxo de edição e salvamento da tela de produtos.
-     *
-     * @implNote Exige produto com ID válido antes de permitir atualização.
+     * Valida e atualiza um produto existente, exigindo ID válido.
      */
     public void atualizar(Produto produto) {
 
@@ -114,10 +109,7 @@ public class ProdutoService {
     }
 
     /**
-     * Busca um produto pelo ID informado.
-     *
-     * @implNote Permite localizar e validar um produto específico para uso no
-     * carrinho de vendas.
+     * Busca e valida um produto pelo ID informado.
      */
     public Produto buscarPorId(Integer idProduto) {
 
@@ -135,10 +127,7 @@ public class ProdutoService {
     }
 
     /**
-     * Fail-fast: validação básica e reutilizável para cadastro e atualização.
-     *
-     * @implNote Garante que os dados mínimos do produto estejam preenchidos
-     * antes da persistência.
+     * Valida os dados mínimos compartilhados por cadastro e atualização.
      */
     private void validarProduto(Produto produto) {
 

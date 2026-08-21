@@ -161,17 +161,10 @@ public class ContaReceberDAO {
         }
     }
     /**
-     * Busca uma conta a receber pelo ID usando uma Connection externa.
+     * Busca uma conta pelo ID durante o fluxo transacional de recebimento.
      *
-     * É utilizada pelo ContaReceberService no fluxo transacional de recebimento
-     * integral. O DAO apenas consulta e mapeia os dados; as validações sobre o
-     * estado da conta pertencem ao Service.
-     *
-     * Importante:
-     * - não abre nova Connection;
-     * - não executa commit;
-     * - não executa rollback;
-     * - não fecha a Connection recebida.
+     * O DAO apenas consulta e mapeia os dados; a validação do estado pertence ao
+     * ContaReceberService. A Connection permanece sob controle do Service.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @param idConta ID da conta a receber.
@@ -312,19 +305,11 @@ public class ContaReceberDAO {
         }
     }
     /**
-     * Atualiza o status de uma conta a receber com proteção de estado atual.
+     * Atualiza o status somente se a conta ainda estiver no estado esperado.
      *
-     * A condição combina o identificador e o status esperado, evitando que uma
-     * conta já alterada seja atualizada novamente sem que o Service perceba. A
-     * decisão do novo estado pertence ao Service responsável pelo fluxo, como
-     * recebimento ou estorno. O retorno permite confirmar se exatamente a conta
-     * esperada foi atualizada.
-     *
-     * Importante:
-     * - não abre nova Connection;
-     * - não executa commit;
-     * - não executa rollback;
-     * - não fecha a Connection recebida.
+     * A condição por ID e status protege o fluxo contra atualização repetida ou
+     * concorrente. A escolha do novo estado pertence ao Service. A Connection
+     * continua sob controle do chamador.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @param idConta ID da conta a receber.
@@ -384,19 +369,10 @@ public class ContaReceberDAO {
         }
     }
     /**
-     * Lista contas a receber pendentes com o nome do cliente vinculado.
+     * Lista contas pendentes com os dados básicos do cliente vinculado.
      *
-     * Usa uma Connection externa fornecida pelo ContaReceberService. Encerra os
-     * recursos JDBC que cria, mas respeita a propriedade da conexão recebida.
-     *
-     * Importante:
-     * - não abre nova Connection;
-     * - não executa commit;
-     * - não executa rollback;
-     * - não fecha a Connection recebida;
-     * - não calcula vencimento;
-     * - não formata moeda;
-     * - não formata data.
+     * O DAO apenas consulta e mapeia as linhas; não calcula vencimento nem aplica
+     * formatação de moeda ou data. A Connection permanece sob controle do Service.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @return lista de contas pendentes com dados básicos do cliente.

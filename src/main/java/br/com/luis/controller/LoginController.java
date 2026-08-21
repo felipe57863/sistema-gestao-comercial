@@ -154,11 +154,9 @@ public class LoginController {
     }
 
     /**
-     * Prepara a tela restrita e entrega o usuário autenticado antes de substituir
-     * a Scene. O usuário ainda não entra na sessão normal neste momento.
+     * Abre a troca obrigatória antes de criar a sessão normal.
      *
-     * @param usuarioAutenticado usuário com troca obrigatória pendente.
-     * @return true quando a tela restrita foi aberta; false em caso de falha.
+     * O usuário autenticado é entregue ao Controller restrito antes da troca de Scene.
      */
     private boolean abrirTrocaSenhaObrigatoria(
             Usuario usuarioAutenticado

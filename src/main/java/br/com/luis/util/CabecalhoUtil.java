@@ -58,9 +58,6 @@ public final class CabecalhoUtil {
         timeline.play();
     }
 
-    /**
-     * Atualiza o Label de usuário com os dados atuais da sessão.
-     */
     private static void atualizarUsuario(Label lblUsuario) {
         Usuario usuarioLogado = SessaoUsuario.getInstance().getUsuarioLogado();
         String nomeUsuario = usuarioLogado != null ? usuarioLogado.getNome() : null;
@@ -73,16 +70,10 @@ public final class CabecalhoUtil {
         lblUsuario.setText("Usuário: " + nomeUsuario.trim());
     }
 
-    /**
-     * Atualiza o Label de data e hora usando o instante local atual.
-     */
     private static void atualizarDataHora(Label lblDataHora) {
         lblDataHora.setText(LocalDateTime.now().format(FORMATO_DATA_HORA));
     }
 
-    /**
-     * Registra o encerramento do Timeline quando a tela deixa a Window atual.
-     */
     private static void registrarEncerramentoTimeline(
             Label lblDataHora,
             Timeline timeline
@@ -102,9 +93,6 @@ public final class CabecalhoUtil {
         }
     }
 
-    /**
-     * Para o Timeline quando uma Scene anteriormente vinculada perde sua Window.
-     */
     private static void acompanharWindow(Scene scene, Timeline timeline) {
         scene.windowProperty().addListener(
                 (observable, janelaAnterior, janelaAtual) -> {

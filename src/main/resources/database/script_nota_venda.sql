@@ -1,19 +1,16 @@
--- Criação da tabela NotaVenda.
--- Cada registro representa a fotografia histórica de uma venda finalizada.
+-- Tabela: NotaVenda
+-- Preserva a fotografia documental de uma venda finalizada.
 CREATE TABLE IF NOT EXISTS NotaVenda (
-    -- Identificador e número permanente da Nota de Venda.
     id_nota INTEGER PRIMARY KEY AUTOINCREMENT,
 
-    -- Venda de origem. UNIQUE garante no máximo uma NotaVenda por Venda.
+    -- Uma venda possui no máximo uma Nota de Venda.
     venda_id INTEGER NOT NULL UNIQUE
     CHECK (venda_id > 0),
 
-    -- Situação documental. O único fluxo permitido pela aplicação é
-    -- ATIVA -> ESTORNADA.
+    -- O único fluxo documental permitido é ATIVA -> ESTORNADA.
     status TEXT NOT NULL DEFAULT 'ATIVA'
     CHECK (status IN ('ATIVA', 'ESTORNADA')),
 
-    -- Fotografia dos dados principais da venda.
     data_hora_venda TEXT NOT NULL
     CHECK (LENGTH(TRIM(data_hora_venda)) > 0),
 
@@ -30,38 +27,35 @@ CREATE TABLE IF NOT EXISTS NotaVenda (
         )
     ),
 
-    -- Usuário histórico responsável pela venda.
-    -- O ID é fotografia e não possui FK viva para o cadastro atual.
+    -- O usuário é histórico e não mantém FK viva com o cadastro atual.
     usuario_id INTEGER NOT NULL
     CHECK (usuario_id > 0),
 
     nome_usuario TEXT NOT NULL
     CHECK (LENGTH(TRIM(nome_usuario)) > 0),
 
-    -- Cliente histórico. Venda à vista pode não possuir cliente identificado.
-    -- Os três campos permanecem todos nulos ou todos preenchidos.
+    -- O cliente é histórico; vendas à vista podem não possuir cliente identificado.
+    -- ID, nome e documento ficam todos ausentes ou todos preenchidos.
     cliente_id INTEGER
     CHECK (cliente_id IS NULL OR cliente_id > 0),
 
     nome_cliente TEXT,
     documento_cliente TEXT,
 
-    -- Valores históricos da venda.
     valor_total REAL NOT NULL
     CHECK (valor_total > 0),
 
     valor_desconto_global REAL NOT NULL DEFAULT 0
     CHECK (valor_desconto_global >= 0),
 
-    -- Preenchidos somente para venda à vista em DINHEIRO.
+    -- Valor recebido e troco existem somente para pagamento em DINHEIRO.
     valor_recebido REAL
     CHECK (valor_recebido IS NULL OR valor_recebido >= 0),
 
     troco REAL
     CHECK (troco IS NULL OR troco >= 0),
 
-    -- Fotografia do prazo efetivo. Os IDs são históricos e não possuem
-    -- dependência viva do cadastro de PrazoPagamento.
+    -- O prazo efetivo é histórico e não mantém dependência viva do cadastro atual.
     prazo_pagamento_id INTEGER
     CHECK (prazo_pagamento_id IS NULL OR prazo_pagamento_id > 0),
 
@@ -73,7 +67,6 @@ CREATE TABLE IF NOT EXISTS NotaVenda (
 
     data_vencimento TEXT,
 
-    -- Cliente histórico: os campos são todos ausentes ou todos presentes.
     CHECK (
         (
             cliente_id IS NULL
@@ -96,7 +89,7 @@ CREATE TABLE IF NOT EXISTS NotaVenda (
         OR cliente_id IS NOT NULL
     ),
 
-    -- Coerência entre tipo da venda e forma de pagamento.
+    -- Tipo de venda e forma de pagamento devem permanecer coerentes.
     CHECK (
         (
             tipo_venda = 'A_VISTA'
@@ -113,8 +106,7 @@ CREATE TABLE IF NOT EXISTS NotaVenda (
         )
     ),
 
-    -- Dinheiro preserva valor recebido e troco. Outras formas não usam
-    -- esses campos. A igualdade exata do troco pertence ao Service/BigDecimal.
+    -- A igualdade exata do troco é validada pelo Service com BigDecimal.
     CHECK (
         (
             forma_pagamento = 'DINHEIRO'
@@ -131,8 +123,7 @@ CREATE TABLE IF NOT EXISTS NotaVenda (
         )
     ),
 
-    -- Venda a prazo congela prazo e vencimento; venda à vista não usa esses
-    -- campos documentais.
+    -- Venda a prazo congela prazo e vencimento; venda à vista não usa esses campos.
     CHECK (
         (
             tipo_venda = 'A_PRAZO'
@@ -150,7 +141,7 @@ CREATE TABLE IF NOT EXISTS NotaVenda (
         )
     ),
 
-    -- A Venda permanece como vínculo estrutural vivo da Nota histórica.
+    -- A Venda permanece como o vínculo estrutural vivo da Nota histórica.
     FOREIGN KEY (venda_id)
     REFERENCES Venda(id_venda)
     ON DELETE RESTRICT

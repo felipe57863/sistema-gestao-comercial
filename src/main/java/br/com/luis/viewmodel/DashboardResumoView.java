@@ -225,30 +225,18 @@ public final class DashboardResumoView {
                 quantidadeProdutosEstoqueBaixo;
     }
 
-    /**
-     * Retorna a data inicial inclusiva do período apresentado.
-     */
     public LocalDate getDataInicial() {
         return dataInicial;
     }
 
-    /**
-     * Retorna a data final inclusiva do período apresentado.
-     */
     public LocalDate getDataFinal() {
         return dataFinal;
     }
 
-    /**
-     * Retorna a quantidade de vendas válidas encontradas no período.
-     */
     public int getQuantidadeVendas() {
         return quantidadeVendas;
     }
 
-    /**
-     * Retorna o valor total das vendas pagas e pendentes no período.
-     */
     public BigDecimal getValorTotalVendido() {
         return valorTotalVendido;
     }
@@ -262,37 +250,22 @@ public final class DashboardResumoView {
         return valorRecebidoLiquido;
     }
 
-    /**
-     * Retorna a quantidade atual de contas pendentes.
-     */
     public int getQuantidadeContasPendentes() {
         return quantidadeContasPendentes;
     }
 
-    /**
-     * Retorna o valor atual total das contas pendentes.
-     */
     public BigDecimal getValorTotalPendente() {
         return valorTotalPendente;
     }
 
-    /**
-     * Retorna a quantidade atual de contas pendentes vencidas.
-     */
     public int getQuantidadeContasVencidas() {
         return quantidadeContasVencidas;
     }
 
-    /**
-     * Retorna o valor atual total das contas pendentes vencidas.
-     */
     public BigDecimal getValorTotalVencido() {
         return valorTotalVencido;
     }
 
-    /**
-     * Retorna a quantidade atual de produtos ativos abaixo ou no estoque mínimo.
-     */
     public int getQuantidadeProdutosEstoqueBaixo() {
         return quantidadeProdutosEstoqueBaixo;
     }

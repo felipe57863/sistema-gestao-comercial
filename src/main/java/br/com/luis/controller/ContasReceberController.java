@@ -77,12 +77,6 @@ public class ContasReceberController {
     private final ContaReceberService contaReceberService;
     private final ObservableList<ContaReceberListagemView> contasPendentes;
 
-    /**
-     * Construtor do Controller.
-     *
-     * Inicializa o Service e a lista observável usada pela TableView.
-     * Não acessa banco de dados.
-     */
     public ContasReceberController() {
         this.contaReceberService = new ContaReceberService();
         this.contasPendentes = FXCollections.observableArrayList();
@@ -104,11 +98,6 @@ public class ContasReceberController {
         carregarContasPendentes();
     }
 
-    /**
-     * Configura as colunas da TableView de contas pendentes.
-     *
-     * A formatação visual permanece no Controller.
-     */
     private void configurarTabela() {
 
         colConta.setCellValueFactory(new PropertyValueFactory<>("contaReceberId"));

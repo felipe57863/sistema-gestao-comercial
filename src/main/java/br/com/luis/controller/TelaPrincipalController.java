@@ -116,11 +116,9 @@ public class TelaPrincipalController {
     @FXML private ProgressIndicator progressoAlertasVencimento;
 
     /**
-     * Cria o Controller com uma única instância do serviço responsável pelo
-     * dashboard e configura o formatador monetário brasileiro.
+     * Cria os Services do dashboard e dos alertas e configura o formatador monetário.
      *
-     * O construtor público sem argumentos mantém a instanciação compatível
-     * com o FXMLLoader.
+     * O construtor sem argumentos mantém a instanciação pelo FXMLLoader.
      */
     public TelaPrincipalController() {
         this.dashboardService = new DashboardService();

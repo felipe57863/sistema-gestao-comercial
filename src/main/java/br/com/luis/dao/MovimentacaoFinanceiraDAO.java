@@ -36,19 +36,11 @@ import java.util.List;
 public class MovimentacaoFinanceiraDAO {
 
     /**
-     * Insere uma nova movimentação financeira usando a Connection informada.
+     * Insere uma movimentação na transação controlada pelo Service responsável.
      *
-     * Participa da transação coordenada pelo Service que originou o lançamento,
-     * seja a finalização de uma venda à vista, o recebimento integral de uma conta
-     * ou uma compensação de estorno. Encerra o PreparedStatement e o ResultSet que
-     * cria, mas respeita a propriedade da Connection recebida. Lançamentos
-     * anteriores permanecem preservados.
-     *
-     * Importante:
-     * - não abre nova Connection;
-     * - não executa commit;
-     * - não executa rollback;
-     * - não fecha a Connection recebida.
+     * O lançamento pode pertencer à venda, ao recebimento ou à compensação de
+     * estorno e não substitui movimentações anteriores. O DAO encerra os recursos
+     * JDBC que cria, mas não controla commit, rollback ou fechamento da Connection.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @param movimentacaoFinanceira movimentação financeira que será persistida.
@@ -109,19 +101,15 @@ public class MovimentacaoFinanceiraDAO {
         }
     }
     /**
-     * Lista todas as movimentações financeiras vinculadas a uma venda usando
-     * uma Connection externa.
+     * Lista, em ordem de identificação, as movimentações vinculadas a uma venda.
      *
-     * Participa da transação controlada pela camada Service e encerra somente
-     * o PreparedStatement e o ResultSet criados pelo método.
-     *
-     * O DAO não escolhe a movimentação original nem valida o cenário financeiro.
-     * Essas decisões pertencem ao Service responsável pelo estorno.
+     * A Connection pertence ao Service e o DAO encerra somente os recursos JDBC
+     * que cria. A escolha da movimentação relevante e a validação do cenário
+     * financeiro permanecem no Service responsável pelo estorno.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @param vendaId identificador da venda.
-     * @return movimentações vinculadas à venda, em ordem de identificação;
-     *         lista vazia quando nenhuma movimentação for encontrada.
+     * @return movimentações vinculadas à venda; lista vazia quando não houver nenhuma.
      */
     public List<MovimentacaoFinanceira> listarPorVendaId(
             Connection conn,

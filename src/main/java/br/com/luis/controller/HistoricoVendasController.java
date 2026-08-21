@@ -177,11 +177,6 @@ public class HistoricoVendasController {
     private final ObservableList<ItemVendaHistoricoView>
             itensVendaExibidos;
 
-    /**
-     * Inicializa Services e listas observáveis.
-     *
-     * Não acessa banco de dados.
-     */
     public HistoricoVendasController() {
         this.historicoVendaService =
                 new HistoricoVendaService();

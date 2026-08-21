@@ -1,12 +1,12 @@
--- Criação da tabela ItemNotaVenda.
--- Os itens preservam a fotografia histórica usada para geração e reimpressão.
+-- Tabela: ItemNotaVenda
+-- Preserva os itens da fotografia documental usada na geração e reimpressão da Nota.
 CREATE TABLE IF NOT EXISTS ItemNotaVenda (
     id_item_nota INTEGER PRIMARY KEY AUTOINCREMENT,
 
     nota_id INTEGER NOT NULL
     CHECK (nota_id > 0),
 
-    -- ID histórico do produto. Não possui FK viva para o cadastro atual.
+    -- O produto é histórico e não mantém FK viva com o cadastro atual.
     produto_id INTEGER NOT NULL
     CHECK (produto_id > 0),
 

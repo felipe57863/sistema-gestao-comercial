@@ -535,11 +535,6 @@ public class RegistroVendaController {
         txtDescontoPercentual.setDisable(!rbDescontoPercentual.isSelected());
     }
 
-    /**
-     * Converte um ItemVenda em ItemCarrinhoView para exibição na TableView.
-     *
-     * Esta conversão é responsabilidade de apresentação, não regra de negócio.
-     */
     private ItemCarrinhoView converterParaItemCarrinhoView(ItemVenda itemVenda) {
         Produto produto = produtoService.buscarPorId(itemVenda.getProdutoId());
 
@@ -605,11 +600,6 @@ public class RegistroVendaController {
         return "Não";
     }
 
-    /**
-     * Adiciona o produto ao carrinho chamando o VendaService.
-     *
-     * Após sucesso, atualiza tabela, resumo e limpa os campos da área de produto.
-     */
     private void adicionarProdutoAoCarrinho(Integer idProduto, Integer quantidade) {
 
         vendaService.adicionarItemAoCarrinho(vendaAtual, idProduto, quantidade);
@@ -671,9 +661,6 @@ public class RegistroVendaController {
         }
     }
 
-    /**
-     * Obtém e valida o texto informado no campo de busca de produto.
-     */
     private String obterTextoBuscaProduto() {
 
         String textoBusca = txtBuscaProduto.getText();
@@ -685,16 +672,10 @@ public class RegistroVendaController {
         return textoBusca.trim();
     }
 
-    /**
-     * Verifica se o texto digitado contém apenas números.
-     */
     private boolean textoEhNumero(String texto) {
         return texto != null && texto.matches("\\d+");
     }
 
-    /**
-     * Converte o texto numérico informado para ID de produto.
-     */
     private Integer converterTextoParaIdProduto(String textoProduto) {
 
         try {
@@ -711,17 +692,11 @@ public class RegistroVendaController {
         }
     }
 
-    /**
-     * Limpa os campos da área de produto após adicionar item ao carrinho.
-     */
     private void limparCamposProduto() {
         txtBuscaProduto.clear();
         txtBuscaProduto.requestFocus();
     }
 
-    /**
-     * Exibe uma mensagem de erro amigável para o usuário.
-     */
     private void exibirErro(String mensagem) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Erro");
@@ -1763,9 +1738,6 @@ public class RegistroVendaController {
         );
     }
 
-    /**
-     * Formata o número documental com preenchimento mínimo de seis dígitos.
-     */
     private String formatarNumeroNota(Integer notaVendaId) {
         if (notaVendaId == null || notaVendaId <= 0) {
             return "—";
@@ -2056,9 +2028,6 @@ public class RegistroVendaController {
         }
     }
 
-    /**
-     * Exibe uma mensagem informativa amigável para o usuário.
-     */
     private void exibirInformacao(String titulo, String mensagem) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(titulo);

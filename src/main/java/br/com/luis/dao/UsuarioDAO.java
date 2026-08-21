@@ -287,10 +287,10 @@ public class UsuarioDAO {
     }
 
     /**
-     * Verifica se o login pertence a outro usuário dentro da Connection
-     * transacional recebida. A comparação é insensível a maiúsculas e minúsculas
-     * e exclui o identificador informado. O DAO não executa commit, rollback nem
-     * fecha a Connection, cujo ciclo pertence ao Service chamador.
+     * Verifica, na Connection da transação, se o login pertence a outro usuário.
+     *
+     * A comparação ignora maiúsculas e minúsculas e exclui o usuário informado.
+     * O ciclo da Connection continua sob controle do Service.
      *
      * @param conn Connection externa que participa do fluxo transacional.
      * @param login login cuja disponibilidade será consultada.

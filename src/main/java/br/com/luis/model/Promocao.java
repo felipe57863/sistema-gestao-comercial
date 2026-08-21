@@ -3,34 +3,26 @@ package br.com.luis.model;
 import java.math.BigDecimal;
 
 /**
- * Entidade que representa uma Promoção vinculada a um Produto.
- * Aplica validações de negócio e fail-fast.
+ * Promoção vinculada a um produto, com desconto percentual ou por valor fixo.
  */
 public class Promocao {
 
     private Integer idPromocao;
     private TipoDesconto tipoDesconto;
     private BigDecimal valorDesconto;
-    private boolean ativa; // SQLite: INTEGER (0 ou 1)
+    private boolean ativa;
 
-    // Associação (FK produto_id)
     private Produto produto;
 
-    /**
-     * Construtor vazio
-     */
     public Promocao() {
     }
 
-    /**
-     * Construtor completo com validação
-     */
     public Promocao(Integer idPromocao, TipoDesconto tipoDesconto, BigDecimal valorDesconto,
                     boolean ativa, Produto produto) {
 
         this.idPromocao = idPromocao;
 
-        // Ordem importante: produto precisa existir antes da validação do desconto
+        // O produto precisa estar definido antes da validação do desconto.
         setProduto(produto);
         setTipoDesconto(tipoDesconto);
         setValorDesconto(valorDesconto);
@@ -38,15 +30,10 @@ public class Promocao {
         this.ativa = ativa;
     }
 
-    /**
-     * ENUM dos tipos de desconto
-     */
     public enum TipoDesconto {
         PERCENTUAL,
         VALOR_FIXO
     }
-
-    // --- GETTERS E SETTERS COM VALIDAÇÃO ---
 
     public Integer getIdPromocao() {
         return idPromocao;
@@ -77,7 +64,6 @@ public class Promocao {
             throw new IllegalArgumentException("O valor do desconto deve ser maior que zero.");
         }
 
-        // REGRA DE NEGÓCIO: valida conforme tipo
         if (tipoDesconto == TipoDesconto.PERCENTUAL) {
 
             if (valorDesconto.compareTo(new BigDecimal("100")) > 0) {
@@ -115,7 +101,7 @@ public class Promocao {
     }
 
     /**
-     * equals e hashCode baseados no ID
+     * A identidade da promoção é definida pelo ID persistido.
      */
     @Override
     public boolean equals(Object o) {
@@ -132,9 +118,6 @@ public class Promocao {
         return idPromocao != null ? idPromocao.hashCode() : 0;
     }
 
-    /**
-     * toString útil para UI (ComboBox, logs)
-     */
     @Override
     public String toString() {
         return tipoDesconto + " - " + valorDesconto;

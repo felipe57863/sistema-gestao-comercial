@@ -78,20 +78,12 @@ public class EstornoVendaService {
     }
 
     /**
-     * Realiza o estorno total de uma venda finalizada.
+     * Realiza o estorno total de uma venda finalizada em uma única transação.
      *
-     * Abre e controla uma única Connection para revalidar o usuário, a venda, os
-     * itens, a conta e as movimentações persistidas. Dentro da mesma transação,
-     * restaura o estoque, altera a venda e a Nota de Venda vinculada para
-     * ESTORNADA, trata a conta conforme o cenário, registra eventual saída
-     * compensatória e grava a auditoria. O commit ocorre somente após todas as
-     * etapas; qualquer falha
-     * provoca rollback integral e o estado anterior de autoCommit é restaurado.
-     *
-     * @param vendaId identificador da venda que será estornada.
-     * @param motivo motivo obrigatório do estorno.
-     * @param usuarioId identificador do usuário responsável pelo estorno.
-     * @return resultado consolidado do estorno.
+     * Revalida o administrador e os dados persistidos, restaura o estoque, atualiza
+     * venda e Nota, trata a conta, registra eventual saída compensatória e persiste
+     * a auditoria. O commit ocorre somente após todas as etapas; falhas provocam
+     * rollback integral e a restauração do autoCommit anterior.
      */
     public ResultadoEstornoVenda estornarVenda(
             Integer vendaId,
@@ -152,15 +144,10 @@ public class EstornoVendaService {
     }
 
     /**
-     * Executa o fluxo completo do estorno dentro da transação.
+     * Executa o fluxo do estorno usando a Connection controlada pelo método público.
      *
-     * Usa a Connection recebida para executar as validações e alterações de venda,
-     * Nota de Venda, itens, estoque, conta, movimentações e auditoria. Não abre
-     * outra conexão, não executa commit ou rollback e não fecha a Connection; essas
-     * responsabilidades pertencem ao método público que delimita a transação.
-     *
-     * @return dados internos necessários para montar o resultado
-     *         depois do commit.
+     * Não abre outra conexão, não faz commit ou rollback e não fecha a Connection.
+     * Os dados retornados são usados somente para montar o resultado após o commit.
      */
     private DadosEstornoConcluido estornarVendaTransacional(
             Connection conn,

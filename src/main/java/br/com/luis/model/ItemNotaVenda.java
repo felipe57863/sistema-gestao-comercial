@@ -24,9 +24,6 @@ public class ItemNotaVenda {
     private BigDecimal descontoGlobal;
     private BigDecimal subtotal;
 
-    /**
-     * Construtor padrão para carregamento e montagem gradual do item.
-     */
     public ItemNotaVenda() {
         this.quantidade = 1;
         this.precoUnitario = zeroMonetario();
@@ -35,9 +32,6 @@ public class ItemNotaVenda {
         this.subtotal = zeroMonetario();
     }
 
-    /**
-     * Construtor completo usado quando a fotografia do item já está definida.
-     */
     public ItemNotaVenda(
             Integer idItemNota,
             Integer notaId,

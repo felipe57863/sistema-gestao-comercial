@@ -100,17 +100,10 @@ public class VendaDAO {
     }
 
     /**
-     * Insere uma nova venda usando uma Connection externa.
+     * Insere uma venda na transação de finalização coordenada pelo VendaService.
      *
-     * Participa da mesma transação de finalização coordenada pelo VendaService.
-     * Encerra o PreparedStatement e o ResultSet que cria, mas respeita a
-     * propriedade da Connection recebida.
-     *
-     * Importante:
-     * - não abre nova Connection;
-     * - não executa commit;
-     * - não executa rollback;
-     * - não fecha a Connection recebida.
+     * Encerra apenas o PreparedStatement e o ResultSet que cria. A Connection
+     * pertence ao Service, portanto o DAO não faz commit, rollback nem fechamento.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @param venda venda que será persistida.
@@ -171,17 +164,12 @@ public class VendaDAO {
     }
 
     /**
-     * Atualiza o status de uma venda somente quando o status atual persistido
-     * corresponde ao status esperado.
+     * Atualiza o status somente se o estado persistido ainda for o esperado.
      *
-     * A condição combina o identificador e o status esperado, impedindo que o
-     * fluxo altere uma venda que já esteja em outro estado. O retorno permite ao
-     * Service confirmar se exatamente o registro esperado foi atualizado. A
-     * escolha do novo status pertence ao Service responsável pelo recebimento ou
-     * estorno.
-     *
-     * Usa a Connection informada e encerra apenas o PreparedStatement criado.
-     * Não executa commit, rollback nem fecha a Connection recebida.
+     * A condição por ID e status protege o fluxo contra alteração de estado já
+     * consumida por outra operação. O novo estado continua sendo decisão do
+     * Service. A Connection pertence ao Service; o DAO encerra apenas o
+     * PreparedStatement que cria.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @param vendaId identificador da venda que será atualizada.
