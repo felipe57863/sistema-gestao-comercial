@@ -113,8 +113,9 @@ public class ProdutoDAO {
     }
 
     /**
-     * Atualiza os dados de um produto existente.
-     * Pode ser utilizado tanto para edição quanto para exclusão lógica (ativo = false).
+     * Atualiza somente os dados cadastrais de um produto existente.
+     * O saldo atual não é alterado: a quantidade inicial pertence ao cadastro
+     * novo e as movimentações posteriores usam seus fluxos próprios.
      */
     public void atualizar(Produto produto) {
 
@@ -127,7 +128,6 @@ public class ProdutoDAO {
             UPDATE Produto
             SET descricao = ?,
                 preco = ?,
-                quantidade_estoque = ?,
                 estoque_minimo = ?,
                 ativo = ?
             WHERE id_produto = ?
@@ -138,13 +138,12 @@ public class ProdutoDAO {
 
             stmt.setString(1, produto.getDescricao());
             stmt.setBigDecimal(2, produto.getPreco());
-            stmt.setInt(3, produto.getQuantidadeEstoque());
-            stmt.setInt(4, produto.getEstoqueMinimo());
+            stmt.setInt(3, produto.getEstoqueMinimo());
 
             // SQLite não possui BOOLEAN → usamos 1 (true) ou 0 (false)
-            stmt.setInt(5, produto.isAtivo() ? 1 : 0);
+            stmt.setInt(4, produto.isAtivo() ? 1 : 0);
 
-            stmt.setInt(6, produto.getIdProduto());
+            stmt.setInt(5, produto.getIdProduto());
 
             int linhasAfetadas = stmt.executeUpdate();
 
@@ -481,6 +480,67 @@ public class ProdutoDAO {
 
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao baixar estoque usando conexão externa.", e);
+        }
+    }
+
+    /**
+     * Incrementa o estoque de um produto ativo usando uma Connection externa.
+     * Não abre conexão própria nem controla commit ou rollback.
+     */
+    public void incrementarEstoqueEntrada(
+            Connection conn,
+            Integer idProduto,
+            Integer quantidade
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        if (idProduto == null || idProduto <= 0) {
+            throw new IllegalArgumentException(
+                    "ID do produto inválido para entrada de estoque."
+            );
+        }
+
+        if (quantidade == null || quantidade <= 0) {
+            throw new IllegalArgumentException(
+                    "Quantidade inválida para entrada de estoque."
+            );
+        }
+
+        String sql = """
+            UPDATE Produto
+            SET quantidade_estoque = quantidade_estoque + ?
+            WHERE id_produto = ?
+              AND ativo = 1
+            """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, quantidade);
+            stmt.setInt(2, idProduto);
+
+            int linhasAfetadas = stmt.executeUpdate();
+
+            if (linhasAfetadas == 0) {
+                throw new IllegalStateException(
+                        "Produto inexistente ou inativo para receber entrada de estoque."
+                );
+            }
+
+            if (linhasAfetadas > 1) {
+                throw new IllegalStateException(
+                        "Mais de um produto foi atualizado para o ID "
+                                + idProduto + "."
+                );
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao incrementar estoque da entrada usando conexão externa.",
+                    e
+            );
         }
     }
 
