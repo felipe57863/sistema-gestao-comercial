@@ -1950,6 +1950,12 @@ public class TelaPrincipalController {
                 "Relatório de Contas a Receber"
         ),
 
+        ENTRADAS_ESTOQUE(
+                "Entradas de estoque",
+                "/br/com/luis/view/RelatorioEntradaEstoque.fxml",
+                "Relatório de Entradas de Estoque"
+        ),
+
         RELATORIOS_PRODUTOS(
                 "Relatórios de produtos",
                 "/br/com/luis/view/RelatorioProduto.fxml",

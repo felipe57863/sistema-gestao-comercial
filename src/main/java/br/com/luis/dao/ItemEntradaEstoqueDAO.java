@@ -1,6 +1,7 @@
 package br.com.luis.dao;
 
 import br.com.luis.model.ItemEntradaEstoque;
+import br.com.luis.viewmodel.ItemEntradaEstoqueRelatorioView;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -8,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Persiste itens de entrada de estoque usando uma Connection externa.
@@ -101,6 +104,79 @@ public class ItemEntradaEstoqueDAO {
         } catch (SQLException e) {
             throw new RuntimeException(
                     "Erro ao inserir item da entrada de estoque usando conexão externa.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Lista os itens históricos de uma entrada sem consultar o produto atual.
+     */
+    public List<ItemEntradaEstoqueRelatorioView> listarParaRelatorioPorEntradaId(
+            Connection conn,
+            Integer entradaId
+    ) {
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+        if (entradaId == null || entradaId <= 0) {
+            throw new IllegalArgumentException("ID da entrada deve ser maior que zero.");
+        }
+
+        String sql = """
+                SELECT id_item_entrada,
+                       entrada_id,
+                       produto_id,
+                       descricao_produto,
+                       quantidade_recebida,
+                       preco_compra_unitario,
+                       subtotal
+                FROM ItemEntradaEstoque
+                WHERE entrada_id = ?
+                ORDER BY id_item_entrada ASC
+                """;
+
+        List<ItemEntradaEstoqueRelatorioView> itens = new ArrayList<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, entradaId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Integer itemId = null;
+
+                    try {
+                        itemId = rs.getInt("id_item_entrada");
+
+                        itens.add(
+                                new ItemEntradaEstoqueRelatorioView(
+                                        itemId,
+                                        rs.getInt("entrada_id"),
+                                        rs.getInt("produto_id"),
+                                        rs.getString("descricao_produto"),
+                                        rs.getInt("quantidade_recebida"),
+                                        rs.getBigDecimal("preco_compra_unitario"),
+                                        rs.getBigDecimal("subtotal")
+                                )
+                        );
+
+                    } catch (RuntimeException e) {
+                        throw new IllegalStateException(
+                                "Dados inválidos no item de entrada"
+                                        + (itemId == null
+                                        ? "."
+                                        : " de ID " + itemId + "."),
+                                e
+                        );
+                    }
+                }
+            }
+
+            return itens;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao consultar itens do relatório de entradas de estoque.",
                     e
             );
         }
