@@ -114,7 +114,9 @@
                             </children>
                         </HBox>
 
-                        <Label text="Quantidade em Estoque:*" GridPane.rowIndex="2" />
+                        <Label fx:id="lblEstoque"
+                               text="Saldo Inicial:*"
+                               GridPane.rowIndex="2" />
                         <Spinner fx:id="spnEstoque"
                                  prefWidth="120.0"
                                  GridPane.columnIndex="1"

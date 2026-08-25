@@ -46,6 +46,7 @@ public class ProdutoController implements Initializable {
 
     @FXML private TextField txtDescricao;
     @FXML private TextField txtPreco;
+    @FXML private Label lblEstoque;
     @FXML private Spinner<Integer> spnEstoque;
     @FXML private Spinner<Integer> spnEstoqueMinimo;
     @FXML private ComboBox<String> cbStatus;
@@ -122,6 +123,7 @@ public class ProdutoController implements Initializable {
         // Configuração dos Spinners
         spnEstoque.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10000, 0));
         spnEstoqueMinimo.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10000, 0));
+        atualizarModoEstoque();
 
         // Tipo de desconto
         tgTipoDesconto = new ToggleGroup();
@@ -471,12 +473,6 @@ public class ProdutoController implements Initializable {
             return true;
         }
 
-        if (valoresInteirosDiferentes(
-                spnEstoque.getValue(),
-                produtoSelecionado.getQuantidadeEstoque()
-        )) {
-            return true;
-        }
 
         if (valoresInteirosDiferentes(
                 spnEstoqueMinimo.getValue(),
@@ -584,7 +580,9 @@ public class ProdutoController implements Initializable {
             String descricao = txtDescricao.getText();
             BigDecimal preco = converterDecimal(txtPreco.getText(), "Preço é obrigatório.");
 
-            int estoque = spnEstoque.getValue();
+            int estoque = produtoSelecionado == null
+                    ? spnEstoque.getValue()
+                    : produtoSelecionado.getQuantidadeEstoque();
             int estoqueMin = spnEstoqueMinimo.getValue();
 
             boolean ativo = produtoSelecionado == null || obterProdutoAtivoSelecionado();
@@ -750,7 +748,7 @@ public class ProdutoController implements Initializable {
 
     @FXML
     public void acaoLimpar() {
-        limparSomenteCamposFormulario();
+        prepararNovoCadastro();
     }
 
     @FXML
@@ -807,6 +805,7 @@ public class ProdutoController implements Initializable {
         txtPreco.setText(produto.getPreco().toString().replace(".", ","));
         spnEstoque.getValueFactory().setValue(produto.getQuantidadeEstoque());
         spnEstoqueMinimo.getValueFactory().setValue(produto.getEstoqueMinimo());
+        atualizarModoEstoque();
 
         cbStatus.setValue(produto.isAtivo() ? "Ativo" : "Inativo");
 
@@ -858,16 +857,30 @@ public class ProdutoController implements Initializable {
 
     private void prepararNovoCadastro() {
 
-        limparSomenteCamposFormulario();
-
         produtoSelecionado = null;
         promocaoAtivaProdutoSelecionado = null;
+
+        limparSomenteCamposFormulario();
+        atualizarModoEstoque();
 
         tabelaProdutos.getSelectionModel().clearSelection();
 
         btnSalvar.setText("Salvar");
         atualizarEstadoBotaoInativar();
         txtDescricao.requestFocus();
+    }
+
+    /**
+     * Mantém o saldo inicial editável somente durante um novo cadastro.
+     * Produtos persistidos exibem o estoque atual apenas para consulta.
+     */
+    private void atualizarModoEstoque() {
+        boolean produtoExistente = produtoSelecionado != null;
+
+        lblEstoque.setText(
+                produtoExistente ? "Estoque Atual:" : "Saldo Inicial:*"
+        );
+        spnEstoque.setDisable(produtoExistente);
     }
 
     private void atualizarEstadoBotaoInativar() {

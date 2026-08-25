@@ -85,6 +85,7 @@ public class TelaPrincipalController {
     @FXML private Label lblDataHora;
     @FXML private Button btnClientes;
     @FXML private Button btnProdutos;
+    @FXML private Button btnEntradaEstoque;
     @FXML private Button btnPrazosPagamento;
     @FXML private Button btnRelatorios;
     @FXML private Button btnUsuarios;
@@ -195,6 +196,10 @@ public class TelaPrincipalController {
         btnProdutos.setVisible(administrador);
         btnProdutos.setManaged(administrador);
         btnProdutos.setDisable(!administrador);
+
+        btnEntradaEstoque.setVisible(administrador);
+        btnEntradaEstoque.setManaged(administrador);
+        btnEntradaEstoque.setDisable(!administrador);
 
         btnClientes.setVisible(administrador);
         btnClientes.setManaged(administrador);
@@ -1499,6 +1504,26 @@ public class TelaPrincipalController {
         abrirTela(
                 "/br/com/luis/view/Produto.fxml",
                 "Cadastro de Produtos"
+        );
+    }
+
+    /**
+     * Abre a tela operacional de Entrada de Estoque no mesmo Stage.
+     */
+    @FXML
+    public void abrirEntradaEstoque() {
+        if (!usuarioAtualEhAdministrador()) {
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Acesso negado",
+                    "A Entrada de Estoque é exclusiva para administradores ativos."
+            );
+            return;
+        }
+
+        abrirTela(
+                "/br/com/luis/view/EntradaEstoque.fxml",
+                "Entrada de Estoque"
         );
     }
 
