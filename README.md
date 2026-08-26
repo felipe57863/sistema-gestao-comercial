@@ -78,6 +78,11 @@ Os valores monetários são tratados com `BigDecimal`, evitando perda de precis�
 - Situação financeira do cliente com saldo devedor e limite disponível;
 - Cadastro, consulta, edição e inativação de produtos;
 - Controle de estoque e estoque mínimo;
+- Entrada de estoque rastreável, com múltiplos produtos;
+- Registro de quantidade recebida e preço unitário de compra;
+- Incremento transacional do estoque;
+- Histórico de entradas com responsável, referência e observação;
+- Relatório de Entradas de Estoque com filtros, detalhes e totalizadores;
 - Cadastro e gerenciamento de promoções;
 - Cadastro e gerenciamento de prazos de pagamento;
 - Carrinho de venda com alteração de quantidade;
@@ -103,6 +108,12 @@ Os valores monetários são tratados com `BigDecimal`, evitando perda de precis�
 O projeto busca representar regras comuns de um sistema comercial, como:
 
 - Não permitir venda de produto sem estoque suficiente;
+- Produtos existentes não têm saldo alterado pelo cadastro;
+- A reposição normal do saldo ocorre pela Entrada de Estoque;
+- Entradas aceitam somente produtos ativos;
+- A confirmação da Entrada persiste cabeçalho, itens e incrementos no mesmo commit;
+- O histórico de Entradas preserva snapshots do responsável e dos produtos;
+- O filtro do relatório por produto seleciona a Entrada inteira;
 - Aplicar promoções ativas automaticamente;
 - Não aplicar desconto global sobre itens promocionais;
 - Validar limite de crédito em vendas a prazo;
@@ -137,7 +148,9 @@ O sistema está funcionalmente concluído para o escopo definido no TCC.
 
 Os principais módulos de autenticação, usuários, clientes, produtos, estoque, promoções, prazos, vendas, contas a receber, movimentações financeiras, Nota de Venda, estorno, histórico, relatórios, dashboard e alertas estão implementados.
 
-A regressão final do projeto foi concluída sem defeitos funcionais bloqueantes reproduzidos.
+O R6 foi concluído com a Entrada de Estoque e o Relatório de Entradas de Estoque implementados.
+
+A regressão global pós-R6 foi concluída sem defeitos funcionais bloqueantes reproduzidos.
 
 ---
 
