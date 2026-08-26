@@ -59,6 +59,7 @@ public class EntradaEstoqueController {
     @FXML private TextField txtPrecoCompra;
     @FXML private Button btnAdicionarAtualizarItem;
     @FXML private Button btnRemoverItem;
+    @FXML private Label lblOrientacaoEdicaoItem;
     @FXML private TableView<ItemEntradaEstoque> tabelaItens;
     @FXML private TableColumn<ItemEntradaEstoque, String> colProduto;
     @FXML private TableColumn<ItemEntradaEstoque, String> colEstoqueAtual;
@@ -679,7 +680,7 @@ public class EntradaEstoqueController {
                 + "\nData/hora: " + entrada.getDataHora().format(FORMATADOR_DATA_HORA)
                 + "\nResponsável: " + entrada.getNomeUsuario()
                 + "\nProdutos distintos: " + itensConfirmados.size()
-                + "\nTotal de unidades: " + calcularTotalUnidades(itensConfirmados)
+                + "\nUnidades recebidas: " + calcularTotalUnidades(itensConfirmados)
                 + "\nValor total: " + formatarMoeda(calcularValorTotal(itensConfirmados));
 
         mostrarAlerta(
@@ -724,6 +725,9 @@ public class EntradaEstoqueController {
                 confirmando
                         || tabelaItens.getSelectionModel().getSelectedItem() == null
         );
+        boolean editandoItem = itemEmEdicao != null;
+        lblOrientacaoEdicaoItem.setManaged(editandoItem);
+        lblOrientacaoEdicaoItem.setVisible(editandoItem);
         btnLimparEntrada.setDisable(confirmando);
         btnConfirmarEntrada.setDisable(
                 confirmando

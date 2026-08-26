@@ -58,6 +58,10 @@
                     <Label fx:id="lblNumeroEntrada"
                            text="Número: gerado após confirmação"
                            textFill="#555555" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <Label text="Data/Hora: automática na confirmação"
+                           textFill="#555555" />
+                    <Region HBox.hgrow="ALWAYS" />
                     <Label fx:id="lblResponsavel"
                            text="Responsável: não identificado"
                            textFill="#555555" />
@@ -67,9 +71,9 @@
                         <ColumnConstraints minWidth="100.0" />
                         <ColumnConstraints hgrow="ALWAYS" />
                     </columnConstraints>
-                    <Label text="Referência:" />
+                    <Label text="Referência interna (opcional):" />
                     <TextField fx:id="txtReferencia"
-                               promptText="Opcional: nota, pedido ou referência interna"
+                               promptText="Ex.: referência interna"
                                GridPane.columnIndex="1" />
                     <Label text="Observação:" GridPane.rowIndex="1" />
                     <TextArea fx:id="txtObservacao"
@@ -98,7 +102,7 @@
                     <Label text="Produto:*" />
                     <Label text="Estoque Atual" GridPane.columnIndex="1" />
                     <Label text="Quantidade Recebida:*" GridPane.columnIndex="2" />
-                    <Label text="Preço de Compra Unitário:*" GridPane.columnIndex="3" />
+                    <Label text="Preço Unitário de Compra:*" GridPane.columnIndex="3" />
                     <ComboBox fx:id="cbProduto"
                               maxWidth="Infinity"
                               promptText="Selecione um produto ativo"
@@ -114,10 +118,16 @@
                              maxWidth="Infinity"
                              GridPane.columnIndex="2"
                              GridPane.rowIndex="1" />
-                    <TextField fx:id="txtPrecoCompra"
-                               promptText="Ex: 12,50"
-                               GridPane.columnIndex="3"
-                               GridPane.rowIndex="1" />
+                    <HBox alignment="CENTER_LEFT"
+                          spacing="6.0"
+                          GridPane.columnIndex="3"
+                          GridPane.rowIndex="1">
+                        <Label text="R$" />
+                        <TextField fx:id="txtPrecoCompra"
+                                   maxWidth="Infinity"
+                                   promptText="Ex: 12,50"
+                                   HBox.hgrow="ALWAYS" />
+                    </HBox>
                 </GridPane>
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                     <Button fx:id="btnAdicionarAtualizarItem"
@@ -129,6 +139,14 @@
                             onAction="#acaoRemoverItem"
                             prefWidth="130.0"
                             text="Remover Item" />
+                    <Label fx:id="lblOrientacaoEdicaoItem"
+                           managed="false"
+                           maxWidth="Infinity"
+                           style="-fx-font-size: 11px; -fx-text-fill: #5f6b76;"
+                           text="Clique em Atualizar Item para aplicar as alterações ao rascunho antes de confirmar a Entrada."
+                           visible="false"
+                           wrapText="true"
+                           HBox.hgrow="ALWAYS" />
                 </HBox>
             </VBox>
 
@@ -155,9 +173,9 @@
                                      prefWidth="120.0"
                                      text="Estoque Atual" />
                         <TableColumn fx:id="colQuantidade"
-                                     minWidth="90.0"
-                                     prefWidth="110.0"
-                                     text="Quantidade" />
+                                      minWidth="90.0"
+                                      prefWidth="110.0"
+                                      text="Quantidade Recebida" />
                         <TableColumn fx:id="colPrecoCompra"
                                      minWidth="135.0"
                                      prefWidth="160.0"
@@ -180,7 +198,7 @@
                     <Label fx:id="lblProdutosDistintos" text="0">
                         <font><Font name="System Bold" size="14.0" /></font>
                     </Label>
-                    <Label text="Total de unidades:" />
+                    <Label text="Unidades recebidas:" />
                     <Label fx:id="lblTotalUnidades" text="0">
                         <font><Font name="System Bold" size="14.0" /></font>
                     </Label>
@@ -197,18 +215,26 @@
         <HBox alignment="CENTER_LEFT"
               spacing="10.0"
               style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;">
-            <Button fx:id="btnConfirmarEntrada"
-                    disable="true"
-                    onAction="#acaoConfirmarEntrada"
-                    prefHeight="40.0"
-                    prefWidth="180.0"
-                    style="-fx-background-color: #345f86; -fx-background-radius: 5; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"
-                    text="Confirmar Entrada" />
-            <Button fx:id="btnLimparEntrada"
-                    onAction="#acaoLimparEntrada"
-                    prefHeight="40.0"
-                    prefWidth="140.0"
-                    text="Limpar Entrada" />
+            <VBox spacing="3.0">
+                <Button fx:id="btnConfirmarEntrada"
+                        disable="true"
+                        onAction="#acaoConfirmarEntrada"
+                        prefHeight="40.0"
+                        prefWidth="180.0"
+                        style="-fx-background-color: #345f86; -fx-background-radius: 5; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"
+                        text="Confirmar Entrada" />
+                <Label style="-fx-font-size: 10px; -fx-text-fill: #666666;"
+                       text="Confirma e registra a Entrada, incrementando o estoque." />
+            </VBox>
+            <VBox spacing="3.0">
+                <Button fx:id="btnLimparEntrada"
+                        onAction="#acaoLimparEntrada"
+                        prefHeight="40.0"
+                        prefWidth="140.0"
+                        text="Limpar Entrada" />
+                <Label style="-fx-font-size: 10px; -fx-text-fill: #666666;"
+                       text="Limpa os campos e o rascunho." />
+            </VBox>
             <Region HBox.hgrow="ALWAYS" />
             <Label fx:id="lblEstadoOperacao"
                    text=""
