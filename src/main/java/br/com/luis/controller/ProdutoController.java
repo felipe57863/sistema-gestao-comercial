@@ -50,7 +50,6 @@ public class ProdutoController implements Initializable {
     @FXML private TextField txtPreco;
     @FXML private TextField txtUltimoPrecoCompra;
     @FXML private Label lblEstoque;
-    @FXML private Label lblOrientacaoEstoque;
     @FXML private Spinner<Integer> spnEstoque;
     @FXML private Spinner<Integer> spnEstoqueMinimo;
     @FXML private ComboBox<String> cbStatus;
@@ -75,7 +74,6 @@ public class ProdutoController implements Initializable {
     @FXML private Button btnCancelar;
     @FXML private Button btnLimpar;
     @FXML private Button btnNovo;
-    @FXML private Button btnExcluir;
 
     // MAPEAMENTO DO FXML (Direita: Lista)
 
@@ -113,9 +111,10 @@ public class ProdutoController implements Initializable {
         );
         configurarComponentes();
         configurarComportamentoPromocao();
+        configurarDirtyState();
         configurarColunas();
         configurarTabelaListener();
-        atualizarEstadoBotaoInativar();
+        atualizarEstadoBotaoSalvar();
         carregarTabela();
     }
 
@@ -178,6 +177,21 @@ public class ProdutoController implements Initializable {
                 atualizarUnidadeDesconto();
             }
         });
+    }
+
+    /**
+     * Mantém o botão de atualização sincronizado com a comparação do estado
+     * persistível atual e a fotografia carregada do produto selecionado.
+     */
+    private void configurarDirtyState() {
+        txtDescricao.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        txtPreco.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        spnEstoqueMinimo.valueProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        cbStatus.valueProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        chkPromocao.selectedProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        rbPercentual.selectedProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        rbFixo.selectedProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        txtValorDesconto.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
     }
 
     private void travarCamposPromocao(boolean travar) {
@@ -250,7 +264,7 @@ public class ProdutoController implements Initializable {
                         btnSalvar.setText("Atualizar");
                     }
 
-                    atualizarEstadoBotaoInativar();
+                    atualizarEstadoBotaoSalvar();
                 }
         );
     }
@@ -320,7 +334,6 @@ public class ProdutoController implements Initializable {
         tarefaCarregamentoProdutosAtual = task;
         tabelaProdutos.setPlaceholder(new Label("Carregando produtos..."));
         btnFiltrar.setDisable(true);
-        atualizarEstadoBotaoInativar();
 
         task.setOnSucceeded(event -> {
             if (tarefaCarregamentoProdutosAtual != task) {
@@ -351,7 +364,7 @@ public class ProdutoController implements Initializable {
 
             tarefaCarregamentoProdutosAtual = null;
             btnFiltrar.setDisable(false);
-            atualizarEstadoBotaoInativar();
+            atualizarEstadoBotaoSalvar();
         });
 
         task.setOnFailed(event -> {
@@ -366,7 +379,7 @@ public class ProdutoController implements Initializable {
 
             tabelaProdutos.setPlaceholder(new Label("Não foi possível carregar os produtos."));
             btnFiltrar.setDisable(false);
-            atualizarEstadoBotaoInativar();
+            atualizarEstadoBotaoSalvar();
 
             mostrarErroAmigavel("Não foi possível carregar os produtos.");
         });
@@ -378,7 +391,7 @@ public class ProdutoController implements Initializable {
 
             tarefaCarregamentoProdutosAtual = null;
             btnFiltrar.setDisable(false);
-            atualizarEstadoBotaoInativar();
+            atualizarEstadoBotaoSalvar();
         });
 
         Thread thread = new Thread(task, "carregar-produtos");
@@ -599,6 +612,11 @@ public class ProdutoController implements Initializable {
      */
     @FXML
     public void acaoSalvar() {
+        if (produtoSelecionado != null && !formularioEdicaoProdutoFoiAlterado()) {
+            atualizarEstadoBotaoSalvar();
+            return;
+        }
+
         try {
 
             boolean estavaEditando = produtoSelecionado != null;
@@ -790,38 +808,6 @@ public class ProdutoController implements Initializable {
         carregarTabela(txtBusca.getText());
     }
 
-    @FXML
-    public void acaoExcluir() {
-
-        Produto selecionado = tabelaProdutos.getSelectionModel().getSelectedItem();
-
-        if (selecionado == null) {
-            mostrarAviso("Selecione um produto.");
-            return;
-        }
-
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Confirmar inativação");
-        confirm.setHeaderText("Deseja inativar este produto?");
-        confirm.setContentText(selecionado.getDescricao());
-
-        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            try {
-                produtoService.inativar(selecionado);
-                carregarTabela();
-                prepararNovoCadastro();
-
-                mostrarInformacao("Produto inativado com sucesso.");
-
-            } catch (RuntimeException e) {
-                System.err.println("[ERRO] Falha ao inativar produto.");
-                e.printStackTrace();
-
-                mostrarErroAmigavel("Não foi possível inativar o produto.");
-            }
-        }
-    }
-
     // MÉTODOS AUXILIARES
 
     private void preencherFormulario(Produto produto) {
@@ -837,6 +823,7 @@ public class ProdutoController implements Initializable {
         cbStatus.setValue(produto.isAtivo() ? "Ativo" : "Inativo");
 
         carregarPromocaoAtivaNoFormulario(produto);
+        atualizarEstadoBotaoSalvar();
     }
 
     /**
@@ -893,7 +880,7 @@ public class ProdutoController implements Initializable {
         tabelaProdutos.getSelectionModel().clearSelection();
 
         btnSalvar.setText("Salvar");
-        atualizarEstadoBotaoInativar();
+        atualizarEstadoBotaoSalvar();
         txtDescricao.requestFocus();
     }
 
@@ -905,27 +892,24 @@ public class ProdutoController implements Initializable {
         boolean produtoExistente = produtoSelecionado != null;
 
         lblEstoque.setText(
-                produtoExistente ? "Estoque Atual:" : "Saldo Inicial:*"
+                produtoExistente ? "Estoque Atual" : "Quantidade Inicial:*"
         );
         spnEstoque.setDisable(produtoExistente);
-        lblOrientacaoEstoque.setManaged(produtoExistente);
-        lblOrientacaoEstoque.setVisible(produtoExistente);
         txtUltimoPrecoCompra.setText(
                 produtoExistente
-                        ? formatarUltimoPrecoCompra(produtoSelecionado.getIdProduto())
+                        ? formatarUltimoPrecoCompraParaCampo(produtoSelecionado.getIdProduto())
                         : "—"
         );
     }
 
-    private void atualizarEstadoBotaoInativar() {
-        Produto selecionado = tabelaProdutos == null
-                ? null
-                : tabelaProdutos.getSelectionModel().getSelectedItem();
+    private void atualizarEstadoBotaoSalvar() {
+        if (btnSalvar == null) {
+            return;
+        }
 
-        btnExcluir.setDisable(
-                selecionado == null
-                        || !selecionado.isAtivo()
-                        || tarefaCarregamentoProdutosAtual != null
+        btnSalvar.setDisable(
+                produtoSelecionado != null
+                        && !formularioEdicaoProdutoFoiAlterado()
         );
     }
 
@@ -940,7 +924,7 @@ public class ProdutoController implements Initializable {
         }
 
         btnFiltrar.setDisable(false);
-        atualizarEstadoBotaoInativar();
+        atualizarEstadoBotaoSalvar();
     }
 
     private void limparSomenteCamposFormulario() {
@@ -988,6 +972,22 @@ public class ProdutoController implements Initializable {
         return ultimoPrecoCompra == null
                 ? "—"
                 : formatarMoeda(ultimoPrecoCompra);
+    }
+
+    private String formatarUltimoPrecoCompraParaCampo(Integer produtoId) {
+
+        if (produtoId == null) {
+            return "—";
+        }
+
+        BigDecimal ultimoPrecoCompra = ultimosPrecosCompra.get(produtoId);
+
+        return ultimoPrecoCompra == null
+                ? "—"
+                : ultimoPrecoCompra
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .toPlainString()
+                        .replace('.', ',');
     }
 
     private String formatarPercentual(BigDecimal valor) {

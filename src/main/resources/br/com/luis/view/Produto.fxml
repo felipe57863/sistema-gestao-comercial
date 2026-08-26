@@ -92,10 +92,6 @@
                     <rowConstraints>
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-                        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                     </rowConstraints>
 
                     <children>
@@ -116,56 +112,84 @@
                             </children>
                         </HBox>
 
-                        <Label text="Último Preço de Compra:" GridPane.rowIndex="2" />
-                        <TextField fx:id="txtUltimoPrecoCompra"
-                                   editable="false"
-                                   focusTraversable="false"
-                                   style="-fx-background-color: #f4f4f4;"
-                                   text="—"
-                                   GridPane.columnIndex="1"
-                                   GridPane.rowIndex="2">
-                            <tooltip>
-                                <Tooltip text="Obtido da última Entrada de Estoque confirmada." />
-                            </tooltip>
-                        </TextField>
+                    </children>
+                </GridPane>
 
-                        <Label fx:id="lblEstoque"
-                               text="Saldo Inicial:*"
-                               GridPane.rowIndex="3" />
-                        <VBox spacing="4.0"
-                              GridPane.columnIndex="1"
-                              GridPane.rowIndex="3">
+                <VBox spacing="6.0">
+                    <children>
+                        <Label text="Último Preço de Compra" />
+                        <HBox alignment="CENTER_LEFT" spacing="5.0">
                             <children>
-                                <Spinner fx:id="spnEstoque" prefWidth="120.0" />
-                                <Label fx:id="lblOrientacaoEstoque"
-                                       managed="false"
-                                       maxWidth="250.0"
-                                       text="Reposições de produtos existentes devem ser feitas em Entrada de Estoque."
-                                       textFill="#666666"
-                                       visible="false"
-                                       wrapText="true">
-                                    <font>
-                                        <Font size="10.0" />
-                                    </font>
+                                <Label text="R$" textFill="#555555" />
+                                <TextField fx:id="txtUltimoPrecoCompra"
+                                           editable="false"
+                                           focusTraversable="false"
+                                           maxWidth="100.0"
+                                           prefWidth="100.0"
+                                           style="-fx-background-color: #f4f4f4;"
+                                           text="—">
                                     <tooltip>
-                                        <Tooltip text="O estoque é atualizado por Entradas, Vendas e Estornos." />
+                                        <Tooltip text="Obtido da última Entrada de Estoque confirmada." />
                                     </tooltip>
-                                </Label>
+                                </TextField>
                             </children>
-                        </VBox>
+                        </HBox>
+                    </children>
+                </VBox>
 
-                        <Label text="Estoque Mínimo:*" GridPane.rowIndex="4" />
-                        <Spinner fx:id="spnEstoqueMinimo"
-                                  prefWidth="120.0"
-                                  GridPane.columnIndex="1"
-                                  GridPane.rowIndex="4" />
+                <Region prefHeight="30.0" />
 
-                        <Label text="Status do Produto:*" GridPane.rowIndex="5" />
+                <TitledPane animated="false" collapsible="false" text="Estoque">
+                    <content>
+                        <GridPane hgap="10.0" vgap="12.0">
+                            <columnConstraints>
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="190.0" />
+                                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="150.0" />
+                            </columnConstraints>
+                            <rowConstraints>
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                            </rowConstraints>
+                            <children>
+                                <Label fx:id="lblEstoque" text="Quantidade Inicial:*" />
+                                <Spinner fx:id="spnEstoque"
+                                         prefWidth="145.0"
+                                         GridPane.columnIndex="1">
+                                    <tooltip>
+                                        <Tooltip text="O estoque é atualizado por Entradas, Vendas e Estornos.&#10;Reposições de produtos existentes devem ser feitas em Entrada de Estoque." />
+                                    </tooltip>
+                                </Spinner>
+
+                                <Label text="Estoque Mínimo:*" GridPane.rowIndex="1" />
+                                <Spinner fx:id="spnEstoqueMinimo"
+                                         prefWidth="145.0"
+                                         GridPane.columnIndex="1"
+                                         GridPane.rowIndex="1" />
+                            </children>
+                            <padding>
+                                <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                            </padding>
+                        </GridPane>
+                    </content>
+                    <font>
+                        <Font name="System Bold" size="12.0" />
+                    </font>
+                </TitledPane>
+
+                <Region prefHeight="15.0" />
+
+                <GridPane>
+                    <columnConstraints>
+                        <ColumnConstraints hgrow="SOMETIMES" maxWidth="180.0" minWidth="10.0" prefWidth="170.0" />
+                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="220.0" />
+                    </columnConstraints>
+                    <children>
+                        <Label text="Status do Produto:*" />
                         <ComboBox fx:id="cbStatus"
-                                  prefWidth="150.0"
+                                  maxWidth="1.7976931348623157E308"
+                                  prefWidth="220.0"
                                   promptText="Ativo"
-                                  GridPane.columnIndex="1"
-                                  GridPane.rowIndex="5" />
+                                  GridPane.columnIndex="1" />
                     </children>
                 </GridPane>
 
@@ -277,12 +301,6 @@
                                 prefWidth="90.0"
                                 text="Novo" />
 
-                        <Button fx:id="btnExcluir"
-                                disable="true"
-                                onAction="#acaoExcluir"
-                                prefHeight="35.0"
-                                prefWidth="90.0"
-                                text="Inativar" />
                     </children>
                 </HBox>
 
