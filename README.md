@@ -76,11 +76,16 @@ Os valores monetários são tratados com `BigDecimal`, evitando perda de precis�
 - Cadastro e consulta de clientes Pessoa Física e Pessoa Jurídica;
 - Validação de CPF e CNPJ;
 - Situação financeira do cliente com saldo devedor e limite disponível;
-- Cadastro, consulta, edição e inativação de produtos;
-- Controle de estoque e estoque mínimo;
-- Entrada de estoque rastreável, com múltiplos produtos;
-- Registro de quantidade recebida e preço unitário de compra;
-- Incremento transacional do estoque;
+- Cadastro, consulta e edição de produtos, com Preço de Venda e Estoque Mínimo cadastral;
+- Último Preço de Compra somente leitura, obtido do histórico de Entradas de Estoque, sem novo campo persistido em Produto;
+- Quantidade Inicial para produto novo e Estoque Atual somente para consulta em produto existente;
+- Ativação e inativação de produtos por Status + Atualizar;
+- Entrada de estoque rastreável, com múltiplos produtos e Referência interna opcional;
+- Registro de Quantidade Recebida e Preço Unitário de Compra;
+- Rascunho com ação contextual Adicionar Item / Atualizar Item;
+- Atualizar Item altera somente o rascunho;
+- Confirmar Entrada registra a operação inteira e incrementa o estoque;
+- Alterações do editor ainda não aplicadas por Atualizar Item não são incorporadas silenciosamente na confirmação;
 - Histórico de entradas com responsável, referência e observação;
 - Relatório de Entradas de Estoque com filtros, detalhes e totalizadores;
 - Cadastro e gerenciamento de promoções;
@@ -151,6 +156,18 @@ Os principais módulos de autenticação, usuários, clientes, produtos, estoque
 O R6 foi concluído com a Entrada de Estoque e o Relatório de Entradas de Estoque implementados.
 
 A regressão global pós-R6 foi concluída sem defeitos funcionais bloqueantes reproduzidos.
+
+O fechamento R6.12 consolidou a regressão global pós-R6 e preservou o histórico técnico dessa evolução.
+
+Os refinamentos posteriores também foram concluídos:
+
+- R6.13 — refinamento do Cadastro de Produtos e Último Preço de Compra;
+- R6.13A — aderência visual final do Cadastro de Produtos;
+- R6.14 — refinamento visual e clareza da Entrada de Estoque.
+
+HEAD técnico anterior a esta atualização documental: `28da89fa092748170f0bffd1618186c4c7f8d341`.
+
+Último commit técnico anterior: `fix: alinhar entrada de estoque ao fluxo aprovado`.
 
 ---
 
