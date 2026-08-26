@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -34,6 +35,32 @@ public class EntradaEstoqueService {
         this.itemEntradaEstoqueDAO = new ItemEntradaEstoqueDAO();
         this.produtoDAO = new ProdutoDAO();
         this.usuarioDAO = new UsuarioDAO();
+    }
+
+    /**
+     * Retorna uma fotografia imutável do último preço de compra dos produtos que
+     * possuem histórico de entrada de estoque.
+     */
+    public Map<Integer, BigDecimal> buscarUltimosPrecosCompra() {
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+            Map<Integer, BigDecimal> ultimosPrecosCompra =
+                    itemEntradaEstoqueDAO.buscarUltimosPrecosCompra(conn);
+
+            if (ultimosPrecosCompra == null) {
+                throw new IllegalStateException(
+                        "A consulta de últimos preços de compra retornou nulo."
+                );
+            }
+
+            return Map.copyOf(ultimosPrecosCompra);
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao consultar os últimos preços de compra.",
+                    e
+            );
+        }
     }
 
     /**

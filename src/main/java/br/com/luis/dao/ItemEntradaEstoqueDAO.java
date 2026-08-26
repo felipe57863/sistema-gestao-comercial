@@ -4,18 +4,82 @@ import br.com.luis.model.ItemEntradaEstoque;
 import br.com.luis.viewmodel.ItemEntradaEstoqueRelatorioView;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Persiste itens de entrada de estoque usando uma Connection externa.
  */
 public class ItemEntradaEstoqueDAO {
+
+    /**
+     * Busca, em uma única consulta, o preço da entrada mais recente de cada produto.
+     * Em caso de empate de data e hora, prevalece a entrada de maior ID.
+     */
+    public Map<Integer, BigDecimal> buscarUltimosPrecosCompra(Connection conn) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException("Conexão não pode ser nula.");
+        }
+
+        String sql = """
+                WITH itens_ordenados AS (
+                    SELECT item.produto_id,
+                           item.preco_compra_unitario,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY item.produto_id
+                               ORDER BY entrada.data_hora DESC,
+                                        entrada.id_entrada DESC
+                           ) AS posicao
+                    FROM ItemEntradaEstoque item
+                    INNER JOIN EntradaEstoque entrada
+                            ON entrada.id_entrada = item.entrada_id
+                )
+                SELECT produto_id,
+                       preco_compra_unitario
+                FROM itens_ordenados
+                WHERE posicao = 1
+                """;
+
+        Map<Integer, BigDecimal> ultimosPrecosCompra = new HashMap<>();
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                int produtoId = rs.getInt("produto_id");
+                BigDecimal precoCompraUnitario =
+                        rs.getBigDecimal("preco_compra_unitario");
+
+                if (produtoId <= 0 || precoCompraUnitario == null) {
+                    throw new IllegalStateException(
+                            "Histórico de preço de compra possui dados inválidos."
+                    );
+                }
+
+                ultimosPrecosCompra.put(
+                        produtoId,
+                        precoCompraUnitario.setScale(2, RoundingMode.HALF_UP)
+                );
+            }
+
+            return ultimosPrecosCompra;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao consultar os últimos preços de compra.",
+                    e
+            );
+        }
+    }
 
     /**
      * Insere um item da entrada na transação controlada pela camada Service.

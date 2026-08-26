@@ -2,6 +2,7 @@ package br.com.luis.controller;
 
 import br.com.luis.model.Produto;
 import br.com.luis.model.Promocao;
+import br.com.luis.service.EntradaEstoqueService;
 import br.com.luis.service.ProdutoService;
 import br.com.luis.service.PromocaoService;
 import br.com.luis.util.CabecalhoUtil;
@@ -39,6 +40,7 @@ public class ProdutoController implements Initializable {
 
     private final ProdutoService produtoService = new ProdutoService();
     private final PromocaoService promocaoService = new PromocaoService();
+    private final EntradaEstoqueService entradaEstoqueService = new EntradaEstoqueService();
 
     private final NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
 
@@ -46,7 +48,9 @@ public class ProdutoController implements Initializable {
 
     @FXML private TextField txtDescricao;
     @FXML private TextField txtPreco;
+    @FXML private TextField txtUltimoPrecoCompra;
     @FXML private Label lblEstoque;
+    @FXML private Label lblOrientacaoEstoque;
     @FXML private Spinner<Integer> spnEstoque;
     @FXML private Spinner<Integer> spnEstoqueMinimo;
     @FXML private ComboBox<String> cbStatus;
@@ -82,7 +86,9 @@ public class ProdutoController implements Initializable {
     @FXML private TableColumn<Produto, Integer> colId;
     @FXML private TableColumn<Produto, String> colDescricao;
     @FXML private TableColumn<Produto, String> colPreco;
+    @FXML private TableColumn<Produto, String> colUltimoPrecoCompra;
     @FXML private TableColumn<Produto, Integer> colEstoque;
+    @FXML private TableColumn<Produto, Integer> colEstoqueMinimo;
     @FXML private TableColumn<Produto, String> colPromocao;
     @FXML private TableColumn<Produto, String> colStatus;
 
@@ -90,6 +96,7 @@ public class ProdutoController implements Initializable {
 
     private final ObservableList<Produto> obsProdutos = FXCollections.observableArrayList();
     private final Map<Integer, String> promocaoPorProduto = new HashMap<>();
+    private final Map<Integer, BigDecimal> ultimosPrecosCompra = new HashMap<>();
 
     // Controle de edição
     private Produto produtoSelecionado;
@@ -123,6 +130,9 @@ public class ProdutoController implements Initializable {
         // Configuração dos Spinners
         spnEstoque.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10000, 0));
         spnEstoqueMinimo.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10000, 0));
+        txtUltimoPrecoCompra.setEditable(false);
+        txtUltimoPrecoCompra.setFocusTraversable(false);
+        txtUltimoPrecoCompra.setText("—");
         atualizarModoEstoque();
 
         // Tipo de desconto
@@ -201,7 +211,14 @@ public class ProdutoController implements Initializable {
                 new SimpleStringProperty(formatarMoeda(cellData.getValue().getPreco()))
         );
 
+        colUltimoPrecoCompra.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        formatarUltimoPrecoCompra(cellData.getValue().getIdProduto())
+                )
+        );
+
         colEstoque.setCellValueFactory(new PropertyValueFactory<>("quantidadeEstoque"));
+        colEstoqueMinimo.setCellValueFactory(new PropertyValueFactory<>("estoqueMinimo"));
 
         // Não consulta o banco dentro da célula.
         // Usa informações carregadas previamente em background.
@@ -246,10 +263,10 @@ public class ProdutoController implements Initializable {
     }
 
     /**
-     * Consulta produtos e prepara os dados de promoção em uma Task executada fora
-     * da thread da interface. Após o sucesso, publica a lista e o mapa de promoções
-     * já formatado nos componentes JavaFX; em falha, restaura os controles e exibe
-     * uma mensagem adequada.
+     * Consulta produtos, últimos preços de compra e promoções em uma Task executada
+     * fora da thread da interface. Após o sucesso, publica as fotografias nos
+     * componentes JavaFX; em falha, restaura os controles e exibe uma mensagem
+     * adequada.
      *
      * @param termoBusca descrição usada como filtro, vazia para listar todos.
      */
@@ -278,6 +295,8 @@ public class ProdutoController implements Initializable {
                     produtos = produtoService.buscarPorDescricao(termo);
                 }
 
+                Map<Integer, BigDecimal> precosCompra =
+                        entradaEstoqueService.buscarUltimosPrecosCompra();
                 Map<Integer, String> promocoes = new HashMap<>();
 
                 for (Produto produto : produtos) {
@@ -289,7 +308,12 @@ public class ProdutoController implements Initializable {
                     promocoes.put(produto.getIdProduto(), formatarPromocao(promocao));
                 }
 
-                return new DadosProdutosTela(produtos, promocoes, termo);
+                return new DadosProdutosTela(
+                        produtos,
+                        precosCompra,
+                        promocoes,
+                        termo
+                );
             }
         };
 
@@ -307,6 +331,9 @@ public class ProdutoController implements Initializable {
 
             promocaoPorProduto.clear();
             promocaoPorProduto.putAll(dados.promocoes());
+
+            ultimosPrecosCompra.clear();
+            ultimosPrecosCompra.putAll(dados.ultimosPrecosCompra());
 
             obsProdutos.setAll(dados.produtos());
             tabelaProdutos.setItems(obsProdutos);
@@ -881,6 +908,13 @@ public class ProdutoController implements Initializable {
                 produtoExistente ? "Estoque Atual:" : "Saldo Inicial:*"
         );
         spnEstoque.setDisable(produtoExistente);
+        lblOrientacaoEstoque.setManaged(produtoExistente);
+        lblOrientacaoEstoque.setVisible(produtoExistente);
+        txtUltimoPrecoCompra.setText(
+                produtoExistente
+                        ? formatarUltimoPrecoCompra(produtoSelecionado.getIdProduto())
+                        : "—"
+        );
     }
 
     private void atualizarEstadoBotaoInativar() {
@@ -913,6 +947,7 @@ public class ProdutoController implements Initializable {
 
         txtDescricao.clear();
         txtPreco.clear();
+        txtUltimoPrecoCompra.setText("—");
 
         spnEstoque.getValueFactory().setValue(0);
         spnEstoqueMinimo.getValueFactory().setValue(0);
@@ -940,6 +975,19 @@ public class ProdutoController implements Initializable {
         }
 
         return formatoMoeda.format(valor).replace('\u00A0', ' ');
+    }
+
+    private String formatarUltimoPrecoCompra(Integer produtoId) {
+
+        if (produtoId == null) {
+            return "—";
+        }
+
+        BigDecimal ultimoPrecoCompra = ultimosPrecosCompra.get(produtoId);
+
+        return ultimoPrecoCompra == null
+                ? "—"
+                : formatarMoeda(ultimoPrecoCompra);
     }
 
     private String formatarPercentual(BigDecimal valor) {
@@ -991,6 +1039,7 @@ public class ProdutoController implements Initializable {
 
     private record DadosProdutosTela(
             List<Produto> produtos,
+            Map<Integer, BigDecimal> ultimosPrecosCompra,
             Map<Integer, String> promocoes,
             String termoBusca
     ) {
