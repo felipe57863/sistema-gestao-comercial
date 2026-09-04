@@ -150,17 +150,34 @@ public class PromocaoService {
      */
     public Promocao buscarPromocaoAtivaPorProduto(Produto produto) {
 
-        if (produto == null || produto.getIdProduto() == null || produto.getIdProduto() <= 0) {
-            throw new IllegalArgumentException("Produto inválido para busca de promoção.");
+        if (produto == null
+                || produto.getIdProduto() == null
+                || produto.getIdProduto() <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Produto inválido para busca de promoção."
+            );
         }
 
-        return promocaoDAO.buscarPromocaoAtivaPorProduto(produto);
+        try (Connection conn = ConnectionFactory.getConnection()) {
+
+            return promocaoDAO.buscarPromocaoAtivaPorProduto(
+                    conn,
+                    produto
+            );
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao abrir conexão para buscar promoção ativa do produto.",
+                    e
+            );
+        }
     }
 
     /**
      * Valida tipo, valor e produto antes da aplicação da RN22.
      */
-    private void validarPromocao(Promocao promocao) {
+    void validarPromocao(Promocao promocao) {
 
         if (promocao == null) {
             throw new IllegalArgumentException("Promoção é obrigatória.");

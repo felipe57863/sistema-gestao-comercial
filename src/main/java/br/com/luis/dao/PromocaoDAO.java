@@ -93,46 +93,78 @@ public class PromocaoDAO {
     }
 
     /**
-     * Busca a promoção ativa de um produto.
-     * Como é apenas uma consulta, o próprio DAO pode abrir e fechar a conexão.
+     * Busca a promoção ativa de um produto usando uma Connection externa.
+     *
+     * Participa da unidade de trabalho controlada pela camada Service.
+     * O DAO encerra apenas o PreparedStatement e o ResultSet criados, sem
+     * executar commit, rollback ou fechar a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param produto produto cuja promoção ativa será consultada.
+     * @return promoção ativa encontrada ou null quando não existir.
      */
-    public Promocao buscarPromocaoAtivaPorProduto(Produto produto) {
+    public Promocao buscarPromocaoAtivaPorProduto(
+            Connection conn,
+            Produto produto
+    ) {
 
-        if (produto == null || produto.getIdProduto() == null) {
-            throw new IllegalArgumentException("Produto inválido para busca de promoção.");
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (produto == null
+                || produto.getIdProduto() == null
+                || produto.getIdProduto() <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Produto inválido para busca de promoção."
+            );
         }
 
         String sql = """
-            SELECT id_promocao, tipo_desconto, valor_desconto, ativa
-            FROM Promocao
-            WHERE produto_id = ? AND ativa = 1
-            LIMIT 1
+        SELECT id_promocao,
+               tipo_desconto,
+               valor_desconto,
+               ativa
+        FROM Promocao
+        WHERE produto_id = ?
+          AND ativa = 1
+        LIMIT 1
         """;
 
-        try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, produto.getIdProduto());
+            stmt.setInt(
+                    1,
+                    produto.getIdProduto()
+            );
 
-            try (var rs = stmt.executeQuery()) {
+            try (ResultSet rs = stmt.executeQuery()) {
 
                 if (rs.next()) {
 
                     Promocao promocao = new Promocao();
 
-                    promocao.setIdPromocao(rs.getInt("id_promocao"));
-
-                    // TEXT → Enum
-                    promocao.setTipoDesconto(
-                            TipoDesconto.valueOf(rs.getString("tipo_desconto"))
+                    promocao.setIdPromocao(
+                            rs.getInt("id_promocao")
                     );
 
-                    promocao.setValorDesconto(rs.getBigDecimal("valor_desconto"));
+                    promocao.setTipoDesconto(
+                            TipoDesconto.valueOf(
+                                    rs.getString("tipo_desconto")
+                            )
+                    );
 
-                    // INTEGER → boolean
-                    promocao.setAtiva(rs.getInt("ativa") == 1);
+                    promocao.setValorDesconto(
+                            rs.getBigDecimal("valor_desconto")
+                    );
 
-                    // Reutiliza o produto da memória
+                    promocao.setAtiva(
+                            rs.getInt("ativa") == 1
+                    );
+
                     promocao.setProduto(produto);
 
                     return promocao;
@@ -140,7 +172,10 @@ public class PromocaoDAO {
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao buscar promoção ativa do produto.", e);
+            throw new RuntimeException(
+                    "Erro ao buscar promoção ativa do produto.",
+                    e
+            );
         }
 
         return null;

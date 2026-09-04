@@ -2,6 +2,13 @@ package br.com.luis.service;
 
 import br.com.luis.dao.ProdutoDAO;
 import br.com.luis.model.Produto;
+import br.com.luis.dao.PromocaoDAO;
+import br.com.luis.model.Promocao;
+
+import br.com.luis.util.ConnectionFactory;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import java.util.List;
 
@@ -12,33 +19,127 @@ import java.util.List;
 public class ProdutoService {
 
     private final ProdutoDAO produtoDAO;
+    private final PromocaoDAO promocaoDAO;
+    private final PromocaoService promocaoService;
 
     public ProdutoService() {
         this.produtoDAO = new ProdutoDAO();
+        this.promocaoDAO = new PromocaoDAO();
+        this.promocaoService = new PromocaoService();
     }
 
     /**
-     * Valida os dados mínimos, cadastra o produto e o define como ativo.
+     * Valida e cadastra um novo produto com sua promoção inicial opcional
+     * em uma única transação.
+     *
+     * A verificação de duplicidade, o cadastro do produto e o cadastro da
+     * promoção utilizam a mesma Connection. O commit somente ocorre quando
+     * toda a operação é concluída com sucesso.
+     *
+     * @param produto produto que será cadastrado.
+     * @param promocao promoção inicial opcional do produto.
      */
-    public void cadastrar(Produto produto) {
+    public void cadastrar(
+            Produto produto,
+            Promocao promocao
+    ) {
 
         validarProduto(produto);
 
-        if (produtoDAO.existeDescricao(produto.getDescricao())) {
-            throw new IllegalArgumentException(
-                    "Já existe um produto cadastrado com esta descrição."
-            );
-        }
-
-        // Regra de negócio: todo produto deve iniciar como ativo
+        // Regra de negócio: todo produto novo inicia ativo.
         produto.setAtivo(true);
 
-        System.out.println(
-                "[LOG] Produto enviado para persistência: "
-                        + produto.getDescricao()
-        );
+        try (Connection conn = ConnectionFactory.getConnection()) {
 
-        produtoDAO.cadastrar(produto);
+            boolean autoCommitOriginal = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+
+            try {
+                conn.setAutoCommit(false);
+
+                if (produtoDAO.existeDescricao(
+                        conn,
+                        produto.getDescricao()
+                )) {
+
+                    throw new IllegalArgumentException(
+                            "Já existe um produto cadastrado com esta descrição."
+                    );
+                }
+
+                produtoDAO.cadastrar(
+                        conn,
+                        produto
+                );
+
+                if (promocao != null) {
+
+                    /*
+                     * O INSERT do produto já gerou seu ID, mas a transação
+                     * ainda não foi confirmada.
+                     */
+                    promocao.setProduto(produto);
+                    promocao.setAtiva(true);
+
+                    promocaoService.validarPromocao(promocao);
+
+                    promocaoDAO.cadastrar(
+                            conn,
+                            promocao
+                    );
+                }
+
+                conn.commit();
+
+                System.out.println(
+                        "[LOG] Produto cadastrado com sucesso: "
+                                + produto.getDescricao()
+                );
+
+            } catch (SQLException | RuntimeException e) {
+
+                falhaOriginal = e;
+
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackErro) {
+                    e.addSuppressed(rollbackErro);
+                }
+
+                if (e instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+
+                throw new IllegalStateException(
+                        "Erro ao cadastrar produto.",
+                        e
+                );
+
+            } finally {
+
+                try {
+                    conn.setAutoCommit(autoCommitOriginal);
+
+                } catch (SQLException restauracaoErro) {
+
+                    if (falhaOriginal != null) {
+                        falhaOriginal.addSuppressed(restauracaoErro);
+
+                    } else {
+                        throw new IllegalStateException(
+                                "Erro ao restaurar o autoCommit após o cadastro do produto.",
+                                restauracaoErro
+                        );
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao controlar a transação de cadastro do produto.",
+                    e
+            );
+        }
     }
 
     /**
@@ -50,20 +151,265 @@ public class ProdutoService {
     }
 
     /**
-     * Valida e atualiza um produto existente, exigindo ID válido.
+     * Valida e atualiza um produto existente em transação própria.
+     *
+     * A Connection é controlada pela camada Service para permitir que este fluxo
+     * possa posteriormente participar de operações compostas com promoção.
+     *
+     * @param produto produto que será atualizado.
      */
     public void atualizar(Produto produto) {
 
         validarProduto(produto);
 
-        // FAIL-FAST: defesa contra ID nulo ou inválido
-        if (produto.getIdProduto() == null || produto.getIdProduto() <= 0) {
-            throw new IllegalArgumentException("Produto ou ID inválido para edição.");
+        if (produto.getIdProduto() == null
+                || produto.getIdProduto() <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Produto ou ID inválido para edição."
+            );
         }
 
-        System.out.println("[LOG] Solicitando atualização do produto: " + produto.getDescricao());
+        try (Connection conn = ConnectionFactory.getConnection()) {
 
-        produtoDAO.atualizar(produto);
+            boolean autoCommitOriginal = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+
+            try {
+                conn.setAutoCommit(false);
+
+                produtoDAO.atualizar(
+                        conn,
+                        produto
+                );
+
+                conn.commit();
+
+                System.out.println(
+                        "[LOG] Produto atualizado com sucesso: "
+                                + produto.getDescricao()
+                );
+
+            } catch (SQLException | RuntimeException e) {
+
+                falhaOriginal = e;
+
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackErro) {
+                    e.addSuppressed(rollbackErro);
+                }
+
+                if (e instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+
+                throw new IllegalStateException(
+                        "Erro ao atualizar produto.",
+                        e
+                );
+
+            } finally {
+
+                try {
+                    conn.setAutoCommit(autoCommitOriginal);
+
+                } catch (SQLException restauracaoErro) {
+
+                    if (falhaOriginal != null) {
+                        falhaOriginal.addSuppressed(restauracaoErro);
+
+                    } else {
+                        throw new IllegalStateException(
+                                "Erro ao restaurar o autoCommit após a atualização do produto.",
+                                restauracaoErro
+                        );
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao controlar a transação de atualização do produto.",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Atualiza um produto e seu estado de promoção em uma única transação.
+     *
+     * A promoção informada representa o estado desejado após a edição:
+     * - promoção não nula: mantém ou substitui a promoção ativa conforme necessário;
+     * - promoção nula: remove a promoção ativa, caso exista.
+     *
+     * A atualização do produto e qualquer alteração de promoção utilizam a mesma
+     * Connection e somente são confirmadas juntas.
+     *
+     * @param produto produto com os dados atualizados.
+     * @param promocaoDesejada promoção desejada após a edição ou null para nenhuma.
+     */
+    public void atualizarComPromocao(
+            Produto produto,
+            Promocao promocaoDesejada
+    ) {
+
+        validarProduto(produto);
+
+        if (produto.getIdProduto() == null
+                || produto.getIdProduto() <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Produto ou ID inválido para edição."
+            );
+        }
+
+        /*
+         * Na edição o produto já possui ID, portanto a promoção pode ser
+         * completamente validada antes de qualquer escrita no banco.
+         */
+        if (promocaoDesejada != null) {
+            promocaoDesejada.setProduto(produto);
+            promocaoDesejada.setAtiva(true);
+
+            promocaoService.validarPromocao(
+                    promocaoDesejada
+            );
+        }
+
+        try (Connection conn = ConnectionFactory.getConnection()) {
+
+            boolean autoCommitOriginal = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+
+            try {
+                conn.setAutoCommit(false);
+
+                Produto produtoPersistido = produtoDAO.buscarPorId(
+                        conn,
+                        produto.getIdProduto()
+                );
+
+                if (produtoPersistido == null) {
+                    throw new IllegalArgumentException(
+                            "Produto não encontrado para edição."
+                    );
+                }
+
+                Promocao promocaoAtual =
+                        promocaoDAO.buscarPromocaoAtivaPorProduto(
+                                conn,
+                                produtoPersistido
+                        );
+
+                boolean precoFoiAlterado =
+                        produtoPersistido.getPreco().compareTo(
+                                produto.getPreco()
+                        ) != 0;
+
+                boolean promocaoFoiAlterada =
+                        promocaoAtual != null
+                                && promocaoDesejada != null
+                                && (
+                                promocaoAtual.getTipoDesconto()
+                                        != promocaoDesejada.getTipoDesconto()
+                                        || promocaoAtual.getValorDesconto().compareTo(
+                                        promocaoDesejada.getValorDesconto()
+                                ) != 0
+                        );
+
+                boolean deveCadastrarNovaPromocao =
+                        promocaoDesejada != null
+                                && (
+                                promocaoAtual == null
+                                        || promocaoFoiAlterada
+                                        || precoFoiAlterado
+                        );
+
+                boolean deveInativarPromocao =
+                        promocaoDesejada == null
+                                && promocaoAtual != null;
+
+                /*
+                 * A partir daqui começam as escritas.
+                 * Todas utilizam a mesma Connection.
+                 */
+                produtoDAO.atualizar(
+                        conn,
+                        produto
+                );
+
+                if (deveCadastrarNovaPromocao) {
+
+                    promocaoDAO.inativarPromocoesAnteriores(
+                            conn,
+                            produto.getIdProduto()
+                    );
+
+                    promocaoDAO.cadastrar(
+                            conn,
+                            promocaoDesejada
+                    );
+
+                } else if (deveInativarPromocao) {
+
+                    promocaoDAO.inativarPromocoesAnteriores(
+                            conn,
+                            produto.getIdProduto()
+                    );
+                }
+
+                conn.commit();
+
+                System.out.println(
+                        "[LOG] Produto e promoção atualizados com sucesso: "
+                                + produto.getDescricao()
+                );
+
+            } catch (SQLException | RuntimeException e) {
+
+                falhaOriginal = e;
+
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackErro) {
+                    e.addSuppressed(rollbackErro);
+                }
+
+                if (e instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+
+                throw new IllegalStateException(
+                        "Erro ao atualizar produto e promoção.",
+                        e
+                );
+
+            } finally {
+
+                try {
+                    conn.setAutoCommit(autoCommitOriginal);
+
+                } catch (SQLException restauracaoErro) {
+
+                    if (falhaOriginal != null) {
+                        falhaOriginal.addSuppressed(restauracaoErro);
+
+                    } else {
+                        throw new IllegalStateException(
+                                "Erro ao restaurar o autoCommit após a atualização do produto.",
+                                restauracaoErro
+                        );
+                    }
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException(
+                    "Erro ao controlar a transação de atualização do produto.",
+                    e
+            );
+        }
     }
 
     /**
@@ -91,7 +437,7 @@ public class ProdutoService {
                 false
         );
 
-        produtoDAO.atualizar(produtoInativado);
+        atualizar(produtoInativado);
     }
 
     /**

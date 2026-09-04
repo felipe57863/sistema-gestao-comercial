@@ -30,11 +30,11 @@ import java.util.ResourceBundle;
 /**
  * Controller da tela JavaFX de gestão de produtos.
  *
- * Coordena os componentes visuais e o preenchimento do formulário, delegando as
- * regras de produto e promoção aos respectivos Services. A coordenação entre os
- * dois módulos ocorre na interface, mas cada operação é tratada separadamente
- * pelo seu Service. O Controller não acessa DAOs diretamente e usa Task nas
- * consultas da tabela para evitar o bloqueio da interface.
+ * Coordena os componentes visuais e o preenchimento do formulário,
+ * delegando ao ProdutoService as operações de gravação de produto e promoção.
+ * Consultas de promoção permanecem delegadas ao PromocaoService.
+ * O Controller não acessa DAOs diretamente e usa Task nas consultas da tabela
+ * para evitar o bloqueio da interface.
  */
 public class ProdutoController implements Initializable {
 
@@ -605,10 +605,11 @@ public class ProdutoController implements Initializable {
     }
 
     /**
-     * Lê e converte os campos visuais e delega o cadastro ou a atualização ao
-     * ProdutoService. Após a persistência do produto, trata separadamente a
-     * promoção pelo PromocaoService, recarrega a tabela e limpa o formulário.
-     * Produto e promoção não são apresentados como uma única transação.
+     * Lê e converte os campos visuais e delega ao ProdutoService o cadastro
+     * ou a atualização do produto juntamente com sua promoção opcional.
+     *
+     * As regras de negócio e a unidade transacional de Produto + Promoção
+     * permanecem na camada Service.
      */
     @FXML
     public void acaoSalvar() {
@@ -620,7 +621,6 @@ public class ProdutoController implements Initializable {
         try {
 
             boolean estavaEditando = produtoSelecionado != null;
-            Promocao promocaoAnterior = promocaoAtivaProdutoSelecionado;
 
             String descricao = txtDescricao.getText();
             BigDecimal preco = converterDecimal(txtPreco.getText(), "Preço é obrigatório.");
@@ -637,8 +637,25 @@ public class ProdutoController implements Initializable {
             if (!estavaEditando) {
 
                 // NOVO
-                produto = new Produto(null, descricao, preco, estoque, estoqueMin, true);
-                produtoService.cadastrar(produto);
+                produto = new Produto(
+                        null,
+                        descricao,
+                        preco,
+                        estoque,
+                        estoqueMin,
+                        true
+                );
+
+                Promocao promocaoInicial = null;
+
+                if (chkPromocao.isSelected()) {
+                    promocaoInicial = montarPromocao(produto);
+                }
+
+                produtoService.cadastrar(
+                        produto,
+                        promocaoInicial
+                );
 
                 System.out.println("[LOG] Produto cadastrado com sucesso!");
 
@@ -654,12 +671,20 @@ public class ProdutoController implements Initializable {
                         ativo
                 );
 
-                produtoService.atualizar(produto);
+                Promocao promocaoDesejada = null;
+
+                if (chkPromocao.isSelected()) {
+                    promocaoDesejada = montarPromocao(produto);
+                }
+
+                produtoService.atualizarComPromocao(
+                        produto,
+                        promocaoDesejada
+                );
 
                 System.out.println("[LOG] Produto atualizado com sucesso!");
             }
 
-            tratarPromocaoAposSalvar(produto, estavaEditando, promocaoAnterior);
 
             carregarTabela();
             prepararNovoCadastro();
@@ -687,56 +712,8 @@ public class ProdutoController implements Initializable {
         }
     }
 
-    /**
-     * Coordena a promoção depois que o produto foi salvo.
-     *
-     * Quando a promoção está selecionada, cria uma nova versão para produto novo,
-     * ausência de promoção anterior, alteração do desconto ou mudança de preço.
-     * Quando a opção é removida durante uma edição, solicita ao PromocaoService a
-     * inativação da promoção ativa. As validações e transações permanecem no Service.
-     */
-    private void tratarPromocaoAposSalvar(Produto produto, boolean estavaEditando, Promocao promocaoAnterior) {
 
-        if (chkPromocao.isSelected()) {
 
-            Promocao novaPromocao = montarPromocao(produto);
-
-            boolean deveCadastrarNovaPromocao = !estavaEditando
-                    || promocaoAnterior == null
-                    || promocaoFoiAlterada(promocaoAnterior, novaPromocao)
-                    || precoFoiAlterado(produto);
-
-            if (deveCadastrarNovaPromocao) {
-                promocaoService.cadastrarPromocaoNova(novaPromocao);
-                System.out.println("[LOG] Promoção cadastrada para o produto: " + produto.getDescricao());
-            }
-
-            return;
-        }
-
-        if (estavaEditando && promocaoAnterior != null) {
-            promocaoService.inativarPromocaoAtivaDoProduto(produto);
-            System.out.println("[LOG] Promoção removida do produto: " + produto.getDescricao());
-        }
-    }
-
-    private boolean promocaoFoiAlterada(Promocao promocaoAnterior, Promocao novaPromocao) {
-
-        if (promocaoAnterior.getTipoDesconto() != novaPromocao.getTipoDesconto()) {
-            return true;
-        }
-
-        return promocaoAnterior.getValorDesconto().compareTo(novaPromocao.getValorDesconto()) != 0;
-    }
-
-    private boolean precoFoiAlterado(Produto produtoAtualizado) {
-
-        if (produtoSelecionado == null || produtoSelecionado.getPreco() == null) {
-            return false;
-        }
-
-        return produtoSelecionado.getPreco().compareTo(produtoAtualizado.getPreco()) != 0;
-    }
 
     private Promocao montarPromocao(Produto produto) {
 

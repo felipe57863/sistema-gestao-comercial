@@ -20,37 +20,73 @@ import java.util.Locale;
 public class ProdutoDAO {
 
     /**
-     * Insere um novo produto no banco de dados.
-     * O ID é gerado automaticamente pelo SQLite (AUTOINCREMENT).
+     * Insere um novo produto usando uma Connection externa.
+     *
+     * Participa da transação controlada pela camada Service. O DAO encerra apenas
+     * o PreparedStatement e o ResultSet que cria, sem executar commit, rollback
+     * ou fechar a Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param produto produto que será persistido.
      */
-    public void cadastrar(Produto produto) {
+    public void cadastrar(Connection conn, Produto produto) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (produto == null) {
+            throw new IllegalArgumentException(
+                    "Produto não pode ser nulo."
+            );
+        }
 
         String sql = """
-            INSERT INTO Produto (descricao, preco, quantidade_estoque, estoque_minimo, ativo)
-            VALUES (?, ?, ?, ?, ?)
+        INSERT INTO Produto (
+            descricao,
+            preco,
+            quantidade_estoque,
+            estoque_minimo,
+            ativo
+        )
+        VALUES (?, ?, ?, ?, ?)
         """;
 
-        try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement stmt =
+                     conn.prepareStatement(
+                             sql,
+                             Statement.RETURN_GENERATED_KEYS
+                     )) {
 
             stmt.setString(1, produto.getDescricao());
             stmt.setBigDecimal(2, produto.getPreco());
             stmt.setInt(3, produto.getQuantidadeEstoque());
             stmt.setInt(4, produto.getEstoqueMinimo());
-
-            // SQLite não possui BOOLEAN → usamos 1 (true) ou 0 (false)
             stmt.setInt(5, produto.isAtivo() ? 1 : 0);
 
             stmt.executeUpdate();
 
-            try (var rs = stmt.getGeneratedKeys()) {
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     produto.setIdProduto(rs.getInt(1));
                 }
             }
 
+            if (produto.getIdProduto() == null
+                    || produto.getIdProduto() <= 0) {
+
+                throw new IllegalStateException(
+                        "Produto cadastrado sem um ID válido."
+                );
+            }
+
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao cadastrar produto no banco de dados.", e);
+            throw new RuntimeException(
+                    "Erro ao cadastrar produto no banco de dados.",
+                    e
+            );
         }
     }
 
@@ -113,63 +149,103 @@ public class ProdutoDAO {
     }
 
     /**
-     * Atualiza somente os dados cadastrais de um produto existente.
+     * Atualiza somente os dados cadastrais de um produto existente usando uma
+     * Connection externa.
+     *
      * O saldo atual não é alterado: a quantidade inicial pertence ao cadastro
      * novo e as movimentações posteriores usam seus fluxos próprios.
+     *
+     * Participa da transação controlada pela camada Service. O DAO encerra apenas
+     * o PreparedStatement criado, sem executar commit, rollback ou fechar a
+     * Connection recebida.
+     *
+     * @param conn conexão externa controlada pela camada Service.
+     * @param produto produto que será atualizado.
      */
-    public void atualizar(Produto produto) {
+    public void atualizar(
+            Connection conn,
+            Produto produto
+    ) {
 
-        // FAIL-FAST: validação obrigatória de objeto e ID
-        if (produto == null || produto.getIdProduto() == null) {
-            throw new IllegalArgumentException("Produto ou ID inválido para atualização.");
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (produto == null
+                || produto.getIdProduto() == null
+                || produto.getIdProduto() <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Produto ou ID inválido para atualização."
+            );
         }
 
         String sql = """
-            UPDATE Produto
-            SET descricao = ?,
-                preco = ?,
-                estoque_minimo = ?,
-                ativo = ?
-            WHERE id_produto = ?
+        UPDATE Produto
+        SET descricao = ?,
+            preco = ?,
+            estoque_minimo = ?,
+            ativo = ?
+        WHERE id_produto = ?
         """;
 
-        try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, produto.getDescricao());
             stmt.setBigDecimal(2, produto.getPreco());
             stmt.setInt(3, produto.getEstoqueMinimo());
-
-            // SQLite não possui BOOLEAN → usamos 1 (true) ou 0 (false)
             stmt.setInt(4, produto.isAtivo() ? 1 : 0);
-
             stmt.setInt(5, produto.getIdProduto());
 
             int linhasAfetadas = stmt.executeUpdate();
 
-            // Verificação de integridade: se nenhuma linha foi alterada, o ID pode não existir
             if (linhasAfetadas == 0) {
-                throw new RuntimeException(
-                        "Nenhum produto foi atualizado. O ID " + produto.getIdProduto() + " pode não existir."
+                throw new IllegalStateException(
+                        "Nenhum produto foi atualizado. O ID "
+                                + produto.getIdProduto()
+                                + " pode não existir."
                 );
             }
 
-            System.out.println("[LOG] Produto atualizado: " + produto.getDescricao());
+            if (linhasAfetadas > 1) {
+                throw new IllegalStateException(
+                        "Mais de um produto foi atualizado para o ID "
+                                + produto.getIdProduto()
+                                + "."
+                );
+            }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao atualizar o produto no banco de dados.", e);
+            throw new RuntimeException(
+                    "Erro ao atualizar o produto no banco de dados.",
+                    e
+            );
         }
     }
 
     /**
-     * Verifica se já existe produto cadastrado com a descrição informada.
+     * Verifica se já existe produto cadastrado com a descrição informada usando
+     * uma Connection externa.
      *
      * A comparação ignora diferenças entre letras maiúsculas e minúsculas.
+     * O DAO não controla commit, rollback nem fecha a Connection recebida.
      *
+     * @param conn conexão externa controlada pela camada Service.
      * @param descricao descrição que será consultada.
      * @return true quando já existir produto com a mesma descrição.
      */
-    public boolean existeDescricao(String descricao) {
+    public boolean existeDescricao(
+            Connection conn,
+            String descricao
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
 
         if (descricao == null || descricao.isBlank()) {
             throw new IllegalArgumentException(
@@ -184,8 +260,7 @@ public class ProdutoDAO {
         LIMIT 1
         """;
 
-        try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, descricao.trim());
 
