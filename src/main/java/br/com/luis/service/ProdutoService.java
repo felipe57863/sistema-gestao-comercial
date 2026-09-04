@@ -24,10 +24,19 @@ public class ProdutoService {
 
         validarProduto(produto);
 
+        if (produtoDAO.existeDescricao(produto.getDescricao())) {
+            throw new IllegalArgumentException(
+                    "Já existe um produto cadastrado com esta descrição."
+            );
+        }
+
         // Regra de negócio: todo produto deve iniciar como ativo
         produto.setAtivo(true);
 
-        System.out.println("[LOG] Produto enviado para persistência: " + produto.getDescricao());
+        System.out.println(
+                "[LOG] Produto enviado para persistência: "
+                        + produto.getDescricao()
+        );
 
         produtoDAO.cadastrar(produto);
     }

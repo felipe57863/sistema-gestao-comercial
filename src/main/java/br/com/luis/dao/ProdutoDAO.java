@@ -162,6 +162,46 @@ public class ProdutoDAO {
     }
 
     /**
+     * Verifica se já existe produto cadastrado com a descrição informada.
+     *
+     * A comparação ignora diferenças entre letras maiúsculas e minúsculas.
+     *
+     * @param descricao descrição que será consultada.
+     * @return true quando já existir produto com a mesma descrição.
+     */
+    public boolean existeDescricao(String descricao) {
+
+        if (descricao == null || descricao.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Descrição é obrigatória para verificar duplicidade."
+            );
+        }
+
+        String sql = """
+        SELECT 1
+        FROM Produto
+        WHERE descricao = ? COLLATE NOCASE
+        LIMIT 1
+        """;
+
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, descricao.trim());
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao verificar produto duplicado.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Busca produtos por parte da descrição (case-insensitive).
      */
     public List<Produto> buscarPorDescricao(String termo) {

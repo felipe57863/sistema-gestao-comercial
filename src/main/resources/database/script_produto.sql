@@ -2,7 +2,7 @@
 -- Armazena os dados comerciais e de estoque dos produtos.
 CREATE TABLE IF NOT EXISTS Produto (
     id_produto INTEGER PRIMARY KEY AUTOINCREMENT,
-    descricao TEXT NOT NULL,
+    descricao TEXT NOT NULL COLLATE NOCASE UNIQUE,
     preco REAL NOT NULL CHECK (preco >= 0),
     quantidade_estoque INTEGER NOT NULL CHECK (quantidade_estoque >= 0),
     estoque_minimo INTEGER NOT NULL CHECK (estoque_minimo >= 0),
