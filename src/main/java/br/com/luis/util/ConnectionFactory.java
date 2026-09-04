@@ -27,15 +27,21 @@ public class ConnectionFactory {
      * responsável pelo fechamento, preferencialmente com try-with-resources, e
      * pode controlar commit, rollback e autoCommit quando delimitar uma transação.
      *
+     * Se ocorrer falha durante a configuração inicial da conexão, a Connection
+     * já aberta é fechada antes de propagar o erro.
+     *
      * @return nova conexão JDBC com o banco database.db.
      */
     public static Connection getConnection() {
+
+        Connection conn = null;
+
         try {
             Class.forName("org.sqlite.JDBC");
 
             exibirCaminhoBancoUmaVez();
 
-            Connection conn = DriverManager.getConnection(URL);
+            conn = DriverManager.getConnection(URL);
 
             // ATIVA FOREIGN KEYS (OBRIGATÓRIO NO SQLITE)
             try (Statement stmt = conn.createStatement()) {
@@ -45,9 +51,25 @@ public class ConnectionFactory {
             return conn;
 
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Driver SQLite não encontrado.", e);
+            throw new RuntimeException(
+                    "Driver SQLite não encontrado.",
+                    e
+            );
+
         } catch (SQLException e) {
-            throw new RuntimeException("Erro ao conectar com o banco SQLite.", e);
+
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException fechamentoErro) {
+                    e.addSuppressed(fechamentoErro);
+                }
+            }
+
+            throw new RuntimeException(
+                    "Erro ao conectar com o banco SQLite.",
+                    e
+            );
         }
     }
 
