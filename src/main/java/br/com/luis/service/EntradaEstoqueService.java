@@ -79,6 +79,8 @@ public class EntradaEstoqueService {
 
         try (Connection conn = ConnectionFactory.getConnection()) {
             boolean autoCommitAnterior = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -91,25 +93,27 @@ public class EntradaEstoqueService {
                 );
 
                 conn.commit();
+                transacaoConcluida = true;
 
                 return entradaConfirmada;
 
-            } catch (RuntimeException e) {
-                executarRollbackSeguro(conn);
+            } catch (RuntimeException | Error e) {
+                falhaOriginal = e;
+                transacaoConcluida = executarRollbackSeguro(conn, e);
                 throw e;
 
             } catch (SQLException e) {
-                executarRollbackSeguro(conn);
+                falhaOriginal = e;
+                transacaoConcluida = executarRollbackSeguro(conn, e);
                 throw new RuntimeException(
                         "Erro ao confirmar entrada de estoque.",
                         e
                 );
 
             } finally {
-                restaurarAutoCommitSeguro(
-                        conn,
-                        autoCommitAnterior
-                );
+                if (transacaoConcluida) {
+                    restaurarAutoCommitSeguro(conn, autoCommitAnterior, falhaOriginal);
+                }
             }
 
         } catch (SQLException e) {
@@ -379,30 +383,32 @@ public class EntradaEstoqueService {
     }
 
     /**
-     * Executa rollback sem substituir a exceção original do fluxo.
+     * Tenta rollback e informa se a transação foi encerrada com segurança.
+     * A falha de rollback é preservada como suppressed na falha original.
      */
-    private void executarRollbackSeguro(Connection conn) {
+    private boolean executarRollbackSeguro(Connection conn, Throwable falhaOriginal) {
 
         if (conn == null) {
-            return;
+            return false;
         }
 
         try {
             conn.rollback();
+            return true;
         } catch (SQLException e) {
-            System.err.println(
-                    "Erro ao executar rollback da entrada de estoque: "
-                            + e.getMessage()
-            );
+            falhaOriginal.addSuppressed(e);
+            return false;
         }
     }
 
     /**
-     * Restaura o autoCommit sem mascarar uma exceção anterior.
+     * Restaura o autoCommit após commit ou rollback concluído.
+     * Preserva a falha original ou propaga a falha de restauração quando isolada.
      */
     private void restaurarAutoCommitSeguro(
             Connection conn,
-            boolean autoCommitAnterior
+            boolean autoCommitAnterior,
+            Throwable falhaOriginal
     ) {
 
         if (conn == null) {
@@ -412,10 +418,14 @@ public class EntradaEstoqueService {
         try {
             conn.setAutoCommit(autoCommitAnterior);
         } catch (SQLException e) {
-            System.err.println(
-                    "Erro ao restaurar autoCommit da entrada de estoque: "
-                            + e.getMessage()
-            );
+            if (falhaOriginal != null) {
+                falhaOriginal.addSuppressed(e);
+            } else {
+                throw new RuntimeException(
+                        "Erro ao restaurar autoCommit após a confirmação da entrada de estoque.",
+                        e
+                );
+            }
         }
     }
 }
