@@ -62,7 +62,7 @@ public class ContaReceberService {
      * estado e registra a movimentação financeira de entrada.
      *
      * O resultado é devolvido somente após o commit. Falhas provocam rollback
-     * integral e o autoCommit anterior é restaurado.
+     * integral; o autoCommit anterior só é restaurado após commit ou rollback concluído.
      */
     public ResultadoRecebimentoConta receberConta(
             Integer contaReceberId,
@@ -78,6 +78,8 @@ public class ContaReceberService {
 
         try (Connection conn = ConnectionFactory.getConnection()) {
             boolean autoCommitAnterior = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -90,19 +92,24 @@ public class ContaReceberService {
                 );
 
                 conn.commit();
+                transacaoConcluida = true;
 
                 return montarResultadoRecebimentoConta(dadosRecebimento);
 
-            } catch (RuntimeException e) {
-                executarRollbackSeguro(conn);
+            } catch (RuntimeException | Error e) {
+                falhaOriginal = e;
+                transacaoConcluida = executarRollbackSeguro(conn, e);
                 throw e;
 
             } catch (SQLException e) {
-                executarRollbackSeguro(conn);
+                falhaOriginal = e;
+                transacaoConcluida = executarRollbackSeguro(conn, e);
                 throw new RuntimeException("Erro ao receber conta a receber.", e);
 
             } finally {
-                restaurarAutoCommitSeguro(conn, autoCommitAnterior);
+                if (transacaoConcluida) {
+                    restaurarAutoCommitSeguro(conn, autoCommitAnterior, falhaOriginal);
+                }
             }
 
         } catch (SQLException e) {
@@ -372,33 +379,32 @@ public class ContaReceberService {
     }
 
     /**
-     * Executa rollback de forma segura.
-     *
-     * Caso o rollback falhe, o erro é apenas registrado para não substituir
-     * a exceção original do fluxo.
+     * Tenta rollback e informa se a transação foi encerrada com segurança.
+     * A falha de rollback é preservada como suppressed na falha original.
      */
-    private void executarRollbackSeguro(Connection conn) {
+    private boolean executarRollbackSeguro(Connection conn, Throwable falhaOriginal) {
 
         if (conn == null) {
-            return;
+            return false;
         }
 
         try {
             conn.rollback();
+            return true;
         } catch (SQLException e) {
-            System.err.println("Erro ao executar rollback do recebimento: " + e.getMessage());
+            falhaOriginal.addSuppressed(e);
+            return false;
         }
     }
 
     /**
-     * Restaura o autoCommit da conexão de forma segura.
-     *
-     * Caso a restauração falhe, o erro é apenas registrado para não substituir
-     * a exceção original do fluxo.
+     * Restaura o autoCommit após commit ou rollback concluído.
+     * Preserva a falha original ou propaga a falha de restauração quando isolada.
      */
     private void restaurarAutoCommitSeguro(
             Connection conn,
-            boolean autoCommitAnterior
+            boolean autoCommitAnterior,
+            Throwable falhaOriginal
     ) {
 
         if (conn == null) {
@@ -408,7 +414,14 @@ public class ContaReceberService {
         try {
             conn.setAutoCommit(autoCommitAnterior);
         } catch (SQLException e) {
-            System.err.println("Erro ao restaurar autoCommit do recebimento: " + e.getMessage());
+            if (falhaOriginal != null) {
+                falhaOriginal.addSuppressed(e);
+            } else {
+                throw new RuntimeException(
+                        "Erro ao restaurar autoCommit após o recebimento da conta.",
+                        e
+                );
+            }
         }
     }
 
