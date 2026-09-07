@@ -110,6 +110,9 @@ public class PromocaoService {
 
         try (Connection conn = ConnectionFactory.getConnection()) {
 
+            boolean autoCommitOriginal = conn.getAutoCommit();
+            Exception falhaOriginal = null;
+
             try {
                 conn.setAutoCommit(false);
 
@@ -121,14 +124,12 @@ public class PromocaoService {
                         + produto.getIdProduto());
 
             } catch (Exception e) {
+                falhaOriginal = e;
 
                 try {
                     conn.rollback();
                 } catch (SQLException rollbackErro) {
-                    throw new RuntimeException(
-                            "Erro crítico: falha ao tentar realizar o rollback da inativação da promoção.",
-                            rollbackErro
-                    );
+                    e.addSuppressed(rollbackErro);
                 }
 
                 throw new RuntimeException(
@@ -138,10 +139,16 @@ public class PromocaoService {
 
             } finally {
                 try {
-                    conn.setAutoCommit(true);
-                } catch (SQLException e) {
-                    System.err.println("[ERRO] Não foi possível restaurar o autoCommit da conexão.");
-                    e.printStackTrace();
+                    conn.setAutoCommit(autoCommitOriginal);
+                } catch (SQLException restauracaoErro) {
+                    if (falhaOriginal != null) {
+                        falhaOriginal.addSuppressed(restauracaoErro);
+                    } else {
+                        throw new RuntimeException(
+                                "Erro ao restaurar o autoCommit da conexão após inativação de promoção.",
+                                restauracaoErro
+                        );
+                    }
                 }
             }
 
