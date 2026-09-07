@@ -6,6 +6,7 @@ import br.com.luis.model.Produto;
 import br.com.luis.util.ConnectionFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -252,5 +253,20 @@ public class PromocaoService {
         if (promocao.getValorDesconto().compareTo(produto.getPreco()) > 0) {
             throw new IllegalArgumentException("Desconto não pode ser maior que o preço do produto.");
         }
+
+        BigDecimal valorNormalizado = promocao.getValorDesconto()
+                .setScale(2, RoundingMode.HALF_UP);
+
+        if (valorNormalizado.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                    "Valor do desconto deve ser maior que zero após o arredondamento monetário."
+            );
+        }
+
+        if (valorNormalizado.compareTo(produto.getPreco()) > 0) {
+            throw new IllegalArgumentException("Desconto não pode ser maior que o preço do produto.");
+        }
+
+        promocao.setValorDesconto(valorNormalizado);
     }
 }

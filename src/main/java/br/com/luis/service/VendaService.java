@@ -2184,7 +2184,9 @@ public class VendaService {
                     .multiply(promocao.getValorDesconto())
                     .divide(CEM, ESCALA_MONETARIA, RoundingMode.HALF_UP);
         } else if (promocao.getTipoDesconto() == Promocao.TipoDesconto.VALOR_FIXO) {
-            desconto = promocao.getValorDesconto().multiply(quantidadeBigDecimal);
+            BigDecimal descontoUnitario = promocao.getValorDesconto()
+                    .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+            desconto = descontoUnitario.multiply(quantidadeBigDecimal);
         } else {
             desconto = BigDecimal.ZERO;
         }
