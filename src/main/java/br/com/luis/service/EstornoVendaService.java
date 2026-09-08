@@ -101,6 +101,8 @@ public class EstornoVendaService {
 
         try (Connection conn = ConnectionFactory.getConnection()) {
             boolean autoCommitAnterior = conn.getAutoCommit();
+            Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -113,13 +115,16 @@ public class EstornoVendaService {
                 );
 
                 conn.commit();
+                transacaoConcluida = true;
 
-            } catch (RuntimeException e) {
-                executarRollbackSeguro(conn);
+            } catch (RuntimeException | Error e) {
+                falhaOriginal = e;
+                transacaoConcluida = executarRollbackSeguro(conn, e);
                 throw e;
 
             } catch (SQLException e) {
-                executarRollbackSeguro(conn);
+                falhaOriginal = e;
+                transacaoConcluida = executarRollbackSeguro(conn, e);
 
                 throw new RuntimeException(
                         "Erro ao realizar o estorno da venda.",
@@ -127,10 +132,9 @@ public class EstornoVendaService {
                 );
 
             } finally {
-                restaurarAutoCommitSeguro(
-                        conn,
-                        autoCommitAnterior
-                );
+                if (transacaoConcluida) {
+                    restaurarAutoCommitSeguro(conn, autoCommitAnterior, falhaOriginal);
+                }
             }
 
         } catch (SQLException e) {
@@ -1562,37 +1566,32 @@ public class EstornoVendaService {
     }
 
     /**
-     * Executa rollback de forma segura.
-     *
-     * Uma eventual falha no rollback não substitui a exceção original.
+     * Tenta rollback e informa se a transação foi encerrada com segurança.
+     * A falha de rollback é preservada como suppressed na falha original.
      */
-    private void executarRollbackSeguro(
-            Connection conn
-    ) {
+    private boolean executarRollbackSeguro(Connection conn, Throwable falhaOriginal) {
 
         if (conn == null) {
-            return;
+            return false;
         }
 
         try {
             conn.rollback();
-
+            return true;
         } catch (SQLException e) {
-            System.err.println(
-                    "Erro ao executar rollback do estorno: "
-                            + e.getMessage()
-            );
+            falhaOriginal.addSuppressed(e);
+            return false;
         }
     }
 
     /**
-     * Restaura o autoCommit da conexão de forma segura.
-     *
-     * Uma eventual falha na restauração não substitui a exceção original.
+     * Restaura o autoCommit após commit ou rollback concluído.
+     * Preserva a falha original ou propaga a falha de restauração quando isolada.
      */
     private void restaurarAutoCommitSeguro(
             Connection conn,
-            boolean autoCommitAnterior
+            boolean autoCommitAnterior,
+            Throwable falhaOriginal
     ) {
 
         if (conn == null) {
@@ -1600,15 +1599,16 @@ public class EstornoVendaService {
         }
 
         try {
-            conn.setAutoCommit(
-                    autoCommitAnterior
-            );
-
+            conn.setAutoCommit(autoCommitAnterior);
         } catch (SQLException e) {
-            System.err.println(
-                    "Erro ao restaurar autoCommit do estorno: "
-                            + e.getMessage()
-            );
+            if (falhaOriginal != null) {
+                falhaOriginal.addSuppressed(e);
+            } else {
+                throw new RuntimeException(
+                        "Erro ao restaurar autoCommit após o estorno da venda.",
+                        e
+                );
+            }
         }
     }
 
