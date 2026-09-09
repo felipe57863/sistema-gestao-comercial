@@ -9,7 +9,6 @@ import br.com.luis.viewmodel.FiltroRelatorioDescontoVenda;
 import br.com.luis.viewmodel.FiltroHistoricoVenda;
 import br.com.luis.viewmodel.VendaDescontoRelatorioDados;
 import br.com.luis.viewmodel.VendaHistoricoListagemView;
-import br.com.luis.util.ConnectionFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,62 +41,6 @@ import java.util.List;
  * e fechamento da conexão.
  */
 public class VendaDAO {
-
-    /**
-     * Insere uma nova venda no banco de dados.
-     *
-     * Abre e fecha sua própria Connection e usa try-with-resources para encerrar
-     * o PreparedStatement e o ResultSet. Persiste apenas os dados principais;
-     * os itens vinculados são inseridos separadamente pelo ItemVendaDAO.
-     *
-     * @param venda venda que será persistida.
-     * @return ID gerado pelo banco para a venda inserida.
-     */
-    public int inserir(Venda venda) {
-        String sql = """
-                INSERT INTO Venda (
-                    data_hora,
-                    tipo_venda,
-                    forma_pagamento,
-                    valor_total,
-                    valor_desconto_global,
-                    status,
-                    usuario_id,
-                    cliente_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-        try (Connection conn = ConnectionFactory.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            stmt.setString(1, venda.getDataHora().toString());
-            stmt.setString(2, venda.getTipoVenda());
-            stmt.setString(3, venda.getFormaPagamento());
-            stmt.setBigDecimal(4, venda.getValorTotal());
-            stmt.setBigDecimal(5, venda.getValorDescontoGlobal());
-            stmt.setString(6, venda.getStatus());
-            stmt.setInt(7, venda.getUsuarioId());
-
-            if (venda.getClienteId() != null) {
-                stmt.setInt(8, venda.getClienteId());
-            } else {
-                stmt.setNull(8, Types.INTEGER);
-            }
-
-            stmt.executeUpdate();
-
-            try (ResultSet rs = stmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-
-            throw new RuntimeException("Venda inserida, mas o ID gerado não foi retornado pelo banco.");
-
-        } catch (SQLException e) {
-            throw new RuntimeException("Erro ao inserir venda no banco de dados.", e);
-        }
-    }
 
     /**
      * Insere uma venda na transação de finalização coordenada pelo VendaService.
