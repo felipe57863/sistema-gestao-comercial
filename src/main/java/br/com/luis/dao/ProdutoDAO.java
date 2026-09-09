@@ -277,6 +277,60 @@ public class ProdutoDAO {
     }
 
     /**
+     * Verifica se a descrição pertence a outro produto, ignorando diferenças
+     * entre letras maiúsculas e minúsculas e excluindo o ID em edição.
+     * Usa a Connection recebida sem controlar a transação nem fechá-la.
+     */
+    public boolean existeDescricaoEmOutroProduto(
+            Connection conn,
+            String descricao,
+            Integer produtoId
+    ) {
+
+        if (conn == null) {
+            throw new IllegalArgumentException(
+                    "Conexão não pode ser nula."
+            );
+        }
+
+        if (descricao == null || descricao.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Descrição é obrigatória para verificar duplicidade."
+            );
+        }
+
+        if (produtoId == null || produtoId <= 0) {
+            throw new IllegalArgumentException(
+                    "ID do produto inválido para verificar duplicidade."
+            );
+        }
+
+        String sql = """
+        SELECT 1
+        FROM Produto
+        WHERE descricao = ? COLLATE NOCASE
+          AND id_produto <> ?
+        LIMIT 1
+        """;
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, descricao.trim());
+            stmt.setInt(2, produtoId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                    "Erro ao verificar descrição em outro produto.",
+                    e
+            );
+        }
+    }
+
+    /**
      * Busca produtos por parte da descrição (case-insensitive).
      */
     public List<Produto> buscarPorDescricao(String termo) {

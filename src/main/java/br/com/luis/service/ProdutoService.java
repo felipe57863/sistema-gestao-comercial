@@ -296,6 +296,16 @@ public class ProdutoService {
                     );
                 }
 
+                if (produtoDAO.existeDescricaoEmOutroProduto(
+                        conn,
+                        produto.getDescricao(),
+                        produto.getIdProduto()
+                )) {
+                    throw new IllegalArgumentException(
+                            "Já existe um produto cadastrado com esta descrição."
+                    );
+                }
+
                 Promocao promocaoAtual =
                         promocaoDAO.buscarPromocaoAtivaPorProduto(
                                 conn,
