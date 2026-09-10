@@ -46,7 +46,8 @@ public class PromocaoService {
         try (Connection conn = ConnectionFactory.getConnection()) {
 
             boolean autoCommitOriginal = conn.getAutoCommit();
-            Exception falhaOriginal = null;
+            Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 // 3. Assume o controle manual da transação
@@ -58,18 +59,26 @@ public class PromocaoService {
 
                 // 5. Se chegou até aqui sem erros, confirma tudo no banco
                 conn.commit();
+                transacaoConcluida = true;
 
                 System.out.println("[LOG] Promoção cadastrada para o produto ID: "
                         + promocao.getProduto().getIdProduto());
 
-            } catch (Exception e) {
+            } catch (SQLException | RuntimeException | Error e) {
                 falhaOriginal = e;
 
                 // 6. Deu erro em qualquer etapa? Desfaz TUDO
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackErro) {
-                    e.addSuppressed(rollbackErro);
+                if (!transacaoConcluida) {
+                    try {
+                        conn.rollback();
+                        transacaoConcluida = true;
+                    } catch (SQLException rollbackErro) {
+                        e.addSuppressed(rollbackErro);
+                    }
+                }
+
+                if (e instanceof Error error) {
+                    throw error;
                 }
 
                 throw new RuntimeException(
@@ -78,16 +87,18 @@ public class PromocaoService {
                 );
 
             } finally {
-                try {
-                    conn.setAutoCommit(autoCommitOriginal);
-                } catch (SQLException restauracaoErro) {
-                    if (falhaOriginal != null) {
-                        falhaOriginal.addSuppressed(restauracaoErro);
-                    } else {
-                        throw new RuntimeException(
-                                "Erro ao restaurar o autoCommit da conexão após cadastro de promoção.",
-                                restauracaoErro
-                        );
+                if (transacaoConcluida) {
+                    try {
+                        conn.setAutoCommit(autoCommitOriginal);
+                    } catch (SQLException restauracaoErro) {
+                        if (falhaOriginal != null) {
+                            falhaOriginal.addSuppressed(restauracaoErro);
+                        } else {
+                            throw new RuntimeException(
+                                    "Erro ao restaurar o autoCommit da conexão após cadastro de promoção.",
+                                    restauracaoErro
+                            );
+                        }
                     }
                 }
             }
@@ -112,7 +123,8 @@ public class PromocaoService {
         try (Connection conn = ConnectionFactory.getConnection()) {
 
             boolean autoCommitOriginal = conn.getAutoCommit();
-            Exception falhaOriginal = null;
+            Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -120,17 +132,25 @@ public class PromocaoService {
                 promocaoDAO.inativarPromocoesAnteriores(conn, produto.getIdProduto());
 
                 conn.commit();
+                transacaoConcluida = true;
 
                 System.out.println("[LOG] Promoção ativa inativada para o produto ID: "
                         + produto.getIdProduto());
 
-            } catch (Exception e) {
+            } catch (SQLException | RuntimeException | Error e) {
                 falhaOriginal = e;
 
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackErro) {
-                    e.addSuppressed(rollbackErro);
+                if (!transacaoConcluida) {
+                    try {
+                        conn.rollback();
+                        transacaoConcluida = true;
+                    } catch (SQLException rollbackErro) {
+                        e.addSuppressed(rollbackErro);
+                    }
+                }
+
+                if (e instanceof Error error) {
+                    throw error;
                 }
 
                 throw new RuntimeException(
@@ -139,16 +159,18 @@ public class PromocaoService {
                 );
 
             } finally {
-                try {
-                    conn.setAutoCommit(autoCommitOriginal);
-                } catch (SQLException restauracaoErro) {
-                    if (falhaOriginal != null) {
-                        falhaOriginal.addSuppressed(restauracaoErro);
-                    } else {
-                        throw new RuntimeException(
-                                "Erro ao restaurar o autoCommit da conexão após inativação de promoção.",
-                                restauracaoErro
-                        );
+                if (transacaoConcluida) {
+                    try {
+                        conn.setAutoCommit(autoCommitOriginal);
+                    } catch (SQLException restauracaoErro) {
+                        if (falhaOriginal != null) {
+                            falhaOriginal.addSuppressed(restauracaoErro);
+                        } else {
+                            throw new RuntimeException(
+                                    "Erro ao restaurar o autoCommit da conexão após inativação de promoção.",
+                                    restauracaoErro
+                            );
+                        }
                     }
                 }
             }
