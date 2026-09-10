@@ -53,6 +53,7 @@ public class ProdutoService {
 
             boolean autoCommitOriginal = conn.getAutoCommit();
             Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -90,24 +91,32 @@ public class ProdutoService {
                 }
 
                 conn.commit();
+                transacaoConcluida = true;
 
                 System.out.println(
                         "[LOG] Produto cadastrado com sucesso: "
                                 + produto.getDescricao()
                 );
 
-            } catch (SQLException | RuntimeException e) {
+            } catch (SQLException | RuntimeException | Error e) {
 
                 falhaOriginal = e;
 
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackErro) {
-                    e.addSuppressed(rollbackErro);
+                if (!transacaoConcluida) {
+                    try {
+                        conn.rollback();
+                        transacaoConcluida = true;
+                    } catch (SQLException rollbackErro) {
+                        e.addSuppressed(rollbackErro);
+                    }
                 }
 
                 if (e instanceof RuntimeException runtimeException) {
                     throw runtimeException;
+                }
+
+                if (e instanceof Error error) {
+                    throw error;
                 }
 
                 throw new IllegalStateException(
@@ -117,19 +126,21 @@ public class ProdutoService {
 
             } finally {
 
-                try {
-                    conn.setAutoCommit(autoCommitOriginal);
+                if (transacaoConcluida) {
+                    try {
+                        conn.setAutoCommit(autoCommitOriginal);
 
-                } catch (SQLException restauracaoErro) {
+                    } catch (SQLException restauracaoErro) {
 
-                    if (falhaOriginal != null) {
-                        falhaOriginal.addSuppressed(restauracaoErro);
+                        if (falhaOriginal != null) {
+                            falhaOriginal.addSuppressed(restauracaoErro);
 
-                    } else {
-                        throw new IllegalStateException(
-                                "Erro ao restaurar o autoCommit após o cadastro do produto.",
-                                restauracaoErro
-                        );
+                        } else {
+                            throw new IllegalStateException(
+                                    "Erro ao restaurar o autoCommit após o cadastro do produto.",
+                                    restauracaoErro
+                            );
+                        }
                     }
                 }
             }
@@ -174,6 +185,7 @@ public class ProdutoService {
 
             boolean autoCommitOriginal = conn.getAutoCommit();
             Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -184,24 +196,32 @@ public class ProdutoService {
                 );
 
                 conn.commit();
+                transacaoConcluida = true;
 
                 System.out.println(
                         "[LOG] Produto atualizado com sucesso: "
                                 + produto.getDescricao()
                 );
 
-            } catch (SQLException | RuntimeException e) {
+            } catch (SQLException | RuntimeException | Error e) {
 
                 falhaOriginal = e;
 
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackErro) {
-                    e.addSuppressed(rollbackErro);
+                if (!transacaoConcluida) {
+                    try {
+                        conn.rollback();
+                        transacaoConcluida = true;
+                    } catch (SQLException rollbackErro) {
+                        e.addSuppressed(rollbackErro);
+                    }
                 }
 
                 if (e instanceof RuntimeException runtimeException) {
                     throw runtimeException;
+                }
+
+                if (e instanceof Error error) {
+                    throw error;
                 }
 
                 throw new IllegalStateException(
@@ -211,19 +231,21 @@ public class ProdutoService {
 
             } finally {
 
-                try {
-                    conn.setAutoCommit(autoCommitOriginal);
+                if (transacaoConcluida) {
+                    try {
+                        conn.setAutoCommit(autoCommitOriginal);
 
-                } catch (SQLException restauracaoErro) {
+                    } catch (SQLException restauracaoErro) {
 
-                    if (falhaOriginal != null) {
-                        falhaOriginal.addSuppressed(restauracaoErro);
+                        if (falhaOriginal != null) {
+                            falhaOriginal.addSuppressed(restauracaoErro);
 
-                    } else {
-                        throw new IllegalStateException(
-                                "Erro ao restaurar o autoCommit após a atualização do produto.",
-                                restauracaoErro
-                        );
+                        } else {
+                            throw new IllegalStateException(
+                                    "Erro ao restaurar o autoCommit após a atualização do produto.",
+                                    restauracaoErro
+                            );
+                        }
                     }
                 }
             }
@@ -281,6 +303,7 @@ public class ProdutoService {
 
             boolean autoCommitOriginal = conn.getAutoCommit();
             Throwable falhaOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -370,24 +393,32 @@ public class ProdutoService {
                 }
 
                 conn.commit();
+                transacaoConcluida = true;
 
                 System.out.println(
                         "[LOG] Produto e promoção atualizados com sucesso: "
                                 + produto.getDescricao()
                 );
 
-            } catch (SQLException | RuntimeException e) {
+            } catch (SQLException | RuntimeException | Error e) {
 
                 falhaOriginal = e;
 
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackErro) {
-                    e.addSuppressed(rollbackErro);
+                if (!transacaoConcluida) {
+                    try {
+                        conn.rollback();
+                        transacaoConcluida = true;
+                    } catch (SQLException rollbackErro) {
+                        e.addSuppressed(rollbackErro);
+                    }
                 }
 
                 if (e instanceof RuntimeException runtimeException) {
                     throw runtimeException;
+                }
+
+                if (e instanceof Error error) {
+                    throw error;
                 }
 
                 throw new IllegalStateException(
@@ -397,19 +428,21 @@ public class ProdutoService {
 
             } finally {
 
-                try {
-                    conn.setAutoCommit(autoCommitOriginal);
+                if (transacaoConcluida) {
+                    try {
+                        conn.setAutoCommit(autoCommitOriginal);
 
-                } catch (SQLException restauracaoErro) {
+                    } catch (SQLException restauracaoErro) {
 
-                    if (falhaOriginal != null) {
-                        falhaOriginal.addSuppressed(restauracaoErro);
+                        if (falhaOriginal != null) {
+                            falhaOriginal.addSuppressed(restauracaoErro);
 
-                    } else {
-                        throw new IllegalStateException(
-                                "Erro ao restaurar o autoCommit após a atualização do produto.",
-                                restauracaoErro
-                        );
+                        } else {
+                            throw new IllegalStateException(
+                                    "Erro ao restaurar o autoCommit após a atualização do produto.",
+                                    restauracaoErro
+                            );
+                        }
                     }
                 }
             }
