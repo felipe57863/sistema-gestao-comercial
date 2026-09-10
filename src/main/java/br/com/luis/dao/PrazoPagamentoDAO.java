@@ -41,8 +41,6 @@ public class PrazoPagamentoDAO {
                 }
             }
 
-            System.out.println("[LOG] Prazo cadastrado: " + prazo.getDescricao());
-
         } catch (SQLException e) {
             throw new RuntimeException("Erro ao cadastrar prazo de pagamento.", e);
         }

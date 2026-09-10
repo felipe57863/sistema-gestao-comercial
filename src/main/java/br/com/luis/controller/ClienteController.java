@@ -777,8 +777,6 @@ public class ClienteController {
     public void novo() {
         limparCamposFormulario();
         voltarModoCadastro();
-
-        System.out.println("[LOG] Novo cadastro de cliente iniciado.");
     }
 
     /**
@@ -788,8 +786,6 @@ public class ClienteController {
     public void cancelar() {
         limparCamposFormulario();
         voltarModoCadastro();
-
-        System.out.println("[LOG] Cadastro cancelado pelo usuário.");
     }
 
     /**

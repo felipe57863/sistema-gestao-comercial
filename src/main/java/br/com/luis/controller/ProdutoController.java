@@ -657,8 +657,6 @@ public class ProdutoController implements Initializable {
                         promocaoInicial
                 );
 
-                System.out.println("[LOG] Produto cadastrado com sucesso!");
-
             } else {
 
                 // EDIÇÃO
@@ -681,8 +679,6 @@ public class ProdutoController implements Initializable {
                         produto,
                         promocaoDesejada
                 );
-
-                System.out.println("[LOG] Produto atualizado com sucesso!");
             }
 
 

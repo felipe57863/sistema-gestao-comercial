@@ -468,8 +468,6 @@ public class ProdutoService {
             throw new IllegalArgumentException("Produto inválido para inativação.");
         }
 
-        System.out.println("[LOG] Realizando exclusão lógica do produto ID: " + produto.getIdProduto());
-
         // ISOLAMENTO DE MEMÓRIA (evita efeitos colaterais na UI)
         Produto produtoInativado = new Produto(
                 produto.getIdProduto(),
