@@ -98,12 +98,16 @@ public class ContaReceberService {
 
             } catch (RuntimeException | Error e) {
                 falhaOriginal = e;
-                transacaoConcluida = executarRollbackSeguro(conn, e);
+                if (!transacaoConcluida) {
+                    transacaoConcluida = executarRollbackSeguro(conn, e);
+                }
                 throw e;
 
             } catch (SQLException e) {
                 falhaOriginal = e;
-                transacaoConcluida = executarRollbackSeguro(conn, e);
+                if (!transacaoConcluida) {
+                    transacaoConcluida = executarRollbackSeguro(conn, e);
+                }
                 throw new RuntimeException("Erro ao receber conta a receber.", e);
 
             } finally {
