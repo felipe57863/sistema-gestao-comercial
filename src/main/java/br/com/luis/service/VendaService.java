@@ -432,7 +432,8 @@ public class VendaService {
 
         try (Connection conn = ConnectionFactory.getConnection()) {
             boolean autoCommitAnterior = conn.getAutoCommit();
-            Exception erroOriginal = null;
+            Throwable erroOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -461,13 +462,20 @@ public class VendaService {
                 }
 
                 conn.commit();
+                transacaoConcluida = true;
 
                 return resultado;
 
-            } catch (Exception erro) {
+            } catch (Exception | Error erro) {
                 erroOriginal = erro;
 
-                executarRollbackSeguro(conn, erroOriginal);
+                if (!transacaoConcluida) {
+                    transacaoConcluida = executarRollbackSeguro(conn, erroOriginal);
+                }
+
+                if (erro instanceof Error error) {
+                    throw error;
+                }
 
                 if (erro instanceof IllegalArgumentException) {
                     throw (IllegalArgumentException) erro;
@@ -484,7 +492,9 @@ public class VendaService {
                 throw new IllegalStateException("Erro inesperado ao finalizar venda.", erro);
 
             } finally {
-                restaurarAutoCommitSeguro(conn, autoCommitAnterior, erroOriginal);
+                if (transacaoConcluida) {
+                    restaurarAutoCommitSeguro(conn, autoCommitAnterior, erroOriginal);
+                }
             }
 
         } catch (SQLException erro) {
@@ -792,21 +802,22 @@ public class VendaService {
      * Este método não abre nem fecha a Connection e não executa commit. Ele é
      * chamado pelo controle transacional de finalizarVenda(...) após uma falha.
      */
-    private void executarRollbackSeguro(
+    private boolean executarRollbackSeguro(
             Connection conn,
-            Exception erroOriginal
+            Throwable erroOriginal
     ) {
 
         if (conn == null) {
-            return;
+            return false;
         }
 
         try {
             conn.rollback();
+            return true;
         } catch (SQLException erroRollback) {
             if (erroOriginal != null) {
                 erroOriginal.addSuppressed(erroRollback);
-                return;
+                return false;
             }
 
             throw new IllegalStateException("Falha ao executar rollback da transação.", erroRollback);
@@ -826,7 +837,7 @@ public class VendaService {
     private void restaurarAutoCommitSeguro(
             Connection conn,
             boolean autoCommitAnterior,
-            Exception erroOriginal
+            Throwable erroOriginal
     ) {
 
         if (conn == null) {
@@ -1237,7 +1248,8 @@ public class VendaService {
         try (Connection conn = ConnectionFactory.getConnection()) {
 
             boolean autoCommitAnterior = conn.getAutoCommit();
-            Exception erroOriginal = null;
+            Throwable erroOriginal = null;
+            boolean transacaoConcluida = false;
 
             try {
                 conn.setAutoCommit(false);
@@ -1254,11 +1266,18 @@ public class VendaService {
                         consultarSituacaoFinanceiraCliente(conn, cliente);
 
                 conn.commit();
+                transacaoConcluida = true;
                 return situacaoFinanceira;
 
-            } catch (Exception erro) {
+            } catch (Exception | Error erro) {
                 erroOriginal = erro;
-                executarRollbackSeguro(conn, erroOriginal);
+                if (!transacaoConcluida) {
+                    transacaoConcluida = executarRollbackSeguro(conn, erroOriginal);
+                }
+
+                if (erro instanceof Error error) {
+                    throw error;
+                }
 
                 if (erro instanceof IllegalArgumentException) {
                     throw (IllegalArgumentException) erro;
@@ -1274,7 +1293,9 @@ public class VendaService {
                 );
 
             } finally {
-                restaurarAutoCommitSeguro(conn, autoCommitAnterior, erroOriginal);
+                if (transacaoConcluida) {
+                    restaurarAutoCommitSeguro(conn, autoCommitAnterior, erroOriginal);
+                }
             }
 
         } catch (SQLException erro) {
