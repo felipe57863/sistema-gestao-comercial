@@ -35,8 +35,6 @@ public class ClienteService {
         // Regra de negócio: todo cliente inicia como ATIVO
         cliente.setStatus(Cliente.StatusCliente.ATIVO);
 
-        System.out.println("[LOG] Cliente enviado para persistência (Cadastro): " + cliente.getNome());
-
         dao.cadastrar(cliente);
     }
 
@@ -61,8 +59,6 @@ public class ClienteService {
 
         // Regra de negócio: evitar duplicidade de documento em outro cliente
         validarDocumentoDuplicado(cliente.getDocumento(), cliente.getIdCliente());
-
-        System.out.println("[LOG] Cliente enviado para persistência (Atualização): " + cliente.getNome());
 
         dao.atualizar(cliente);
     }

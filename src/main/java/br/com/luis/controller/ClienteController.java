@@ -650,8 +650,6 @@ public class ClienteController {
                 );
                 clienteService.cadastrar(cliente);
 
-                System.out.println("[LOG] Cliente cadastrado via UI: " + cliente.getNome());
-
             } else {
 
                 Cliente clienteAtualizado = new Cliente(
@@ -667,8 +665,6 @@ public class ClienteController {
                 );
 
                 clienteService.atualizar(clienteAtualizado);
-
-                System.out.println("[LOG] Cliente atualizado: " + clienteAtualizado.getNome());
             }
 
             mostrarAlerta(Alert.AlertType.INFORMATION,

@@ -71,8 +71,6 @@ public class ClienteDAO {
                 }
             }
 
-            System.out.println("[LOG] Cliente cadastrado: " + cliente.getNome());
-
         } catch (SQLException e) {
 
             String mensagemErro = e.getMessage();
@@ -192,8 +190,6 @@ public class ClienteDAO {
             if (linhasAfetadas == 0) {
                 throw new RuntimeException("Nenhum cliente encontrado para atualização.");
             }
-
-            System.out.println("[LOG] Cliente atualizado: " + cliente.getNome());
 
         } catch (SQLException e) {
 
