@@ -521,7 +521,7 @@ public class EstornoVendaService {
                     "[AVISO] Venda "
                             + venda.getIdVenda()
                             + " não possui NotaVenda. "
-                            + "Estorno executado em modo de compatibilidade com legado."
+                            + "Prosseguindo em modo de compatibilidade com legado."
             );
 
             return null;
