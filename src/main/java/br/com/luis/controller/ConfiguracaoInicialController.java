@@ -126,6 +126,7 @@ public class ConfiguracaoInicialController {
             System.err.println(
                     "[ERRO] Falha ao abrir Login.fxml após a configuração inicial."
             );
+            e.printStackTrace();
             return false;
         }
     }
