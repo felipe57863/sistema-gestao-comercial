@@ -67,7 +67,13 @@ public class PrazoPagamentoDAO {
             stmt.setInt(3, prazo.isAtivo() ? 1 : 0);
             stmt.setInt(4, prazo.getIdPrazo());
 
-            stmt.executeUpdate();
+            int linhasAfetadas = stmt.executeUpdate();
+
+            if (linhasAfetadas == 0) {
+                throw new RuntimeException(
+                        "Nenhum prazo de pagamento encontrado para atualização."
+                );
+            }
 
             System.out.println("[LOG] Prazo atualizado: " + prazo.getDescricao());
 
@@ -92,7 +98,13 @@ public class PrazoPagamentoDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, idPrazo);
-            stmt.executeUpdate();
+            int linhasAfetadas = stmt.executeUpdate();
+
+            if (linhasAfetadas == 0) {
+                throw new RuntimeException(
+                        "Nenhum prazo de pagamento encontrado para inativação."
+                );
+            }
 
             System.out.println("[LOG] Prazo inativado. ID: " + idPrazo);
 
