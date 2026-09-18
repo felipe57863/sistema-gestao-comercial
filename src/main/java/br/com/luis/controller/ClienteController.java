@@ -613,9 +613,12 @@ public class ClienteController {
     @FXML
     public void salvar() {
 
+        boolean cadastrando;
+        Integer clienteIdParaReselecionar;
+
         try {
-            boolean cadastrando = clienteSelecionado == null;
-            Integer clienteIdParaReselecionar = clienteSelecionado != null
+            cadastrando = clienteSelecionado == null;
+            clienteIdParaReselecionar = clienteSelecionado != null
                     ? clienteSelecionado.getIdCliente()
                     : null;
 
@@ -667,6 +670,34 @@ public class ClienteController {
                 clienteService.atualizar(clienteAtualizado);
             }
 
+        } catch (NumberFormatException e) {
+
+            mostrarAlerta(Alert.AlertType.WARNING,
+                    "Aviso",
+                    "Limite de crédito inválido.");
+
+            txtLimiteCredito.requestFocus();
+            return;
+
+        } catch (IllegalArgumentException e) {
+
+            mostrarAlerta(Alert.AlertType.WARNING,
+                    "Aviso",
+                    e.getMessage());
+            return;
+
+        } catch (RuntimeException e) {
+
+            System.err.println("[ERRO] Falha ao salvar cliente.");
+            e.printStackTrace();
+
+            mostrarAlerta(Alert.AlertType.ERROR,
+                    "Erro",
+                    "Não foi possível salvar o cliente. Verifique os dados e tente novamente.");
+            return;
+        }
+
+        try {
             mostrarAlerta(Alert.AlertType.INFORMATION,
                     "Sucesso",
                     cadastrando
@@ -677,28 +708,18 @@ public class ClienteController {
             voltarModoCadastro();
             atualizarTabela(clienteIdParaReselecionar);
 
-        } catch (NumberFormatException e) {
-
-            mostrarAlerta(Alert.AlertType.WARNING,
-                    "Aviso",
-                    "Limite de crédito inválido.");
-
-            txtLimiteCredito.requestFocus();
-
-        } catch (IllegalArgumentException e) {
-
-            mostrarAlerta(Alert.AlertType.WARNING,
-                    "Aviso",
-                    e.getMessage());
-
         } catch (RuntimeException e) {
 
-            System.err.println("[ERRO] Falha ao salvar cliente.");
+            System.err.println(
+                    "[ERRO] Cliente salvo, mas não foi possível concluir a atualização da tela."
+            );
             e.printStackTrace();
 
-            mostrarAlerta(Alert.AlertType.ERROR,
-                    "Erro",
-                    "Não foi possível salvar o cliente. Verifique os dados e tente novamente.");
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Operação concluída",
+                    "O cliente foi salvo, mas não foi possível concluir a atualização da tela."
+            );
         }
     }
 
