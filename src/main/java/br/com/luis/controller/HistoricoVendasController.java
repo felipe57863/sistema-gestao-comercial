@@ -1141,53 +1141,74 @@ public class HistoricoVendasController {
                 vendaSelecionada.getVendaId();
 
         try {
-            bloquearAcoesConsulta(true);
-            btnEstornarVenda.setDisable(true);
+            ResultadoEstornoVenda resultado;
 
-            ResultadoEstornoVenda resultado =
-                    estornoVendaService.estornarVenda(
-                            vendaId,
-                            motivo,
-                            usuarioId
-                    );
+            try {
+                bloquearAcoesConsulta(true);
+                btnEstornarVenda.setDisable(true);
 
-            if (resultado == null) {
-                throw new RuntimeException(
-                        "Resultado do estorno não retornado pelo Service."
+                resultado =
+                        estornoVendaService.estornarVenda(
+                                vendaId,
+                                motivo,
+                                usuarioId
+                        );
+
+            } catch (IllegalArgumentException
+                     | IllegalStateException e) {
+
+                mostrarAlerta(
+                        Alert.AlertType.WARNING,
+                        "Não foi possível estornar a venda",
+                        obterMensagemSegura(
+                                e,
+                                "Não foi possível realizar o estorno."
+                        )
                 );
+                return;
+
+            } catch (RuntimeException e) {
+
+                System.err.println(
+                        "[ERRO] Falha ao realizar estorno da venda "
+                                + vendaId
+                                + "."
+                );
+                e.printStackTrace();
+
+                mostrarAlerta(
+                        Alert.AlertType.ERROR,
+                        "Erro",
+                        "Não foi possível realizar o estorno da venda."
+                );
+                return;
             }
 
-            mostrarResultadoEstorno(resultado);
+            try {
+                if (resultado == null) {
+                    throw new RuntimeException(
+                            "Resultado do estorno não retornado pelo Service."
+                    );
+                }
 
-            carregarHistorico();
-            selecionarVendaPorId(vendaId);
+                mostrarResultadoEstorno(resultado);
 
-        } catch (IllegalArgumentException
-                 | IllegalStateException e) {
+                carregarHistorico();
+                selecionarVendaPorId(vendaId);
 
-            mostrarAlerta(
-                    Alert.AlertType.WARNING,
-                    "Não foi possível estornar a venda",
-                    obterMensagemSegura(
-                            e,
-                            "Não foi possível realizar o estorno."
-                    )
-            );
+            } catch (RuntimeException e) {
 
-        } catch (RuntimeException e) {
+                System.err.println(
+                        "[ERRO] Estorno da venda concluído, mas não foi possível concluir a atualização da tela."
+                );
+                e.printStackTrace();
 
-            System.err.println(
-                    "[ERRO] Falha ao realizar estorno da venda "
-                            + vendaId
-                            + "."
-            );
-            e.printStackTrace();
-
-            mostrarAlerta(
-                    Alert.AlertType.ERROR,
-                    "Erro",
-                    "Não foi possível realizar o estorno da venda."
-            );
+                mostrarAlerta(
+                        Alert.AlertType.ERROR,
+                        "Operação concluída",
+                        "O estorno da venda foi concluído, mas não foi possível concluir a atualização da tela."
+                );
+            }
 
         } finally {
             bloquearAcoesConsulta(false);
