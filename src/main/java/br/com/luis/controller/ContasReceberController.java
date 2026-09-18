@@ -549,47 +549,67 @@ public class ContasReceberController {
         }
 
         try {
-            btnReceberConta.setDisable(true);
-            btnAtualizar.setDisable(true);
+            ResultadoRecebimentoConta resultado;
 
-            ResultadoRecebimentoConta resultado =
-                    contaReceberService.receberConta(
-                            contaSelecionada.getContaReceberId(),
-                            formaPagamento,
-                            usuarioId
+            try {
+                btnReceberConta.setDisable(true);
+                btnAtualizar.setDisable(true);
+
+                resultado =
+                        contaReceberService.receberConta(
+                                contaSelecionada.getContaReceberId(),
+                                formaPagamento,
+                                usuarioId
+                        );
+
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                String mensagem = e.getMessage();
+
+                if (mensagem == null || mensagem.isBlank()) {
+                    mensagem = "Não foi possível receber a conta.";
+                }
+
+                mostrarAlerta(
+                        Alert.AlertType.WARNING,
+                        "Não foi possível receber a conta",
+                        mensagem
+                );
+                return;
+
+            } catch (RuntimeException e) {
+                System.err.println("[ERRO] Falha ao concluir recebimento da conta.");
+                e.printStackTrace();
+
+                mostrarAlerta(
+                        Alert.AlertType.ERROR,
+                        "Erro",
+                        "Não foi possível concluir o recebimento da conta."
+                );
+                return;
+            }
+
+            try {
+                if (resultado == null) {
+                    throw new RuntimeException(
+                            "Resultado do recebimento não retornado pelo Service."
                     );
+                }
 
-            if (resultado == null) {
-                throw new RuntimeException(
-                        "Resultado do recebimento não retornado pelo Service."
+                mostrarResultadoRecebimento(resultado);
+                carregarContasPendentes();
+
+            } catch (RuntimeException e) {
+                System.err.println(
+                        "[ERRO] Recebimento concluído, mas não foi possível concluir a atualização da tela."
+                );
+                e.printStackTrace();
+
+                mostrarAlerta(
+                        Alert.AlertType.ERROR,
+                        "Operação concluída",
+                        "O recebimento foi concluído, mas não foi possível concluir a atualização da tela."
                 );
             }
-
-            mostrarResultadoRecebimento(resultado);
-            carregarContasPendentes();
-
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            String mensagem = e.getMessage();
-
-            if (mensagem == null || mensagem.isBlank()) {
-                mensagem = "Não foi possível receber a conta.";
-            }
-
-            mostrarAlerta(
-                    Alert.AlertType.WARNING,
-                    "Não foi possível receber a conta",
-                    mensagem
-            );
-
-        } catch (RuntimeException e) {
-            System.err.println("[ERRO] Falha ao concluir recebimento da conta.");
-            e.printStackTrace();
-
-            mostrarAlerta(
-                    Alert.AlertType.ERROR,
-                    "Erro",
-                    "Não foi possível concluir o recebimento da conta."
-            );
 
         } finally {
             btnAtualizar.setDisable(false);
