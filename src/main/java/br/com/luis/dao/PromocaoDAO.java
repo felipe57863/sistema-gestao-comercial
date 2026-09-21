@@ -38,7 +38,6 @@ public class PromocaoDAO {
 
         try (PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // Validação defensiva
             if (promocao.getProduto() == null || promocao.getProduto().getIdProduto() == null) {
                 throw new IllegalArgumentException("Produto inválido para cadastro da promoção.");
             }
@@ -50,7 +49,6 @@ public class PromocaoDAO {
 
             stmt.executeUpdate();
 
-            // Sincroniza ID gerado
             try (var rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     promocao.setIdPromocao(rs.getInt(1));
@@ -95,9 +93,9 @@ public class PromocaoDAO {
     /**
      * Busca a promoção ativa de um produto usando uma Connection externa.
      *
-     * Participa da unidade de trabalho controlada pela camada Service.
-     * O DAO encerra apenas o PreparedStatement e o ResultSet criados, sem
-     * executar commit, rollback ou fechar a Connection recebida.
+     * A consulta participa da transação controlada pelo Service. O DAO encerra
+     * apenas o PreparedStatement e o ResultSet criados, sem executar commit,
+     * rollback ou fechar a Connection recebida.
      *
      * @param conn conexão externa controlada pela camada Service.
      * @param produto produto cuja promoção ativa será consultada.
@@ -188,12 +186,11 @@ public class PromocaoDAO {
      * produto, evitando consultas adicionais por linha. Promoções distintas do
      * mesmo produto permanecem separadas e ordenadas pelo ID da promoção.
      *
-     * Usa a Connection recebida externamente e encerra somente o
-     * PreparedStatement e o ResultSet criados. Não executa commit, rollback nem
-     * fecha a Connection informada.
+     * Usa a Connection recebida e encerra somente o PreparedStatement e o ResultSet
+     * criados. Não executa commit, rollback nem fecha a Connection informada.
      *
      * @param conn conexão externa controlada pela camada Service.
-     * @param filtro fotografia imutável dos filtros aplicados ao relatório.
+     * @param filtro filtros aplicados ao relatório.
      * @return promoções ativas encontradas; lista vazia quando não houver registros.
      * @throws IllegalArgumentException quando a conexão ou o filtro for nulo.
      * @throws IllegalStateException quando um registro persistido for inválido.

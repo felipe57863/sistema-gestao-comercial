@@ -126,7 +126,6 @@ public class ProdutoController implements Initializable {
         cbStatus.setItems(FXCollections.observableArrayList("Ativo", "Inativo"));
         cbStatus.setValue("Ativo");
 
-        // Configuração dos Spinners
         spnEstoque.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10000, 0));
         spnEstoqueMinimo.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10000, 0));
         txtUltimoPrecoCompra.setEditable(false);
@@ -180,8 +179,8 @@ public class ProdutoController implements Initializable {
     }
 
     /**
-     * Mantém o botão de atualização sincronizado com a comparação do estado
-     * persistível atual e a fotografia carregada do produto selecionado.
+     * Configura os listeners que atualizam o estado do botão de salvar ou
+     * atualizar quando os dados do formulário ou da promoção são alterados.
      */
     private void configurarDirtyState() {
         txtDescricao.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
@@ -278,9 +277,9 @@ public class ProdutoController implements Initializable {
 
     /**
      * Consulta produtos, últimos preços de compra e promoções em uma Task executada
-     * fora da thread da interface. Após o sucesso, publica as fotografias nos
-     * componentes JavaFX; em falha, restaura os controles e exibe uma mensagem
-     * adequada.
+     * fora da thread da interface. Após o sucesso, atualiza os componentes JavaFX
+     * com os dados carregados; em caso de falha, restaura os controles e exibe uma
+     * mensagem adequada.
      *
      * @param termoBusca descrição usada como filtro, vazia para listar todos.
      */
@@ -638,7 +637,6 @@ public class ProdutoController implements Initializable {
 
             if (!estavaEditando) {
 
-                // NOVO
                 produto = new Produto(
                         null,
                         descricao,
@@ -661,7 +659,6 @@ public class ProdutoController implements Initializable {
 
             } else {
 
-                // EDIÇÃO
                 produto = new Produto(
                         produtoSelecionado.getIdProduto(),
                         descricao,

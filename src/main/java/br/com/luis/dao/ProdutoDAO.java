@@ -119,8 +119,7 @@ public class ProdutoDAO {
     }
 
     /**
-     * Retorna apenas os produtos ativos.
-     * Otimizado diretamente no banco de dados.
+     * Retorna apenas os produtos ativos, filtrados diretamente pela consulta SQL.
      */
     public List<Produto> listarAtivos() {
 
@@ -398,18 +397,16 @@ public class ProdutoDAO {
     }
 
     /**
-     * Lista os dados persistidos de produtos necessários ao relatório de estoque.
+     * Lista os dados de produtos necessários ao relatório de estoque.
      *
-     * A consulta aplica somente os filtros que pertencem diretamente às colunas
-     * persistidas: descrição e status cadastral. A classificação da situação de
-     * estoque, seu filtro e a ordenação gerencial final pertencem ao Service.
+     * A consulta aplica os filtros de descrição e status cadastral. A classificação
+     * da situação de estoque, seu filtro e a ordenação final são feitos pelo Service.
      *
-     * Usa a Connection recebida externamente e encerra somente o
-     * PreparedStatement e o ResultSet criados. Não executa commit, rollback nem
-     * fecha a Connection informada.
+     * Usa a Connection recebida e encerra somente o PreparedStatement e o ResultSet
+     * criados. Não executa commit, rollback nem fecha a Connection informada.
      *
      * @param conn conexão externa controlada pela camada Service.
-     * @param filtro fotografia imutável dos filtros aplicados ao relatório.
+     * @param filtro filtros aplicados ao relatório.
      * @return produtos encontrados; lista vazia quando não houver registros.
      * @throws IllegalArgumentException quando a conexão ou o filtro for nulo.
      * @throws IllegalStateException quando um registro persistido for inválido.
