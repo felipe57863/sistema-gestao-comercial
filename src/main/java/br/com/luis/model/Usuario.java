@@ -1,8 +1,11 @@
 package br.com.luis.model;
 
 /**
- * Entidade Usuario - Representa a tabela 'Usuario' do SQLite.
- * Implementa validações (Fail-Fast) e boas práticas de segurança.
+ * Representa um usuário cadastrado no sistema e os dados armazenados na
+ * tabela Usuario.
+ *
+ * O Model valida seus próprios campos. A autenticação e o tratamento das
+ * senhas ficam na camada Service.
  */
 public class Usuario {
 

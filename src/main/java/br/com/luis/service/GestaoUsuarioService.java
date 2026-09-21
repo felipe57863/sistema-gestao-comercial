@@ -106,28 +106,33 @@ public class GestaoUsuarioService {
 
     /**
      * Edita nome, login e perfil após revalidar, na mesma transação, o
-     * administrador executor, o usuário alvo e o snapshot apresentado pela UI.
-     * A autorização é confirmada no estado persistido antes da leitura e da
-     * alteração do alvo. O snapshot original protege contra sobrescrita de dados
-     * desatualizados, e o próprio administrador não pode alterar seu perfil.
-     * Senha, status e indicador de troca obrigatória permanecem preservados.
-     * O objeto retornado somente recebe os novos dados após o commit.
+     * administrador responsável, o usuário alvo e os dados originais exibidos
+     * pela interface.
      *
-     * @param administradorId identificador do administrador executor.
+     * A autorização é confirmada com os dados atuais do banco antes da alteração.
+     * Os valores originais também são comparados para evitar sobrescrever uma
+     * alteração feita depois que a tela foi carregada. O administrador não pode
+     * alterar o próprio perfil.
+     *
+     * Senha, status e indicador de troca obrigatória permanecem preservados.
+     * O objeto retornado só recebe os novos dados depois do commit.
+     *
+     * @param administradorId identificador do administrador responsável.
      * @param usuarioAlvoId identificador do usuário que será editado.
-     * @param nomeOriginal nome presente no snapshot exibido pela interface.
-     * @param loginOriginal login presente no snapshot exibido pela interface.
-     * @param perfilOriginal perfil presente no snapshot exibido pela interface.
+     * @param nomeOriginal nome original exibido pela interface.
+     * @param loginOriginal login original exibido pela interface.
+     * @param perfilOriginal perfil original exibido pela interface.
      * @param novoNome novo nome do usuário alvo.
      * @param novoLogin novo login do usuário alvo.
      * @param novoPerfil novo perfil ADMIN ou VENDEDOR.
      * @return usuário persistido revalidado, atualizado em memória após o commit.
      * @throws IllegalArgumentException se os novos dados forem inválidos ou se o
      *                                  login pertencer a outro usuário.
-     * @throws IllegalStateException se o executor não estiver autorizado, o alvo
-     *                               não existir, o snapshot estiver desatualizado,
-     *                               uma regra de perfil impedir a edição ou a
-     *                               transação não puder ser concluída.
+     * @throws IllegalStateException se o administrador não estiver autorizado, o
+     *                               usuário alvo não existir, os dados originais
+     *                               estiverem desatualizados, uma regra de perfil
+     *                               impedir a edição ou a transação não puder ser
+     *                               concluída.
      */
     public Usuario editarUsuario(
             Integer administradorId,

@@ -143,7 +143,6 @@ public class AuthService {
      */
     public ResultadoAutenticacao autenticar(String login, String senhaLimpa) {
 
-        // Validação básica (fail-fast)
         if (login == null || login.isBlank() || senhaLimpa == null || senhaLimpa.isBlank()) {
             throw new IllegalArgumentException("Login e senha são obrigatórios.");
         }
@@ -170,7 +169,6 @@ public class AuthService {
             throw new RuntimeException("Usuário ou senha inválidos.");
         }
 
-        // Verifica se o usuário está ativo
         if (!"ATIVO".equalsIgnoreCase(usuario.getStatus())) {
             throw new RuntimeException("Usuário inativo. Contate o administrador.");
         }
