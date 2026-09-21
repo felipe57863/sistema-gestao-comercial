@@ -9,12 +9,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * Coordena a definição da nova senha exigida antes do acesso normal ao ERP.
+ * Responsável pelas operações de troca de senha do usuário.
  *
- * O Service valida os dados, gera o hash BCrypt e controla a transação que
- * atualiza simultaneamente a senha e o indicador de troca obrigatória. Ele não
- * acessa JavaFX e não cria SessaoUsuario; essa liberação pertence ao Controller
- * somente depois da conclusão confirmada.
+ * Atende tanto a troca obrigatória antes do acesso normal quanto a alteração
+ * voluntária da senha de um usuário já liberado. O Service valida os dados,
+ * gera o hash BCrypt e controla as transações necessárias para atualizar a
+ * senha e, quando aplicável, o indicador de troca obrigatória.
+ *
+ * Não acessa JavaFX nem cria a sessão do usuário. A liberação do acesso normal
+ * e as decisões de navegação continuam sob responsabilidade dos Controllers.
  */
 public class TrocaSenhaService {
 
