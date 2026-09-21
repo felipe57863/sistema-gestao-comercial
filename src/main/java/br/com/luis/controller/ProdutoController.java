@@ -618,9 +618,11 @@ public class ProdutoController implements Initializable {
             return;
         }
 
+        boolean estavaEditando;
+
         try {
 
-            boolean estavaEditando = produtoSelecionado != null;
+            estavaEditando = produtoSelecionado != null;
 
             String descricao = txtDescricao.getText();
             BigDecimal preco = converterDecimal(txtPreco.getText(), "Preço é obrigatório.");
@@ -681,7 +683,26 @@ public class ProdutoController implements Initializable {
                 );
             }
 
+        } catch (NumberFormatException e) {
 
+            mostrarAviso(e.getMessage());
+            return;
+
+        } catch (IllegalArgumentException e) {
+
+            mostrarAviso(e.getMessage());
+            return;
+
+        } catch (RuntimeException e) {
+
+            System.err.println("[ERRO] Falha ao salvar produto.");
+            e.printStackTrace();
+
+            mostrarErroAmigavel("Não foi possível salvar o produto. Verifique os dados e tente novamente.");
+            return;
+        }
+
+        try {
             carregarTabela();
             prepararNovoCadastro();
 
@@ -691,20 +712,19 @@ public class ProdutoController implements Initializable {
                             : "Produto cadastrado com sucesso."
             );
 
-        } catch (NumberFormatException e) {
-
-            mostrarAviso(e.getMessage());
-
-        } catch (IllegalArgumentException e) {
-
-            mostrarAviso(e.getMessage());
-
         } catch (RuntimeException e) {
-
-            System.err.println("[ERRO] Falha ao salvar produto.");
+            System.err.println(
+                    "[ERRO] Produto salvo, mas não foi possível concluir a atualização da tela."
+            );
             e.printStackTrace();
 
-            mostrarErroAmigavel("Não foi possível salvar o produto. Verifique os dados e tente novamente.");
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Operação concluída");
+            alert.setHeaderText(null);
+            alert.setContentText(
+                    "O produto foi salvo, mas não foi possível concluir a atualização da tela."
+            );
+            alert.showAndWait();
         }
     }
 
