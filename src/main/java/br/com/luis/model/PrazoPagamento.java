@@ -1,8 +1,10 @@
 package br.com.luis.model;
 
 /**
- * Entidade que representa as condições de pagamento a prazo.
- * Exemplo: "30 Dias", "15 e 30 Dias", "À Vista".
+ * Representa um prazo de pagamento cadastrado para vendas a prazo.
+ *
+ * Cada prazo possui uma descrição, uma quantidade de dias e um indicador
+ * de ativo.
  */
 public class PrazoPagamento {
 

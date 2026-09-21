@@ -92,7 +92,6 @@ public class Cliente {
             throw new IllegalArgumentException("Documento é obrigatório.");
         }
 
-        // Remove tudo que não for número
         String documentoLimpo = documento.replaceAll("[^0-9]", "");
 
         if (documentoLimpo.isBlank()) {

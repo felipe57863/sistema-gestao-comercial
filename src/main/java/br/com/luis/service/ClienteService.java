@@ -180,9 +180,6 @@ public class ClienteService {
         return resto < 2 ? 0 : 11 - resto;
     }
 
-    /**
-     * Impede que outro cliente use o mesmo documento.
-     */
     private void validarDocumentoDuplicado(String documento, Integer idAtual) {
 
         List<Cliente> existentes = dao.listarTodos();
