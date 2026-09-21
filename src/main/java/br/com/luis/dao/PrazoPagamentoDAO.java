@@ -34,7 +34,6 @@ public class PrazoPagamentoDAO {
 
             stmt.executeUpdate();
 
-            // Recupera o ID gerado automaticamente pelo banco
             try (var rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     prazo.setIdPrazo(rs.getInt(1));

@@ -51,12 +51,11 @@ public class ClienteDAO {
             // SQLite não possui ENUM → armazenamos como texto
             stmt.setString(5, cliente.getTipo().name());
 
-            // JDBC converte BigDecimal corretamente
             stmt.setBigDecimal(6, cliente.getLimiteCredito());
 
             stmt.setString(7, cliente.getStatus().name());
 
-            // Validação defensiva da FK
+            // Confere se o prazo de pagamento e seu ID foram informados
             if (cliente.getPrazoPagamento() == null || cliente.getPrazoPagamento().getIdPrazo() == null) {
                 throw new IllegalArgumentException("Prazo de pagamento inválido.");
             }
@@ -106,7 +105,6 @@ public class ClienteDAO {
 
             while (rs.next()) {
 
-                // Reconstrói o PrazoPagamento
                 PrazoPagamento prazo = new PrazoPagamento(
                         rs.getInt("id_prazo"),
                         rs.getString("prazo_descricao"),
@@ -114,7 +112,6 @@ public class ClienteDAO {
                         rs.getInt("ativo") == 1
                 );
 
-                // Reconstrói o Cliente com ENUMs
                 Cliente cliente = new Cliente(
                         rs.getInt("id_cliente"),
                         rs.getString("nome"),
@@ -177,7 +174,7 @@ public class ClienteDAO {
             stmt.setBigDecimal(6, cliente.getLimiteCredito());
             stmt.setString(7, cliente.getStatus().name());
 
-            // Validação defensiva da FK
+            // Confere se o prazo de pagamento e seu ID foram informados
             if (cliente.getPrazoPagamento() == null || cliente.getPrazoPagamento().getIdPrazo() == null) {
                 throw new IllegalArgumentException("Prazo de pagamento inválido.");
             }

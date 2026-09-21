@@ -130,9 +130,6 @@ public class ClienteController {
         rbAtivo.setSelected(true);
     }
 
-    /**
-     * Configura o cabeçalho da tela.
-     */
     private void configurarCabecalho() {
         CabecalhoUtil.configurarUsuarioEDataHora(
                 lblUsuario,
@@ -418,9 +415,6 @@ public class ClienteController {
         return formatarCnpj(numeros);
     }
 
-    /**
-     * Limita o texto ao tamanho máximo informado.
-     */
     private String limitarTexto(String texto, int tamanhoMaximo) {
         if (texto.length() <= tamanhoMaximo) {
             return texto;
@@ -566,9 +560,6 @@ public class ClienteController {
         atualizarContador();
     }
 
-    /**
-     * Atualiza o contador do rodapé.
-     */
     private void atualizarContador() {
         int total = tabelaClientes.getItems().size();
         lblTotalClientes.setText("Total: " + total + " cliente" + (total == 1 ? "" : "s"));
@@ -607,9 +598,6 @@ public class ClienteController {
         thread.start();
     }
 
-    /**
-     * Ação do botão "Salvar".
-     */
     @FXML
     public void salvar() {
 
@@ -976,7 +964,7 @@ public class ClienteController {
     }
 
     /**
-     * Invalida a consulta atual e remove qualquer fotografia financeira exibida.
+     * Invalida a consulta atual e limpa os dados financeiros exibidos.
      */
     private void invalidarConsultaSituacaoFinanceira() {
 
@@ -993,7 +981,7 @@ public class ClienteController {
     }
 
     /**
-     * Exibe a fotografia financeira usando o formato monetário pt-BR.
+     * Exibe a situação financeira usando o formato monetário pt-BR.
      */
     private void exibirSituacaoFinanceira(
             SituacaoFinanceiraClienteView situacaoFinanceira
@@ -1009,16 +997,13 @@ public class ClienteController {
     }
 
     /**
-     * Exibe os placeholders quando não há fotografia financeira válida.
+     * Exibe os valores padrão quando não há situação financeira disponível.
      */
     private void exibirSituacaoFinanceiraIndisponivel() {
         lblSaldoDevedor.setText("Saldo devedor: —");
         lblLimiteDisponivel.setText("Limite disponível: —");
     }
 
-    /**
-     * Método utilitário para alertas.
-     */
     private void mostrarAlerta(Alert.AlertType tipo, String titulo, String mensagem) {
         Alert alerta = new Alert(tipo);
         alerta.setTitle(titulo);
@@ -1060,7 +1045,7 @@ public class ClienteController {
     }
 
     /**
-     * Seleciona no ComboBox o prazo correspondente ao ID do cliente.
+     * Seleciona no ComboBox o prazo de pagamento vinculado ao cliente.
      */
     private void selecionarPrazoNoCombo(PrazoPagamento prazoCliente) {
 
