@@ -108,9 +108,6 @@ public class ItemEntradaEstoque {
         return subtotal;
     }
 
-    /**
-     * Calcula o subtotal com os valores do próprio item.
-     */
     public BigDecimal calcularSubtotal() {
         if (quantidadeRecebida == null || precoCompraUnitario == null) {
             this.subtotal = null;

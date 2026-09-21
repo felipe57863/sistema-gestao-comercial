@@ -38,7 +38,7 @@ public class EntradaEstoqueService {
     }
 
     /**
-     * Retorna uma fotografia imutável do último preço de compra dos produtos que
+     * Retorna um mapa imutável com o último preço de compra dos produtos que
      * possuem histórico de entrada de estoque.
      */
     public Map<Integer, BigDecimal> buscarUltimosPrecosCompra() {
@@ -64,8 +64,8 @@ public class EntradaEstoqueService {
     }
 
     /**
-     * Confirma um rascunho de Entrada de Estoque e retorna uma nova instância
-     * sanitizada somente após o commit.
+     * Confirma um rascunho de Entrada de Estoque e retorna uma nova instância com
+     * os dados revalidados somente após o commit.
      */
     public EntradaEstoque confirmarEntrada(
             EntradaEstoque entradaEstoque,
@@ -220,8 +220,9 @@ public class EntradaEstoqueService {
     }
 
     /**
-     * Revalida os dados persistidos, cria os snapshots e executa todas as
-     * mutações usando a Connection controlada pelo método público.
+     * Revalida o administrador e os produtos, prepara os dados da entrada e
+     * executa todas as alterações usando a Connection controlada pelo método
+     * público.
      */
     private EntradaEstoque confirmarEntradaTransacional(
             Connection conn,

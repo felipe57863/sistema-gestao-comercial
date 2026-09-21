@@ -26,8 +26,8 @@ import java.util.*;
 /**
  * Coordena o rascunho visual e a confirmação de uma Entrada de Estoque.
  *
- * Mantém os itens em memória e delega ao Service a autorização, os snapshots,
- * a persistência e a movimentação transacional do estoque.
+ * Mantém os itens em memória e delega ao Service a autorização, a revalidação
+ * dos dados, a persistência e a atualização do estoque dentro da transação.
  */
 public class EntradaEstoqueController {
 
