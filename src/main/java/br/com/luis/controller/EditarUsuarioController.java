@@ -45,7 +45,8 @@ public class EditarUsuarioController {
     }
 
     /**
-     * Recebe o executor e copia o snapshot sem modificar o objeto selecionado.
+     * Recebe o administrador responsável pela operação e copia os dados do
+     * usuário selecionado sem modificar o objeto original.
      */
     public void definirContexto(
             Integer administradorId,

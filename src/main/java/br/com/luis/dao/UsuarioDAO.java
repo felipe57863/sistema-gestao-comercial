@@ -58,7 +58,6 @@ public class UsuarioDAO {
 
             stmt.executeUpdate();
 
-            // Recupera o ID gerado pelo banco
             try (var rs = stmt.getGeneratedKeys()) {
                 if (rs.next()) {
                     usuario.setIdUsuario(rs.getInt(1));
@@ -425,8 +424,8 @@ public class UsuarioDAO {
     }
 
     /**
-     * Atualiza somente os dados cadastrais quando o snapshot anterior ainda
-     * corresponde ao registro persistido. O login anterior é comparado sem
+     * Atualiza somente os dados cadastrais quando os valores anteriores ainda
+     * correspondem ao registro persistido. O login anterior é comparado sem
      * distinção entre maiúsculas e minúsculas. O DAO não executa commit, rollback
      * nem fecha a Connection recebida.
      *

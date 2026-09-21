@@ -44,26 +44,23 @@ public class LoginController {
     public void initialize() {
         this.authService = new AuthService();
 
-        // Posiciona o foco inicial no campo de login.
         txtLogin.requestFocus();
     }
 
     /**
      * Processa a ação do botão "Entrar".
      *
-     * Lê as credenciais da interface, evita múltiplos cliques durante o fluxo e
-     * delega a autenticação ao AuthService. Credenciais válidas com troca de
-     * senha pendente permanecem no Login e não criam uma sessão normal. Quando
-     * o acesso está liberado, prepara a Tela Principal e exibe a confirmação
-     * ainda no Login. Após o usuário fechar o alerta, substitui a Scene no mesmo
-     * Stage.
+     * Lê as credenciais da interface, evita múltiplos cliques e delega a
+     * autenticação ao AuthService.
      *
-     * Em falhas de autenticação ou em erros propagados durante o login,
-     * apresenta a mensagem correspondente e limpa o campo de senha. Se a Tela
-     * Principal não puder ser aberta após a autenticação, encerra a sessão
-     * recém-criada, mantém o Login disponível e permite uma nova tentativa.
+     * Quando a troca obrigatória de senha estiver pendente, mantém a sessão
+     * normal vazia e abre a tela específica para definição da nova senha.
+     * Quando o acesso estiver liberado, cria a sessão do usuário e abre a
+     * Tela Principal.
      *
-     * Ao final, reabilita o botão de entrada.
+     * Falhas de autenticação ou de navegação são informadas ao usuário e o
+     * campo de senha é limpo quando necessário. Ao final, o botão de entrada
+     * é habilitado novamente.
      */
     @FXML
     public void fazerLogin(ActionEvent event) {
@@ -75,7 +72,6 @@ public class LoginController {
             // Evita múltiplos cliques durante a tentativa de autenticação.
             btnEntrar.setDisable(true);
 
-            // Delega a autenticação ao AuthService.
             ResultadoAutenticacao resultadoAutenticacao =
                     authService.autenticar(login, senha);
 
@@ -114,7 +110,6 @@ public class LoginController {
                     .getInstance()
                     .setUsuarioLogado(usuarioAutenticado);
 
-            // Redireciona para a Tela Principal do sistema.
             if (!abrirTelaPrincipal(usuarioAutenticado.getNome())) {
                 SessaoUsuario.getInstance().fazerLogout();
 
@@ -301,9 +296,6 @@ public class LoginController {
         }
     }
 
-    /**
-     * Exibe alertas padronizados.
-     */
     private void mostrarAlerta(
             Alert.AlertType tipo,
             String titulo,
