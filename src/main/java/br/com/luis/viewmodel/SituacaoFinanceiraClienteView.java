@@ -4,11 +4,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Representa uma fotografia imutável da situação financeira persistida de um cliente.
+ * Representa os dados da situação financeira de um cliente.
  *
- * Os valores são normalizados com escala monetária 2 e arredondamento
+ * Os valores são normalizados para duas casas decimais com
  * {@link RoundingMode#HALF_UP}. O saldo devedor não pode ser negativo, enquanto
- * o limite disponível pode ser negativo quando o saldo supera o limite de crédito.
+ * o limite disponível pode ficar negativo quando o saldo supera o limite de crédito.
  */
 public final class SituacaoFinanceiraClienteView {
 
@@ -19,7 +19,7 @@ public final class SituacaoFinanceiraClienteView {
     private final BigDecimal limiteDisponivel;
 
     /**
-     * Cria uma fotografia financeira normalizada do cliente.
+     * Cria a situação financeira do cliente com os valores normalizados.
      *
      * @param saldoDevedor total persistido das contas a receber pendentes.
      * @param limiteDisponivel limite de crédito persistido menos o saldo devedor.

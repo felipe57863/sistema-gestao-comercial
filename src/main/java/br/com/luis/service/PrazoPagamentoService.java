@@ -23,10 +23,8 @@ public class PrazoPagamentoService {
      */
     public void cadastrar(PrazoPagamento prazo) {
 
-        // Fail-fast: validação dos dados administrativos obrigatórios
         validarDadosObrigatorios(prazo);
 
-        // Regra de negócio: evitar duplicidade de descrição
         validarDescricaoDuplicada(prazo.getDescricao(), null);
 
         // Regra de negócio: todo novo prazo inicia como ativo
@@ -41,14 +39,12 @@ public class PrazoPagamentoService {
      */
     public void atualizar(PrazoPagamento prazo) {
 
-        // Fail-fast: validação dos dados administrativos obrigatórios
         validarDadosObrigatorios(prazo);
 
         if (prazo.getIdPrazo() == null || prazo.getIdPrazo() <= 0) {
             throw new IllegalArgumentException("ID do prazo de pagamento deve ser válido para atualização.");
         }
 
-        // Regra de negócio: evitar duplicidade de descrição em outro registro
         validarDescricaoDuplicada(prazo.getDescricao(), prazo.getIdPrazo());
 
         dao.atualizar(prazo);
@@ -59,7 +55,6 @@ public class PrazoPagamentoService {
      */
     public void inativar(Integer idPrazo) {
 
-        // Fail-fast: validação básica
         if (idPrazo == null || idPrazo <= 0) {
             throw new IllegalArgumentException("ID do prazo de pagamento é obrigatório para inativação.");
         }
@@ -83,9 +78,6 @@ public class PrazoPagamentoService {
         return dao.listarTodos();
     }
 
-    /**
-     * Valida os dados administrativos obrigatórios de um prazo de pagamento.
-     */
     private void validarDadosObrigatorios(PrazoPagamento prazo) {
 
         if (prazo == null) {
@@ -105,9 +97,6 @@ public class PrazoPagamentoService {
         }
     }
 
-    /**
-     * Impede duplicidade de descrição entre os prazos cadastrados.
-     */
     private void validarDescricaoDuplicada(String descricao, Integer idAtual) {
 
         List<PrazoPagamento> existentes = dao.listarTodos();
@@ -147,9 +136,6 @@ public class PrazoPagamentoService {
         }
     }
 
-    /**
-     * Verifica se a quantidade de dias de um prazo padrão já está cadastrada.
-     */
     private boolean existePrazoComQuantidadeDias(int quantidadeDias) {
 
         List<PrazoPagamento> prazos = dao.listarTodos();
