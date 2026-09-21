@@ -3,9 +3,9 @@ package br.com.luis.viewmodel;
 /**
  * Representa a situação calculada de um produto na visão de estoque.
  *
- * A situação é determinada futuramente pelo Service a partir do estoque atual
- * e do estoque mínimo. A opção visual "Todas" é representada por valor nulo no
- * filtro e, por isso, não integra este enum.
+ * A situação é determinada pelo Service a partir do estoque atual e do estoque
+ * mínimo. A opção visual "Todas" é representada por valor nulo no filtro e, por
+ * isso, não integra este enum.
  */
 public enum SituacaoEstoqueProduto {
 

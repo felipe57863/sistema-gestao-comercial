@@ -23,7 +23,6 @@ public class PromocaoService {
     private final PromocaoDAO promocaoDAO;
 
     public PromocaoService() {
-        // Inicializa o DAO que será orquestrado por este Service
         this.promocaoDAO = new PromocaoDAO();
     }
 
@@ -32,12 +31,14 @@ public class PromocaoService {
      *
      * Os dados são validados antes da abertura da conexão. Pela RN22, a mesma
      * Connection inativa as promoções anteriores do produto e persiste o novo
-     * registro. O commit ocorre somente após as duas operações; qualquer falha
-     * provoca rollback e o autoCommit é restaurado.
+     * registro.
+     *
+     * O commit ocorre somente após as duas operações. Se ocorrer uma falha antes da
+     * conclusão da transação, o Service tenta executar rollback. O autoCommit é
+     * restaurado quando a transação foi concluída por commit ou rollback.
      */
     public void cadastrarPromocaoNova(Promocao promocao) {
 
-        // 1. Fail-Fast (Defesa antes de tocar no banco)
         validarPromocao(promocao);
 
         // 2. Toda promoção cadastrada por este fluxo deve entrar como ativa
@@ -57,7 +58,6 @@ public class PromocaoService {
                 promocaoDAO.inativarPromocoesAnteriores(conn, promocao.getProduto().getIdProduto());
                 promocaoDAO.cadastrar(conn, promocao);
 
-                // 5. Se chegou até aqui sem erros, confirma tudo no banco
                 conn.commit();
                 transacaoConcluida = true;
 
@@ -67,7 +67,7 @@ public class PromocaoService {
             } catch (SQLException | RuntimeException | Error e) {
                 falhaOriginal = e;
 
-                // 6. Deu erro em qualquer etapa? Desfaz TUDO
+                // Se a transação ainda não foi concluída, tenta executar rollback.
                 if (!transacaoConcluida) {
                     try {
                         conn.rollback();

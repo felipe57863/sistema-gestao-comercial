@@ -164,8 +164,8 @@ public class ProdutoService {
     /**
      * Valida e atualiza um produto existente em transação própria.
      *
-     * A Connection é controlada pela camada Service para permitir que este fluxo
-     * possa posteriormente participar de operações compostas com promoção.
+     * Este método altera somente os dados do produto. A atualização conjunta de
+     * produto e promoção é realizada por atualizarComPromocao(...).
      *
      * @param produto produto que será atualizado.
      */
@@ -263,7 +263,7 @@ public class ProdutoService {
      *
      * A promoção informada representa o estado desejado após a edição:
      * - promoção não nula: mantém ou substitui a promoção ativa conforme necessário;
-     * - promoção nula: remove a promoção ativa, caso exista.
+     * - promoção nula: inativa a promoção ativa, caso exista.
      *
      * A atualização do produto e qualquer alteração de promoção utilizam a mesma
      * Connection e somente são confirmadas juntas.
@@ -463,7 +463,6 @@ public class ProdutoService {
      */
     public void inativar(Produto produto) {
 
-        // FAIL-FAST
         if (produto == null || produto.getIdProduto() == null || produto.getIdProduto() <= 0) {
             throw new IllegalArgumentException("Produto inválido para inativação.");
         }
@@ -489,8 +488,7 @@ public class ProdutoService {
     }
 
     /**
-     * Retorna apenas produtos ativos.
-     * Melhor prática: filtrado direto no banco (performance).
+     * Retorna apenas os produtos ativos.
      */
     public List<Produto> listarAtivos() {
         return produtoDAO.listarAtivos();
