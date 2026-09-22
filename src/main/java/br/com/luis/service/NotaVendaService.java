@@ -22,10 +22,10 @@ import java.util.List;
 /**
  * Service responsável pela coordenação documental da Nota de Venda.
  *
- * Carrega exclusivamente a fotografia persistida em NotaVenda e ItemNotaVenda,
- * valida sua integridade e delega a geração física do PDF. Não reconstrói dados
- * a partir de cadastros atuais, não altera banco e não participa das transações
- * comerciais de venda ou estorno.
+ * Carrega somente os dados registrados em NotaVenda e ItemNotaVenda,
+ * valida sua integridade e delega a geração do PDF. Não reconstrói dados
+ * a partir de cadastros atuais, não altera o banco e não participa das
+ * transações comerciais de venda ou estorno.
  */
 public class NotaVendaService {
 
@@ -42,14 +42,14 @@ public class NotaVendaService {
     }
 
     /**
-     * Gera o PDF a partir da fotografia documental persistida da Nota.
+     * Gera o PDF a partir dos dados persistidos da Nota de Venda.
      *
      * Aceita Nota ATIVA ou ESTORNADA, não reconstrói dados a partir dos cadastros
      * atuais e gera o arquivo físico somente depois da transação comercial.
      *
      * @throws IllegalArgumentException se os parâmetros de geração forem inválidos.
-     * @throws IllegalStateException se a Nota não existir, sua fotografia estiver
-     *                               inconsistente ou a consulta ou geração falhar.
+     * @throws IllegalStateException se a Nota não existir, seus dados estiverem
+     *                               inconsistentes ou a consulta ou geração falhar.
      */
     public Path gerarPdfPorNotaId(
             Integer notaId,
@@ -100,13 +100,13 @@ public class NotaVendaService {
     /**
      * Gera o PDF da Nota vinculada a uma venda.
      *
-     * Vendas legadas podem não possuir fotografia documental. Quando a Nota existe,
-     * o mesmo número e snapshot são preservados em estado ATIVO ou ESTORNADO e o
-     * arquivo físico é gerado fora da transação comercial.
+     * Vendas legadas podem não possuir Nota de Venda. Quando a Nota existe,
+     * o mesmo número e os dados já registrados são preservados em estado ATIVO
+     * ou ESTORNADO, e o arquivo físico é gerado fora da transação comercial.
      *
      * @throws IllegalArgumentException se os parâmetros de geração forem inválidos.
-     * @throws IllegalStateException se a venda não possuir Nota, a fotografia
-     *                               estiver inconsistente ou a consulta ou geração falhar.
+     * @throws IllegalStateException se a venda não possuir Nota, os dados da Nota
+     *                               estiverem inconsistentes ou a consulta ou geração falhar.
      */
     public Path gerarPdfPorVendaId(
             Integer vendaId,
@@ -193,8 +193,8 @@ public class NotaVendaService {
     /**
      * Sugere o nome físico do PDF a partir da venda vinculada à Nota.
      *
-     * Usa somente a fotografia documental já persistida. A ausência de Nota para
-     * a venda é tratada como compatibilidade com legado e não provoca backfill.
+     * Usa somente os dados da Nota já persistida. A ausência de Nota para uma
+     * venda legada não cria uma Nota automaticamente.
      *
      * @param vendaId identificador da venda vinculada à Nota.
      * @param tipoVia indicação de primeira ou segunda via.

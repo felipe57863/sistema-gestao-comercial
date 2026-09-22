@@ -557,9 +557,6 @@ public class HistoricoVendaService {
         );
     }
 
-    /**
-     * Monta o texto aprovado para a coluna Financeiro.
-     */
     private String montarResumoFinanceiro(
             VendaHistoricoListagemView venda
     ) {
@@ -1851,9 +1848,6 @@ public class HistoricoVendaService {
         );
     }
 
-    /**
-     * Monta o ViewModel final dos detalhes.
-     */
     private VendaHistoricoDetalheView montarDetalheVenda(
             Venda venda,
             DadosVendaConvertidos dadosVenda,
