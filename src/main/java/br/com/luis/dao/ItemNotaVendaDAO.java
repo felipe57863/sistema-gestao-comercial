@@ -76,7 +76,8 @@ public class ItemNotaVendaDAO {
     }
 
     /**
-     * Lista a fotografia histórica dos itens de uma Nota sem consultar Produto.
+     * Lista os itens históricos de uma Nota usando apenas os dados registrados
+     * em ItemNotaVenda, sem consultar Produto.
      */
     public List<ItemNotaVenda> listarPorNotaId(
             Connection conn,

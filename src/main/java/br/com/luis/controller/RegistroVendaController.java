@@ -132,9 +132,6 @@ public class RegistroVendaController {
         this.itensCarrinhoView = FXCollections.observableArrayList();
     }
 
-    /**
-     * Inicialização automática do JavaFX após o carregamento do FXML.
-     */
     @FXML
     public void initialize() {
         inicializarVenda();
@@ -182,9 +179,6 @@ public class RegistroVendaController {
         return usuarioId;
     }
 
-    /**
-     * Configura informações visuais iniciais do cabeçalho.
-     */
     private void configurarCabecalho() {
         CabecalhoUtil.configurarUsuarioEDataHora(
                 lblUsuarioLogado,
@@ -458,9 +452,6 @@ public class RegistroVendaController {
         }
     }
 
-    /**
-     * Converte e valida a quantidade digitada na célula editável.
-     */
     private Integer converterTextoQuantidadeEditada(String textoQuantidade) {
 
         if (textoQuantidade == null || textoQuantidade.isBlank()) {
@@ -549,9 +540,6 @@ public class RegistroVendaController {
         );
     }
 
-    /**
-     * Atualiza os labels do resumo da venda.
-     */
     private void atualizarResumoVenda() {
         if (vendaAtual == null) {
             return;
@@ -587,9 +575,6 @@ public class RegistroVendaController {
         return formatoMoeda.format(valorSeguro);
     }
 
-    /**
-     * Formata a informação de promoção para a coluna da tabela.
-     */
     private String formatarPromocao(ItemVenda itemVenda) {
         BigDecimal descontoPromocional = itemVenda.getDescontoPromocional();
 
@@ -893,9 +878,6 @@ public class RegistroVendaController {
         }
     }
 
-    /**
-     * Identifica qual tipo de desconto global foi selecionado na tela.
-     */
     private TipoDescontoGlobal obterTipoDescontoGlobalSelecionado() {
 
         if (rbDescontoValor.isSelected()) {
@@ -909,9 +891,6 @@ public class RegistroVendaController {
         throw new IllegalArgumentException("Selecione o tipo de desconto.");
     }
 
-    /**
-     * Obtém o valor de desconto informado de acordo com o tipo selecionado.
-     */
     private BigDecimal obterValorDescontoInformado(TipoDescontoGlobal tipoDescontoGlobal) {
 
         String textoValor;
@@ -1020,10 +999,6 @@ public class RegistroVendaController {
         return alerta.showAndWait().orElse(botaoContinuar) == botaoCancelar;
     }
 
-    /**
-     * Limpa os campos da área de desconto global e retorna os campos
-     * ao estado inicial.
-     */
     private void limparCamposDescontoGlobal() {
 
         txtDescontoValor.clear();
@@ -1130,8 +1105,8 @@ public class RegistroVendaController {
      * valor recebido, permanecem no VendaService.
      *
      * Se o usuário cancelar ou fechar a janela, retorna Optional.empty() e a
-     * venda atual permanece inalterada. O troco é calculado pelo VendaService,
-     * apresentado após o sucesso e não é persistido no banco de dados.
+     * venda atual permanece inalterada. O troco é calculado pelo VendaService
+     * e, quando aplicável, também integra os dados registrados na Nota de Venda.
      */
     private Optional<DadosPagamentoAVista> solicitarDadosPagamentoAVista() {
 
@@ -1374,15 +1349,15 @@ public class RegistroVendaController {
     }
 
     /**
-     * Finaliza uma venda a prazo usando cliente selecionado e prazo escolhido no Dialog.
+     * Finaliza uma venda a prazo usando o cliente selecionado e o prazo escolhido.
      *
      * O Controller verifica a presença dos IDs selecionados e delega ao
-     * VendaService as validações de cliente, prazo máximo, limite e estoque,
-     * além da persistência da venda, itens e conta a receber.
+     * VendaService as validações de cliente, prazo máximo, limite, estoque e a
+     * persistência transacional.
      *
-     * Se a seleção do prazo for cancelada, mantém a venda atual. Após sucesso,
-     * apresenta o resultado e limpa a tela; erros são propagados ao evento de
-     * finalização, que exibe a mensagem sem descartar o carrinho.
+     * Se a seleção do prazo for cancelada, retorna null e mantém a venda atual.
+     * Quando a finalização comercial é concluída, retorna o resultado ao evento
+     * responsável pela etapa documental e pela atualização da tela.
      */
     private ResultadoFinalizacaoVenda finalizarVendaAPrazo() {
 
@@ -1421,14 +1396,14 @@ public class RegistroVendaController {
      * Evento do botão Finalizar Venda.
      *
      * Identifica o tipo selecionado e executa o fluxo real de finalização.
-     * Para venda à vista, solicita a forma de pagamento e o valor recebido
-     * quando necessário. Para venda a prazo, utiliza o cliente selecionado e
-     * solicita o prazo efetivo.
+     * Para venda à vista, solicita a forma de pagamento e o valor recebido quando
+     * necessário. Para venda a prazo, utiliza o cliente selecionado e solicita o
+     * prazo efetivo.
      *
-     * Em ambos os fluxos, chama VendaService.finalizarVenda(...), responsável
-     * pelas validações de negócio e pela persistência transacional. A tela é
-     * limpa somente após sucesso. Cancelamentos de Dialog e erros preservam a
-     * venda e o carrinho atuais para correção ou nova tentativa.
+     * As validações e a persistência comercial ficam no VendaService.
+     * Cancelamentos ou erros antes dessa conclusão preservam a venda atual.
+     * Depois que a venda é concluída com sucesso, a etapa documental é processada
+     * separadamente e a tela é limpa ao final dessa etapa.
      */
     @FXML
     private void onFinalizarVenda() {
@@ -1486,8 +1461,9 @@ public class RegistroVendaController {
     /**
      * Exibe o resultado da finalização de uma venda à vista.
      *
-     * Apresenta ID, total, forma de pagamento e, quando positivo, o troco
-     * calculado pelo VendaService. O troco exibido não é persistido no banco.
+     * Apresenta ID, Nota de Venda, total, forma de pagamento e, quando positivo,
+     * o troco calculado pelo VendaService. O troco também compõe os dados da
+     * Nota de Venda quando aplicável.
      */
     private boolean exibirResultadoFinalizacaoAVista(
             ResultadoFinalizacaoVenda resultado
@@ -1747,11 +1723,12 @@ public class RegistroVendaController {
     }
 
     /**
-     * Limpa a tela após uma venda ser finalizada com sucesso.
+     * Limpa a tela depois que a venda comercial já foi concluída.
      *
-     * Este método só deve ser chamado depois que o VendaService finalizar
-     * a venda sem erro. Cria uma nova venda em memória e restaura carrinho,
-     * campos, seleções e área do cliente. Não é chamado quando ocorre erro.
+     * Este método só deve ser chamado após o VendaService finalizar a venda sem
+     * erro. Cria uma nova venda em memória e restaura carrinho, campos, seleções
+     * e área do cliente. Também é executado ao final da etapa documental, mesmo
+     * quando o PDF não é salvo ou ocorre uma falha exclusivamente documental.
      */
     private void limparTelaAposFinalizacao() {
 
