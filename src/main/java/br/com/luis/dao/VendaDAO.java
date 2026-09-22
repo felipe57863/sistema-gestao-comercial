@@ -947,9 +947,6 @@ public class VendaDAO {
         }
     }
 
-    /**
-     * Preenche os parâmetros dinâmicos da consulta do histórico.
-     */
     private void definirParametrosHistorico(
             PreparedStatement stmt,
             List<Object> parametros

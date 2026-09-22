@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Entidade que representa um item da fotografia histórica de uma Nota de Venda.
+ * Representa um item histórico de uma Nota de Venda.
  *
  * Os dados são copiados no momento da finalização da venda e permanecem
  * independentes dos dados cadastrais atuais do Produto. O item documental não

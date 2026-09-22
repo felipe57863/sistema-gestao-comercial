@@ -17,7 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * DAO responsável pela persistência e leitura da fotografia principal da
+ * DAO responsável pela persistência e leitura dos dados principais da
  * Nota de Venda.
  *
  * Todos os métodos usam Connection externa. A criação da Nota deve participar
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 public class NotaVendaDAO {
 
     /**
-     * Insere a fotografia principal de uma Nota de Venda usando a Connection
+     * Insere os dados principais de uma Nota de Venda usando a Connection
      * controlada pelo Service.
      *
      * @return ID gerado, que também representa o número permanente da Nota.
@@ -145,7 +145,7 @@ public class NotaVendaDAO {
     }
 
     /**
-     * Busca a fotografia principal pelo número/ID da Nota.
+     * Busca os dados principais pelo número/ID da Nota.
      *
      * Os itens são carregados separadamente pelo ItemNotaVendaDAO.
      */
@@ -175,7 +175,7 @@ public class NotaVendaDAO {
     }
 
     /**
-     * Busca a fotografia principal associada a uma venda.
+     * Busca os dados principais da Nota associada a uma venda.
      *
      * Retorna null para vendas legadas que não possuam NotaVenda.
      */
