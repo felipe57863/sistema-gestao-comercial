@@ -5,7 +5,7 @@ package br.com.luis.model;
  *
  * A Nota nasce ATIVA junto com a finalização da venda. Quando a venda é
  * estornada, a Nota correspondente é marcada como ESTORNADA dentro da mesma
- * transação, preservando integralmente sua fotografia histórica.
+ * transação, preservando os dados históricos já registrados.
  */
 public enum StatusNotaVenda {
 

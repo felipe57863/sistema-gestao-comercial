@@ -8,12 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entidade que representa a fotografia histórica documental de uma venda.
+ * Representa a Nota de Venda gerada a partir de uma venda finalizada.
  *
  * Uma nova venda finalizada deve gerar exatamente uma NotaVenda dentro da mesma
- * transação. Depois de criada, sua fotografia comercial e financeira não deve
- * ser reconstruída a partir dos cadastros atuais. O único dado mutável é o
- * status documental, que pode passar de ATIVA para ESTORNADA no fluxo de estorno.
+ * transação. Depois de criada, seus dados comerciais e financeiros devem
+ * permanecer como foram registrados, sem reconstrução a partir dos cadastros
+ * atuais. O único dado mutável é o status documental, que pode passar de ATIVA
+ * para ESTORNADA no fluxo de estorno.
  */
 public class NotaVenda {
 

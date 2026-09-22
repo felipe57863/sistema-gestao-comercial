@@ -82,8 +82,10 @@ public class EstornoVendaService {
      *
      * Revalida o administrador e os dados persistidos, restaura o estoque, atualiza
      * venda e Nota, trata a conta, registra eventual saída compensatória e persiste
-     * a auditoria. O commit ocorre somente após todas as etapas; falhas provocam
-     * rollback integral e a restauração do autoCommit anterior.
+     * a auditoria. O commit ocorre somente após todas as etapas transacionais.
+     * Em caso de falha antes da conclusão, o Service tenta executar rollback; o
+     * autoCommit anterior é restaurado após commit ou rollback concluído. O resultado
+     * público é montado depois do encerramento da transação.
      */
     public ResultadoEstornoVenda estornarVenda(
             Integer vendaId,
@@ -498,8 +500,8 @@ public class EstornoVendaService {
      * Vendas antigas podem não possuir NotaVenda. Nesse caso, o estorno
      * continua normalmente em modo de compatibilidade com legado.
      *
-     * Para vendas que possuem Nota, a fotografia deve estar vinculada à
-     * venda correta e permanecer ATIVA antes do estorno.
+     * Para vendas que possuem Nota, ela deve estar vinculada à venda correta
+     * e permanecer ATIVA antes do estorno.
      *
      * @param conn conexão controlada pelo Service.
      * @param venda venda persistida e previamente validada.
@@ -1231,9 +1233,6 @@ public class EstornoVendaService {
         );
     }
 
-    /**
-     * Valida os campos comuns da movimentação financeira original.
-     */
     private void validarDadosBasicosMovimentacaoOriginal(
             MovimentacaoFinanceira movimentacaoOriginal,
             Venda venda
@@ -1304,9 +1303,6 @@ public class EstornoVendaService {
         }
     }
 
-    /**
-     * Valida a entrada financeira original de uma venda à vista.
-     */
     private void validarMovimentacaoOriginalVendaAVista(
             MovimentacaoFinanceira movimentacaoOriginal,
             Venda venda,
@@ -1362,9 +1358,6 @@ public class EstornoVendaService {
         }
     }
 
-    /**
-     * Valida a entrada criada pelo recebimento integral de uma conta.
-     */
     private void validarMovimentacaoOriginalRecebimentoConta(
             MovimentacaoFinanceira movimentacaoOriginal,
             Venda venda,
