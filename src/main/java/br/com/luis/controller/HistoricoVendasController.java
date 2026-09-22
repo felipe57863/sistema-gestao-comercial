@@ -194,9 +194,6 @@ public class HistoricoVendasController {
                 FXCollections.observableArrayList();
     }
 
-    /**
-     * Inicializa a interface.
-     */
     @FXML
     public void initialize() {
 
@@ -215,9 +212,6 @@ public class HistoricoVendasController {
         carregarHistorico();
     }
 
-    /**
-     * Configura os campos de filtro.
-     */
     private void configurarFiltros() {
 
         cbTipoVenda.getItems().setAll(
@@ -289,9 +283,6 @@ public class HistoricoVendasController {
         dpDataFinal.setValue(hoje);
     }
 
-    /**
-     * Configura a tabela principal do histórico.
-     */
     private void configurarTabelaVendas() {
 
         colVendaId.setCellValueFactory(
@@ -334,9 +325,6 @@ public class HistoricoVendasController {
         tabelaVendas.setItems(vendasExibidas);
     }
 
-    /**
-     * Configura a tabela de itens históricos.
-     */
     private void configurarTabelaItens() {
 
         colItemProdutoId.setCellValueFactory(
@@ -372,9 +360,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Formata a coluna Data/Hora.
-     */
     private void configurarColunaDataHora() {
 
         colDataHora.setCellFactory(
@@ -397,9 +382,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Formata a coluna Tipo.
-     */
     private void configurarColunaTipoVenda() {
 
         colTipoVenda.setCellFactory(
@@ -422,9 +404,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Formata a coluna Status.
-     */
     private void configurarColunaStatusVenda() {
 
         colStatusVenda.setCellFactory(
@@ -447,9 +426,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Formata a coluna Valor Total.
-     */
     private void configurarColunaValorTotal() {
 
         colValorTotal.setCellFactory(
@@ -472,9 +448,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Formata uma coluna monetária da tabela de itens.
-     */
     private void configurarColunaMonetariaItem(
             TableColumn<ItemVendaHistoricoView, BigDecimal> coluna
     ) {
@@ -499,9 +472,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Configura a seleção da tabela.
-     */
     private void configurarSelecaoTabela() {
 
         tabelaVendas
@@ -565,9 +535,6 @@ public class HistoricoVendasController {
         return filtro;
     }
 
-    /**
-     * Converte o ID digitado.
-     */
     private Integer converterVendaId(String texto) {
 
         if (texto == null || texto.isBlank()) {
@@ -716,9 +683,6 @@ public class HistoricoVendasController {
         }
     }
 
-    /**
-     * Preenche o painel lateral.
-     */
     private void preencherPainelDetalhes(
             VendaHistoricoDetalheView detalhe
     ) {
@@ -858,9 +822,6 @@ public class HistoricoVendasController {
         atualizarEstadoBotoesVendaSelecionada();
     }
 
-    /**
-     * Limpa o painel lateral.
-     */
     private void limparPainelDetalhes() {
 
         lblDetalheVendaId.setText("—");
@@ -892,9 +853,6 @@ public class HistoricoVendasController {
         btnEstornarVenda.setDisable(true);
     }
 
-    /**
-     * Ação do botão Filtrar.
-     */
     @FXML
     private void onFiltrar() {
         carregarHistorico();
@@ -924,9 +882,6 @@ public class HistoricoVendasController {
         carregarHistorico();
     }
 
-    /**
-     * Retorna para a Tela Principal.
-     */
     @FXML
     private void onVoltar() {
 
@@ -956,9 +911,9 @@ public class HistoricoVendasController {
      * Gera uma segunda via da Nota vinculada à venda selecionada.
      *
      * A Nota é localizada pelo NotaVendaService antes da abertura do FileChooser.
-     * Assim, vendas legadas sem fotografia documental exibem o aviso funcional
+     * Assim, vendas legadas sem Nota de Venda registrada exibem o aviso funcional
      * sem oferecer um destino de arquivo. Cancelar o FileChooser não é erro e
-     * preserva integralmente seleção e detalhes da tela.
+     * preserva a seleção e os detalhes da tela.
      */
     @FXML
     private void onGerarSegundaVia() {
@@ -1252,9 +1207,6 @@ public class HistoricoVendasController {
                 && !usuarioLogado.isTrocaSenhaObrigatoria();
     }
 
-    /**
-     * Solicita o motivo obrigatório do estorno.
-     */
     private Optional<String> solicitarMotivoEstorno(
             VendaHistoricoListagemView venda
     ) {
@@ -1360,9 +1312,6 @@ public class HistoricoVendasController {
         return dialog.showAndWait();
     }
 
-    /**
-     * Solicita a confirmação final do estorno.
-     */
     private boolean confirmarEstorno(
             VendaHistoricoListagemView venda,
             String motivo
@@ -1397,9 +1346,6 @@ public class HistoricoVendasController {
                 && resposta.get() == ButtonType.OK;
     }
 
-    /**
-     * Obtém o ID real do usuário logado.
-     */
     private Integer obterUsuarioIdAtual() {
 
         Usuario usuarioLogado =
@@ -1427,9 +1373,6 @@ public class HistoricoVendasController {
         return usuarioId;
     }
 
-    /**
-     * Mostra o resultado consolidado do estorno.
-     */
     private void mostrarResultadoEstorno(
             ResultadoEstornoVenda resultado
     ) {
@@ -1565,9 +1508,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Bloqueia ou libera ações de consulta.
-     */
     private void bloquearAcoesConsulta(boolean bloquear) {
 
         btnFiltrar.setDisable(bloquear);
@@ -1583,9 +1523,6 @@ public class HistoricoVendasController {
         atualizarEstadoBotoesVendaSelecionada();
     }
 
-    /**
-     * Atualiza o contador da tabela.
-     */
     private void atualizarContadorVendas() {
 
         int quantidade = vendasExibidas.size();
@@ -1604,9 +1541,6 @@ public class HistoricoVendasController {
         );
     }
 
-    /**
-     * Formata uma movimentação financeira.
-     */
     private String formatarMovimentacao(
             Integer movimentacaoId,
             TipoMovimentacaoFinanceira tipo,
@@ -1634,9 +1568,6 @@ public class HistoricoVendasController {
                 + formatarDataHora(dataHora);
     }
 
-    /**
-     * Formata IDs.
-     */
     private String formatarId(Integer id) {
 
         if (id == null || id <= 0) {
@@ -1646,9 +1577,6 @@ public class HistoricoVendasController {
         return id.toString();
     }
 
-    /**
-     * Formata textos opcionais.
-     */
     private String formatarTexto(String texto) {
 
         if (texto == null || texto.isBlank()) {
@@ -1658,9 +1586,6 @@ public class HistoricoVendasController {
         return texto.trim();
     }
 
-    /**
-     * Formata pessoa junto ao respectivo ID.
-     */
     private String formatarPessoaComId(
             Integer id,
             String nome
@@ -1679,9 +1604,6 @@ public class HistoricoVendasController {
                 + ")";
     }
 
-    /**
-     * Formata valor obrigatório.
-     */
     private String formatarValor(BigDecimal valor) {
 
         BigDecimal valorSeguro =
@@ -1699,9 +1621,6 @@ public class HistoricoVendasController {
                 .replace('\u00A0', ' ');
     }
 
-    /**
-     * Formata valor opcional.
-     */
     private String formatarValorOpcional(
             BigDecimal valor
     ) {
@@ -1713,9 +1632,6 @@ public class HistoricoVendasController {
         return formatarValor(valor);
     }
 
-    /**
-     * Formata data e hora.
-     */
     private String formatarDataHora(
             LocalDateTime dataHora
     ) {
@@ -1732,9 +1648,6 @@ public class HistoricoVendasController {
         return dataHora.format(formato);
     }
 
-    /**
-     * Formata o tipo da venda.
-     */
     private String formatarTipoVenda(
             TipoVenda tipoVenda
     ) {
@@ -1755,9 +1668,6 @@ public class HistoricoVendasController {
         }
     }
 
-    /**
-     * Formata o status da venda.
-     */
     private String formatarStatusVenda(
             StatusVenda statusVenda
     ) {
@@ -1781,9 +1691,6 @@ public class HistoricoVendasController {
         }
     }
 
-    /**
-     * Formata o status da conta.
-     */
     private String formatarStatusConta(
             StatusContaReceber statusConta
     ) {
@@ -1807,9 +1714,6 @@ public class HistoricoVendasController {
         }
     }
 
-    /**
-     * Formata a forma de pagamento.
-     */
     private String formatarFormaPagamento(
             FormaPagamento formaPagamento
     ) {
@@ -1836,9 +1740,6 @@ public class HistoricoVendasController {
         }
     }
 
-    /**
-     * Formata o tipo da movimentação.
-     */
     private String formatarTipoMovimentacao(
             TipoMovimentacaoFinanceira tipo
     ) {
@@ -1859,9 +1760,6 @@ public class HistoricoVendasController {
         }
     }
 
-    /**
-     * Formata a origem financeira.
-     */
     private String formatarOrigemMovimentacao(
             OrigemMovimentacaoFinanceira origem
     ) {
@@ -1888,9 +1786,6 @@ public class HistoricoVendasController {
         }
     }
 
-    /**
-     * Obtém uma mensagem segura de exceção.
-     */
     private String obterMensagemSegura(
             RuntimeException e,
             String mensagemPadrao
@@ -1905,9 +1800,6 @@ public class HistoricoVendasController {
         return e.getMessage();
     }
 
-    /**
-     * Exibe alertas padronizados.
-     */
     private void mostrarAlerta(
             Alert.AlertType tipo,
             String titulo,
