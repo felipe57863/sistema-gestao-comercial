@@ -42,9 +42,6 @@ public class VendaHistoricoListagemView {
     private Integer quantidadeContasVinculadas;
     private Integer quantidadeEntradasCompativeis;
 
-    /**
-     * Construtor padrão.
-     */
     public VendaHistoricoListagemView() {
         this.nomeCliente = CLIENTE_NAO_IDENTIFICADO;
         this.valorTotal = BigDecimal.ZERO.setScale(
@@ -56,9 +53,6 @@ public class VendaHistoricoListagemView {
         this.quantidadeEntradasCompativeis = 0;
     }
 
-    /**
-     * Construtor com os campos destinados à interface.
-     */
     public VendaHistoricoListagemView(
             Integer vendaId,
             LocalDateTime dataHora,

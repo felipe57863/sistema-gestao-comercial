@@ -17,9 +17,6 @@ public class ItemVendaHistoricoView {
     private BigDecimal precoUnitario;
     private BigDecimal subtotal;
 
-    /**
-     * Construtor padrão.
-     */
     public ItemVendaHistoricoView() {
         this.quantidade = 0;
         this.precoUnitario = BigDecimal.ZERO.setScale(
@@ -32,9 +29,6 @@ public class ItemVendaHistoricoView {
         );
     }
 
-    /**
-     * Construtor completo.
-     */
     public ItemVendaHistoricoView(
             Integer produtoId,
             String descricaoProduto,

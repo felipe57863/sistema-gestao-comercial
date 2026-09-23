@@ -66,9 +66,6 @@ public class VendaHistoricoDetalheView {
     private StatusVenda statusVendaAnterior;
     private StatusContaReceber statusContaReceberAnterior;
 
-    /**
-     * Construtor padrão.
-     */
     public VendaHistoricoDetalheView() {
         this.nomeCliente = CLIENTE_NAO_IDENTIFICADO;
         this.valorTotal = BigDecimal.ZERO.setScale(
@@ -78,9 +75,6 @@ public class VendaHistoricoDetalheView {
         this.itens = new ArrayList<>();
     }
 
-    /**
-     * Construtor completo.
-     */
     public VendaHistoricoDetalheView(
             Integer vendaId,
             LocalDateTime dataHora,
