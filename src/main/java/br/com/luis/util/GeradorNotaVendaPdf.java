@@ -26,7 +26,7 @@ import java.util.Locale;
 /**
  * Gerador físico do PDF da Nota de Venda.
  *
- * Recebe uma fotografia documental já carregada e validada. Não acessa banco,
+ * Recebe os dados documentais já carregados e validados. Não acessa banco,
  * DAO, JavaFX ou transações e não altera as entidades recebidas.
  */
 public class GeradorNotaVendaPdf {
@@ -79,11 +79,11 @@ public class GeradorNotaVendaPdf {
      * O arquivo final nunca é sobrescrito. A gravação ocorre primeiro em arquivo
      * temporário criado pelo próprio gerador no mesmo diretório e, somente após
      * o PDF ser concluído, esse arquivo é movido para o destino final. O gerador
-     * recebe a fotografia já carregada e validada pelo NotaVendaService, inclusive
+     * recebe os dados já carregados e validados pelo NotaVendaService, inclusive
      * para o estado histórico ESTORNADA, e não realiza persistência.
      *
-     * @param notaVenda fotografia persistida da Nota de Venda.
-     * @param itens itens persistidos que compõem a fotografia documental.
+     * @param notaVenda dados persistidos da Nota de Venda.
+     * @param itens itens persistidos da Nota de Venda.
      * @param tipoVia indicação de primeira ou segunda via.
      * @param destino caminho completo do arquivo PDF que será criado.
      * @return caminho absoluto e normalizado do PDF gerado.

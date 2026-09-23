@@ -49,7 +49,7 @@ import java.util.LinkedHashMap;
  * Também finaliza vendas à vista e a prazo em uma única transação, persistindo
  * a venda e seus itens, baixando o estoque, gerando a movimentação financeira
  * ou a conta a receber correspondente ao tipo da venda e registrando NotaVenda
- * e ItemNotaVenda como fotografia documental da operação comercial.
+ * e ItemNotaVenda com os dados documentais da operação comercial.
  */
 public class VendaService {
 
@@ -274,9 +274,6 @@ public class VendaService {
         return !listarItensElegiveisParaDescontoGlobal(venda).isEmpty();
     }
 
-    /**
-     * Calcula o subtotal bruto da venda antes de qualquer desconto.
-     */
     public BigDecimal calcularSubtotalBruto(Venda venda) {
         BigDecimal subtotalBruto = BigDecimal.ZERO;
 
@@ -293,9 +290,6 @@ public class VendaService {
         return subtotalBruto.setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Calcula o total dos descontos promocionais dos itens da venda.
-     */
     public BigDecimal calcularDescontoPromocionalTotal(Venda venda) {
         BigDecimal descontoPromocionalTotal = BigDecimal.ZERO;
 
@@ -395,12 +389,13 @@ public class VendaService {
      * autoCommit durante o fluxo e delega a finalização específica usando a
      * mesma conexão. Persiste a Venda e seus ItemVenda, revalida e baixa o estoque,
      * gera uma MovimentacaoFinanceira para venda à vista ou uma ContaReceber para
-     * venda a prazo e registra NotaVenda e ItemNotaVenda como fotografia documental.
+     * venda a prazo e registra NotaVenda e ItemNotaVenda com os dados documentais.
      *
-     * Executa commit somente depois de concluir todas essas operações. Em caso de
-     * erro, executa rollback, restaura o estado anterior do autoCommit e propaga a
-     * falha. A geração física do PDF não pertence a esta transação e ocorre somente
-     * depois do commit, em fluxo próprio.
+     * O commit ocorre somente depois de concluir todas as operações transacionais.
+     * Se ocorrer uma falha antes da conclusão, o Service tenta executar rollback.
+     * O estado anterior do autoCommit é restaurado depois de commit ou rollback
+     * concluído. A geração física do PDF não pertence a esta transação e ocorre
+     * somente depois do commit, em fluxo próprio.
      *
      * @param venda venda em memória que será finalizada.
      * @param tipoVenda tipo da venda: A_VISTA ou A_PRAZO.
@@ -552,7 +547,8 @@ public class VendaService {
      * Para PIX ou CARTAO:
      * o troco é zero.
      *
-     * O valor calculado compõe o ResultadoFinalizacaoVenda, mas não é persistido.
+     * O valor calculado compõe o ResultadoFinalizacaoVenda e, no pagamento
+     * em dinheiro, também é registrado na Nota de Venda durante a finalização.
      * Este método apenas calcula dados em memória e não acessa o banco de dados.
      */
     private BigDecimal calcularTrocoVendaAVista(
@@ -574,11 +570,12 @@ public class VendaService {
      * Finaliza uma venda à vista usando uma Connection externa.
      *
      * Este método não abre nem fecha a Connection, não executa commit e não
-     * executa rollback. Ele orquestra as operações da venda à vista usando a
-     * mesma transação controlada por finalizarVenda(...).
+     * executa rollback. Coordena as operações da venda à vista usando a mesma
+     * transação controlada por finalizarVenda(...).
      *
      * Ordem do fluxo:
-     * Venda -> ItensVenda -> Baixa de estoque -> MovimentacaoFinanceira -> Resultado.
+     * Venda -> ItensVenda -> Baixa de estoque -> MovimentacaoFinanceira ->
+     * NotaVenda/ItemNotaVenda -> Resultado.
      *
      * Ao final, retorna os identificadores persistidos e o troco calculado.
      */
@@ -722,11 +719,12 @@ public class VendaService {
      * Finaliza uma venda a prazo usando uma Connection externa.
      *
      * Este método não abre nem fecha a Connection, não executa commit e não
-     * executa rollback. Ele orquestra as operações da venda a prazo usando a
-     * mesma transação controlada por finalizarVenda(...).
+     * executa rollback. Coordena as operações da venda a prazo usando a mesma
+     * transação controlada por finalizarVenda(...).
      *
      * Ordem do fluxo:
-     * Validações transacionais -> Venda -> ItensVenda -> Baixa de estoque -> ContaReceber -> Resultado.
+     * Validações transacionais -> Venda -> ItensVenda -> Baixa de estoque ->
+     * ContaReceber -> NotaVenda/ItemNotaVenda -> Resultado.
      *
      * Ao final, retorna os identificadores persistidos e a data de vencimento.
      */
@@ -831,8 +829,9 @@ public class VendaService {
      * será adicionada como erro suprimido no erro original.
      *
      * Este método não abre nem fecha a Connection, não executa commit e não
-     * executa rollback. É chamado ao final do controle transacional para devolver
-     * a Connection ao estado de autoCommit encontrado antes da finalização.
+     * executa rollback. Os fluxos transacionais o chamam somente depois de um
+     * commit ou rollback concluído, para devolver a Connection ao estado de
+     * autoCommit encontrado antes da operação.
      */
     private void restaurarAutoCommitSeguro(
             Connection conn,
@@ -1226,11 +1225,12 @@ public class VendaService {
     }
 
     /**
-     * Consulta uma fotografia consistente da situação financeira persistida do cliente.
+     * Consulta a situação financeira persistida do cliente.
      *
      * A busca do cliente e a soma das contas pendentes são executadas na mesma
-     * Connection e em uma transação curta de leitura. O estado anterior de
-     * autoCommit é restaurado ao final, com rollback seguro em caso de falha.
+     * Connection e em uma transação curta de leitura. Em caso de falha antes da
+     * conclusão, o Service tenta executar rollback. O estado anterior do autoCommit
+     * é restaurado depois de commit ou rollback concluído.
      *
      * @param clienteId ID do cliente consultado.
      * @return saldo devedor e limite disponível com escala monetária.
@@ -1542,7 +1542,7 @@ public class VendaService {
     }
 
     /**
-     * Consulta e calcula uma fotografia financeira usando uma Connection externa.
+     * Consulta e calcula a situação financeira usando uma Connection externa.
      *
      * Este é o ponto interno comum para o saldo devedor e o limite disponível.
      * Não abre nem fecha a Connection e consulta o total pendente uma única vez.
@@ -1677,9 +1677,7 @@ public class VendaService {
      * executa rollback. Usa a conexão externa e participa da mesma transação
      * da finalização da venda.
      *
-     * Antes de inserir cada item, o ID da venda é vinculado ao ItemVenda.
-     *
-     * Cada item é validado e vinculado ao ID da venda antes da persistência.
+     * Cada item é validado e recebe o ID da venda antes da persistência.
      */
     private void persistirItensVenda(
             Connection conn,

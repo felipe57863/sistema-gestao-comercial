@@ -20,15 +20,9 @@ public class FiltroHistoricoVenda {
     private TipoVenda tipoVenda;
     private StatusVenda statusVenda;
 
-    /**
-     * Construtor padrão.
-     */
     public FiltroHistoricoVenda() {
     }
 
-    /**
-     * Construtor completo.
-     */
     public FiltroHistoricoVenda(
             LocalDate dataInicial,
             LocalDate dataFinal,
