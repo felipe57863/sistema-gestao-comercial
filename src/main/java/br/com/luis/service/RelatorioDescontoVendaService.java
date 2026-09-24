@@ -21,9 +21,9 @@ import java.util.List;
 /**
  * Coordena a consulta protegida do relatório de descontos concedidos.
  *
- * Valida a autorização persistida, confere as invariantes históricas entre
- * Venda e ItemVenda, cria as linhas finais e totaliza somente o conjunto que o
- * DAO devolveu após todos os filtros.
+ * Valida a autorização persistida, confere a consistência dos dados históricos
+ * entre Venda e ItemVenda, cria as linhas finais e totaliza somente os dados que
+ * o DAO devolveu após todos os filtros.
  */
 public class RelatorioDescontoVendaService {
 
@@ -42,9 +42,6 @@ public class RelatorioDescontoVendaService {
     private final VendaDAO vendaDAO;
     private final UsuarioDAO usuarioDAO;
 
-    /**
-     * Cria o Service com os DAOs utilizados pela consulta de leitura.
-     */
     public RelatorioDescontoVendaService() {
         this.vendaDAO = new VendaDAO();
         this.usuarioDAO = new UsuarioDAO();
@@ -53,9 +50,9 @@ public class RelatorioDescontoVendaService {
     /**
      * Consulta as vendas válidas com desconto para o período e tipo informados.
      *
-     * @param filtro fotografia imutável dos filtros solicitados.
+     * @param filtro filtros solicitados para a consulta.
      * @param usuarioId identificador do usuário que solicita a consulta.
-     * @return resultado imutável consolidado sobre as linhas finais.
+     * @return resultado consolidado sobre as linhas finais.
      */
     public ResultadoRelatorioDescontoVenda consultar(
             FiltroRelatorioDescontoVenda filtro,

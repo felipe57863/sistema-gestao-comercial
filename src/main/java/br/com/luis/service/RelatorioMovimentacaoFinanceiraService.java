@@ -22,7 +22,7 @@ import java.util.List;
  *
  * O Service valida as entradas, calcula os limites técnicos do período,
  * reconsulta e autoriza o usuário, solicita ao DAO somente as linhas projetadas
- * e consolida os totais financeiros da fotografia retornada.
+ * e consolida os totais financeiros do resultado retornado.
  *
  * Não acessa SessaoUsuario, componentes JavaFX ou mecanismos de formatação
  * visual. Também não altera autoCommit e não executa commit ou rollback,
@@ -44,9 +44,6 @@ public class RelatorioMovimentacaoFinanceiraService {
     private final MovimentacaoFinanceiraDAO movimentacaoFinanceiraDAO;
     private final UsuarioDAO usuarioDAO;
 
-    /**
-     * Cria o Service com as dependências JDBC usadas na consulta financeira.
-     */
     public RelatorioMovimentacaoFinanceiraService() {
         this.movimentacaoFinanceiraDAO =
                 new MovimentacaoFinanceiraDAO();
@@ -56,9 +53,9 @@ public class RelatorioMovimentacaoFinanceiraService {
 
     /**
      * Consulta o relatório de movimentações financeiras para os filtros
-     * informados e devolve uma fotografia completa e imutável.
+     * informados e devolve o resultado consolidado da consulta.
      *
-     * @param filtro fotografia imutável dos filtros solicitados.
+     * @param filtro filtros solicitados para a consulta.
      * @param usuarioId identificador do usuário que solicita a consulta.
      * @return resultado consolidado da consulta financeira.
      * @throws IllegalArgumentException quando o filtro, o usuário ou o período
@@ -242,9 +239,6 @@ public class RelatorioMovimentacaoFinanceiraService {
         }
     }
 
-    /**
-     * Cria o valor monetário inicial R$ 0,00.
-     */
     private BigDecimal criarValorMonetarioZero() {
         return BigDecimal.ZERO.setScale(
                 ESCALA_MONETARIA,

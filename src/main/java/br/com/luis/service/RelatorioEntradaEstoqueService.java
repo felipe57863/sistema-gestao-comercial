@@ -38,7 +38,7 @@ public class RelatorioEntradaEstoqueService {
     }
 
     /**
-     * Consulta entradas completas e consolida os totalizadores da fotografia.
+     * Consulta entradas completas e consolida os totalizadores do resultado.
      */
     public ResultadoRelatorioEntradaEstoque consultarRelatorio(
             FiltroRelatorioEntradaEstoque filtro,
