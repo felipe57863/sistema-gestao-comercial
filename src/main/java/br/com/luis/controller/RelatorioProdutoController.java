@@ -318,7 +318,8 @@ public class RelatorioProdutoController {
     }
 
     /**
-     * Consulta promoções somente na primeira seleção de sua aba.
+     * Inicia a consulta automática de promoções quando a aba é selecionada,
+     * enquanto ainda não houver uma consulta de promoções concluída.
      */
     private void configurarCarregamentoPromocoes() {
         tabPromocoes.selectedProperty().addListener(
@@ -369,7 +370,7 @@ public class RelatorioProdutoController {
     }
 
     /**
-     * Fotografa os filtros visuais da aba Estoque.
+     * Monta os filtros informados na aba Estoque.
      */
     private FiltroRelatorioEstoqueProduto montarFiltroEstoque() {
         return new FiltroRelatorioEstoqueProduto(
@@ -380,7 +381,7 @@ public class RelatorioProdutoController {
     }
 
     /**
-     * Fotografa os filtros visuais da aba Em promoção.
+     * Monta os filtros informados na aba Em promoção.
      */
     private FiltroRelatorioPromocaoProduto montarFiltroPromocao() {
         return new FiltroRelatorioPromocaoProduto(
@@ -401,7 +402,7 @@ public class RelatorioProdutoController {
     }
 
     /**
-     * Valida a sessão e inicia a consulta de estoque com uma fotografia dos filtros.
+     * Valida a sessão e inicia a consulta de estoque com os filtros atuais da tela.
      */
     private void consultarEstoquePelosFiltrosAtuais() {
         if (!telaAtiva || tarefaConsultaAtual != null) {
@@ -422,7 +423,7 @@ public class RelatorioProdutoController {
     }
 
     /**
-     * Valida a sessão e inicia a consulta de promoções com filtros fotografados.
+     * Valida a sessão e inicia a consulta de promoções com os filtros atuais da tela.
      */
     private void consultarPromocoesPelosFiltrosAtuais() {
         if (!telaAtiva || tarefaConsultaAtual != null) {
@@ -566,9 +567,6 @@ public class RelatorioProdutoController {
                 && !tarefa.isCancelled();
     }
 
-    /**
-     * Finaliza e libera os controles da consulta atual.
-     */
     private void finalizarConsulta(Task<?> tarefa) {
         if (tarefaConsultaAtual != tarefa) {
             return;
@@ -816,17 +814,11 @@ public class RelatorioProdutoController {
         }
     }
 
-    /**
-     * Executa a consulta solicitada na aba Estoque.
-     */
     @FXML
     private void onFiltrarEstoque() {
         consultarEstoquePelosFiltrosAtuais();
     }
 
-    /**
-     * Executa a consulta solicitada na aba Em promoção.
-     */
     @FXML
     private void onFiltrarPromocoes() {
         consultarPromocoesPelosFiltrosAtuais();

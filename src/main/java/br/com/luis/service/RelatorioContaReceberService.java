@@ -25,7 +25,7 @@ import java.util.List;
  * O Service valida os filtros, calcula os limites técnicos do período,
  * reconsulta e autoriza o usuário, captura uma única data de referência,
  * solicita ao DAO as projeções persistidas, calcula a situação gerencial de
- * cada conta e consolida os totais da fotografia retornada.
+ * cada conta e consolida os totais do resultado retornado.
  *
  * Não acessa SessaoUsuario, componentes JavaFX ou mecanismos de formatação
  * visual. Também não altera autoCommit e não executa commit ou rollback,
@@ -47,9 +47,6 @@ public class RelatorioContaReceberService {
     private final ContaReceberDAO contaReceberDAO;
     private final UsuarioDAO usuarioDAO;
 
-    /**
-     * Cria o Service com as dependências JDBC usadas na consulta do relatório.
-     */
     public RelatorioContaReceberService() {
         this.contaReceberDAO = new ContaReceberDAO();
         this.usuarioDAO = new UsuarioDAO();
@@ -57,14 +54,14 @@ public class RelatorioContaReceberService {
 
     /**
      * Consulta o relatório de contas a receber para os filtros informados e
-     * devolve uma fotografia completa e imutável.
+     * devolve o resultado consolidado da consulta.
      *
      * O período recebido pela interface possui as duas pontas inclusivas. O
      * Service converte a data final para o limite técnico exclusivo exigido pelo
      * DAO. A mesma data de referência é utilizada em toda a consulta para
      * classificar contas pendentes como A_VENCER ou VENCIDA.
      *
-     * @param filtro fotografia imutável dos filtros solicitados.
+     * @param filtro filtros solicitados para a consulta.
      * @param usuarioId identificador do usuário que solicita a consulta.
      * @return resultado consolidado do relatório de contas a receber.
      * @throws IllegalArgumentException quando o filtro, o usuário ou o período
@@ -300,9 +297,6 @@ public class RelatorioContaReceberService {
         };
     }
 
-    /**
-     * Cria o valor monetário inicial R$ 0,00.
-     */
     private BigDecimal criarValorMonetarioZero() {
         return BigDecimal.ZERO.setScale(
                 ESCALA_MONETARIA,

@@ -39,9 +39,6 @@ public class RelatorioClientePendenciaService {
     private final ContaReceberDAO contaReceberDAO;
     private final UsuarioDAO usuarioDAO;
 
-    /**
-     * Cria o Service com as dependências JDBC utilizadas na consulta.
-     */
     public RelatorioClientePendenciaService() {
         this.contaReceberDAO = new ContaReceberDAO();
         this.usuarioDAO = new UsuarioDAO();
@@ -50,9 +47,9 @@ public class RelatorioClientePendenciaService {
     /**
      * Consulta a posição atual de clientes com contas pendentes.
      *
-     * @param filtro fotografia imutável dos filtros solicitados.
+     * @param filtro filtros solicitados para a consulta.
      * @param usuarioId identificador do usuário que solicita a consulta.
-     * @return resultado imutável consolidado sobre a lista final filtrada.
+     * @return resultado consolidado sobre a lista final filtrada.
      */
     public ResultadoRelatorioClientePendencia consultar(
             FiltroRelatorioClientePendencia filtro,
