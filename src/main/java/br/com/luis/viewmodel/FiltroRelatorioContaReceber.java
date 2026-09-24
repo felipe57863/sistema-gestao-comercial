@@ -5,9 +5,9 @@ import java.time.LocalDate;
 /**
  * Transporta os filtros aplicados ao relatório de contas a receber.
  *
- * A classe é imutável e representa uma fotografia dos filtros informados no
- * momento em que a consulta é iniciada. Cliente nulo representa ausência de
- * filtro textual e situação nula representa a opção visual "Todas".
+ * A classe é imutável e guarda os filtros informados no momento em que a
+ * consulta é iniciada. Cliente nulo representa ausência de filtro textual e
+ * situação nula representa a opção visual "Todas".
  *
  * Esta classe não acessa banco de dados, DAO, Service, sessão, componentes
  * JavaFX ou mecanismos de formatação visual.
@@ -20,12 +20,12 @@ public final class FiltroRelatorioContaReceber {
     private final SituacaoRelatorioContaReceber situacao;
 
     /**
-     * Cria uma fotografia imutável dos filtros do relatório de contas a receber.
+     * Cria os filtros usados pelo relatório de contas a receber.
      *
-     * O texto do cliente é normalizado somente por remoção dos espaços externos.
+     * O texto do cliente é normalizado somente pela remoção dos espaços externos.
      * Valor nulo ou em branco representa ausência do filtro. Nenhuma máscara de
      * CPF ou CNPJ é removida nesta classe, preservando o texto informado para a
-     * fotografia da consulta.
+     * consulta.
      *
      * @param dataInicial data inicial inclusiva do período de vencimento.
      * @param dataFinal data final inclusiva do período de vencimento.
@@ -74,9 +74,6 @@ public final class FiltroRelatorioContaReceber {
         }
     }
 
-    /**
-     * Normaliza somente os espaços externos do texto informado.
-     */
     private static String normalizarClienteTexto(String clienteTexto) {
         if (clienteTexto == null || clienteTexto.isBlank()) {
             return null;

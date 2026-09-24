@@ -41,9 +41,6 @@ public class RelatorioProdutoService {
     private final PromocaoDAO promocaoDAO;
     private final UsuarioDAO usuarioDAO;
 
-    /**
-     * Cria o Service com as dependências JDBC usadas nas consultas de produtos.
-     */
     public RelatorioProdutoService() {
         this.produtoDAO = new ProdutoDAO();
         this.promocaoDAO = new PromocaoDAO();
@@ -53,9 +50,9 @@ public class RelatorioProdutoService {
     /**
      * Consulta e consolida a visão de estoque para um administrador autorizado.
      *
-     * @param filtro fotografia imutável dos filtros solicitados.
+     * @param filtro filtros solicitados para a consulta.
      * @param usuarioId identificador do usuário que solicita a consulta.
-     * @return resultado imutável e consolidado da visão de estoque.
+     * @return resultado consolidado da visão de estoque.
      * @throws IllegalArgumentException quando filtro ou usuário forem inválidos.
      * @throws SecurityException quando o usuário não estiver autorizado.
      * @throws IllegalStateException quando houver incoerência nos dados.
@@ -206,9 +203,9 @@ public class RelatorioProdutoService {
      * Consulta as promoções ativas e devolve uma linha para cada registro
      * encontrado, inclusive quando um produto possuir mais de uma promoção ativa.
      *
-     * @param filtro fotografia imutável dos filtros solicitados.
+     * @param filtro filtros solicitados para a consulta.
      * @param usuarioId identificador do usuário que solicita a consulta.
-     * @return resultado imutável da visão de produtos em promoção.
+     * @return resultado da visão de produtos em promoção.
      * @throws IllegalArgumentException quando filtro ou usuário forem inválidos.
      * @throws SecurityException quando o usuário não estiver autorizado.
      * @throws IllegalStateException quando houver incoerência nos dados.
