@@ -191,9 +191,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         Platform.runLater(this::iniciarFluxoInicial);
     }
 
-    /**
-     * Configura o usuário e o relógio do cabeçalho padrão.
-     */
     private void configurarCabecalho() {
         CabecalhoUtil.configurarUsuarioEDataHora(
                 lblUsuario,
@@ -345,9 +342,6 @@ public class RelatorioMovimentacaoFinanceiraController {
                 .selectFirst();
     }
 
-    /**
-     * Configura as propriedades e formatações da tabela.
-     */
     private void configurarTabela() {
 
         colMovimentacaoId.setCellValueFactory(
@@ -432,9 +426,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         tabelaMovimentacoes.setPlaceholder(placeholder);
     }
 
-    /**
-     * Formata a coluna de data e hora.
-     */
     private void configurarColunaDataHora() {
 
         colDataHora.setCellFactory(
@@ -456,9 +447,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         );
     }
 
-    /**
-     * Formata a coluna de tipo.
-     */
     private void configurarColunaTipo() {
 
         colTipo.setCellFactory(
@@ -480,9 +468,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         );
     }
 
-    /**
-     * Formata a coluna de origem.
-     */
     private void configurarColunaOrigem() {
 
         colOrigem.setCellFactory(
@@ -504,9 +489,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         );
     }
 
-    /**
-     * Formata a coluna de forma de pagamento.
-     */
     private void configurarColunaFormaPagamento() {
 
         colFormaPagamento.setCellFactory(
@@ -975,9 +957,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         configurarEstadoConsulta(false);
     }
 
-    /**
-     * Bloqueia ou libera os controles vinculados à consulta.
-     */
     private void configurarEstadoConsulta(
             boolean carregando
     ) {
@@ -1029,7 +1008,7 @@ public class RelatorioMovimentacaoFinanceiraController {
     }
 
     /**
-     * Aplica uma fotografia completa do relatório.
+     * Aplica o resultado completo do relatório na tela.
      *
      * Todos os textos são preparados antes da alteração dos componentes, e os
      * totais são obtidos exclusivamente do resultado consolidado pelo Service.
@@ -1175,9 +1154,6 @@ public class RelatorioMovimentacaoFinanceiraController {
                 : " movimentações");
     }
 
-    /**
-     * Formata o tipo aplicado ao filtro.
-     */
     private String formatarTipoFiltro(
             TipoMovimentacaoFinanceira tipo
     ) {
@@ -1189,9 +1165,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         return formatarTipo(tipo);
     }
 
-    /**
-     * Formata a origem aplicada ao filtro.
-     */
     private String formatarOrigemFiltro(
             OrigemMovimentacaoFinanceira origem
     ) {
@@ -1203,9 +1176,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         return formatarOrigem(origem);
     }
 
-    /**
-     * Formata a forma de pagamento aplicada ao filtro.
-     */
     private String formatarFormaPagamentoFiltro(
             FormaPagamento formaPagamento
     ) {
@@ -1487,9 +1457,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         );
     }
 
-    /**
-     * Formata data e hora para apresentação na tabela.
-     */
     private String formatarDataHora(
             LocalDateTime dataHora
     ) {
@@ -1501,9 +1468,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         return dataHora.format(FORMATO_DATA_HORA);
     }
 
-    /**
-     * Formata o tipo da movimentação.
-     */
     private String formatarTipo(
             TipoMovimentacaoFinanceira tipo
     ) {
@@ -1518,9 +1482,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         };
     }
 
-    /**
-     * Formata a origem financeira.
-     */
     private String formatarOrigem(
             OrigemMovimentacaoFinanceira origem
     ) {
@@ -1544,9 +1505,6 @@ public class RelatorioMovimentacaoFinanceiraController {
         };
     }
 
-    /**
-     * Formata a forma de pagamento.
-     */
     private String formatarFormaPagamento(
             FormaPagamento formaPagamento
     ) {
@@ -1583,9 +1541,6 @@ public class RelatorioMovimentacaoFinanceiraController {
                 .replace('\u00A0', ' ');
     }
 
-    /**
-     * Formata o identificador opcional da conta.
-     */
     private String formatarConta(
             Integer contaReceberId
     ) {
@@ -1623,9 +1578,6 @@ public class RelatorioMovimentacaoFinanceiraController {
                 + ")";
     }
 
-    /**
-     * Exibe alertas padronizados.
-     */
     private void mostrarAlerta(
             Alert.AlertType tipo,
             String titulo,
