@@ -37,9 +37,9 @@ import java.util.Locale;
 /**
  * Controller do relatório de clientes com pendências financeiras.
  *
- * Traduz filtros visuais para contratos imutáveis e executa uma consulta por
- * vez fora da JavaFX Application Thread. Autorização, agregação, ordenação e
- * totalização permanecem no Service e no DAO.
+ * Converte os filtros da tela nos dados usados pela consulta e executa uma
+ * consulta por vez fora da JavaFX Application Thread. Autorização, agregação,
+ * ordenação e totalização permanecem no Service e no DAO.
  */
 public class RelatorioClientePendenciaController {
 

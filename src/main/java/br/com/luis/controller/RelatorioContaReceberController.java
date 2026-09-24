@@ -161,9 +161,6 @@ public class RelatorioContaReceberController {
         Platform.runLater(this::iniciarFluxoInicial);
     }
 
-    /**
-     * Configura o usuário e o relógio do cabeçalho padrão.
-     */
     private void configurarCabecalho() {
         CabecalhoUtil.configurarUsuarioEDataHora(
                 lblUsuario,
@@ -273,9 +270,6 @@ public class RelatorioContaReceberController {
                 .selectFirst();
     }
 
-    /**
-     * Configura as propriedades e formatações da tabela.
-     */
     private void configurarTabela() {
 
         colContaId.setCellValueFactory(
@@ -359,9 +353,6 @@ public class RelatorioContaReceberController {
         );
     }
 
-    /**
-     * Formata a data de vencimento.
-     */
     private void configurarColunaVencimento() {
 
         colVencimento.setCellFactory(
@@ -383,9 +374,6 @@ public class RelatorioContaReceberController {
         );
     }
 
-    /**
-     * Formata a situação calculada do relatório.
-     */
     private void configurarColunaSituacao() {
 
         colSituacao.setCellFactory(
@@ -773,9 +761,6 @@ public class RelatorioContaReceberController {
         configurarEstadoConsulta(false);
     }
 
-    /**
-     * Bloqueia ou libera os controles vinculados à consulta.
-     */
     private void configurarEstadoConsulta(
             boolean carregando
     ) {
@@ -817,7 +802,7 @@ public class RelatorioContaReceberController {
     }
 
     /**
-     * Aplica uma fotografia completa do relatório.
+     * Aplica o resultado completo do relatório na tela.
      *
      * Todos os textos são preparados antes da alteração dos componentes, e os
      * totais são obtidos exclusivamente do resultado consolidado pelo Service.
@@ -974,9 +959,6 @@ public class RelatorioContaReceberController {
                 : " contas");
     }
 
-    /**
-     * Formata a situação aplicada ao filtro.
-     */
     private String formatarSituacaoFiltro(
             SituacaoRelatorioContaReceber situacao
     ) {
@@ -1257,9 +1239,6 @@ public class RelatorioContaReceberController {
         );
     }
 
-    /**
-     * Formata uma data para apresentação.
-     */
     private String formatarData(
             LocalDate data
     ) {
@@ -1271,9 +1250,6 @@ public class RelatorioContaReceberController {
         return data.format(FORMATO_DATA);
     }
 
-    /**
-     * Formata a situação gerencial da conta.
-     */
     private String formatarSituacao(
             SituacaoRelatorioContaReceber situacao
     ) {
@@ -1312,9 +1288,6 @@ public class RelatorioContaReceberController {
                 .replace('\u00A0', ' ');
     }
 
-    /**
-     * Exibe alertas padronizados.
-     */
     private void mostrarAlerta(
             Alert.AlertType tipo,
             String titulo,

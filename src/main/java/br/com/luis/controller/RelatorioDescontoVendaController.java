@@ -40,9 +40,9 @@ import java.util.Locale;
 /**
  * Controller do relatório de descontos concedidos.
  *
- * Fotografa filtros visuais, executa uma consulta por vez por meio do Service e
- * apenas formata os valores já consolidados. Não acessa DAO, Connection ou SQL e
- * não reconstrói descontos históricos.
+ * Obtém os filtros informados na tela, executa uma consulta por vez por meio do
+ * Service e apenas formata os valores já consolidados. Não acessa DAO, Connection
+ * ou SQL e não reconstrói descontos históricos.
  */
 public class RelatorioDescontoVendaController {
 
