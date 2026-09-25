@@ -3,7 +3,9 @@ package br.com.luis.viewmodel;
 import java.time.LocalDate;
 
 /**
- * Fotografia imutável dos filtros do relatório de entradas de estoque.
+ * Transporta os filtros aplicados ao relatório de entradas de estoque.
+ *
+ * A classe é imutável.
  */
 public final class FiltroRelatorioEntradaEstoque {
 

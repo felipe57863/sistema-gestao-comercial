@@ -7,8 +7,8 @@ import java.time.LocalDate;
 /**
  * Transporta os filtros aplicados ao relatório de descontos concedidos.
  *
- * A classe é imutável e representa uma fotografia do período inclusivo e do
- * tipo de venda selecionado. Tipo nulo representa a opção visual "Todas".
+ * A classe é imutável e guarda o período inclusivo e o tipo de venda
+ * selecionado. Tipo nulo representa a opção visual "Todas".
  */
 public final class FiltroRelatorioDescontoVenda {
 
@@ -17,7 +17,7 @@ public final class FiltroRelatorioDescontoVenda {
     private final TipoVenda tipoVenda;
 
     /**
-     * Cria uma fotografia imutável dos filtros do relatório.
+     * Cria os filtros usados pelo relatório de descontos concedidos.
      *
      * @param dataInicial data inicial inclusiva do período.
      * @param dataFinal data final inclusiva do período.
