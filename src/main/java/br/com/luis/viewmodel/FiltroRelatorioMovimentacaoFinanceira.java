@@ -9,9 +9,9 @@ import java.time.LocalDate;
 /**
  * Transporta os filtros aplicados ao relatório de movimentações financeiras.
  *
- * A classe é imutável e representa uma fotografia dos filtros informados no
- * momento em que a consulta é iniciada. Valores nulos para tipo, origem ou
- * forma de pagamento representam a opção visual "Todos".
+ * A classe é imutável e guarda os filtros informados no momento em que a
+ * consulta é iniciada. Valores nulos para tipo, origem ou forma de pagamento
+ * representam a opção visual "Todos".
  *
  * Esta classe não acessa banco de dados, DAO, Service, sessão, componentes
  * JavaFX ou mecanismos de formatação visual.
@@ -25,7 +25,7 @@ public final class FiltroRelatorioMovimentacaoFinanceira {
     private final FormaPagamento formaPagamento;
 
     /**
-     * Cria uma fotografia imutável dos filtros do relatório financeiro.
+     * Cria os filtros usados pelo relatório de movimentações financeiras.
      *
      * Tipo, origem e forma de pagamento podem ser nulos para representar a
      * ausência do respectivo filtro. A forma {@link FormaPagamento#A_PRAZO}

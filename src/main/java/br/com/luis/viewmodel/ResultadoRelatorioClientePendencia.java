@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Representa a fotografia completa de uma consulta concluída do relatório de
+ * Representa o resultado completo de uma consulta concluída do relatório de
  * clientes com pendências financeiras.
  *
  * A classe é imutável e confere os totalizadores contra a lista final já
@@ -28,7 +28,7 @@ public final class ResultadoRelatorioClientePendencia {
     private final BigDecimal valorTotalVencido;
 
     /**
-     * Cria uma fotografia imutável e coerente da consulta.
+     * Cria um resultado imutável e coerente da consulta.
      *
      * Uma lista vazia com todos os totalizadores zerados é válida.
      *
