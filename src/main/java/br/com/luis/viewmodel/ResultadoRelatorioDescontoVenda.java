@@ -5,7 +5,7 @@ import java.math.RoundingMode;
 import java.util.List;
 
 /**
- * Representa a fotografia consolidada do relatório de descontos concedidos.
+ * Representa o resultado consolidado do relatório de descontos concedidos.
  *
  * A lista e os totalizadores correspondem ao mesmo conjunto final filtrado.
  */

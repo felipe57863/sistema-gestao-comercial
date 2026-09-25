@@ -5,7 +5,7 @@ import java.math.RoundingMode;
 import java.util.List;
 
 /**
- * Fotografia imutável do relatório de entradas de estoque.
+ * Representa o resultado imutável do relatório de entradas de estoque.
  */
 public final class ResultadoRelatorioEntradaEstoque {
 

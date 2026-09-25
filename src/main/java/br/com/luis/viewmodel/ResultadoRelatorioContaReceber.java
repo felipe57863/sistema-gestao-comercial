@@ -6,13 +6,13 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Representa a fotografia completa e imutável de uma consulta concluída do
+ * Representa o resultado completo e imutável de uma consulta concluída do
  * relatório de contas a receber.
  *
  * A classe transporta o filtro efetivamente aplicado, a data única usada como
  * referência temporal, as linhas finais e os totais consolidados da mesma
- * consulta. A data de referência permite identificar com precisão qual fotografia
- * temporal sustentou as classificações A_VENCER e VENCIDA.
+ * consulta. A data de referência permite identificar com precisão qual data
+ * sustentou as classificações A_VENCER e VENCIDA.
  *
  * A classe não acessa banco de dados, DAO, Service, sessão, componentes JavaFX
  * ou mecanismos de formatação visual.
@@ -32,7 +32,7 @@ public final class ResultadoRelatorioContaReceber {
     private final BigDecimal valorVencido;
 
     /**
-     * Cria uma fotografia imutável do relatório de contas a receber.
+     * Cria um resultado imutável do relatório de contas a receber.
      *
      * Os totais recebidos são normalizados e conferidos contra as linhas finais
      * exibidas. O valor pendente corresponde às situações A_VENCER e VENCIDA;
