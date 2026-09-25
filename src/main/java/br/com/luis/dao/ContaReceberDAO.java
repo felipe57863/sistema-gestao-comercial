@@ -626,7 +626,7 @@ public class ContaReceberDAO {
      * commit ou rollback e não fecha a conexão recebida.
      *
      * @param conn conexão externa controlada pelo Service.
-     * @param filtro fotografia dos filtros aplicados.
+     * @param filtro filtros aplicados ao relatório.
      * @param dataReferencia data única usada para identificar contas vencidas.
      * @return linhas agregadas e ordenadas, ou lista vazia quando não houver dados.
      */

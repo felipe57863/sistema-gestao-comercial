@@ -82,9 +82,6 @@ public class ContasReceberController {
         this.contasPendentes = FXCollections.observableArrayList();
     }
 
-    /**
-     * Inicialização da tela.
-     */
     @FXML
     public void initialize() {
         CabecalhoUtil.configurarUsuarioEDataHora(
@@ -182,9 +179,6 @@ public class ContasReceberController {
         linha.setStyle("");
     }
 
-    /**
-     * Configura a formatação monetária da coluna Valor.
-     */
     private void configurarFormatacaoColunaValor() {
 
         colValor.setCellFactory(coluna -> new TableCell<>() {
@@ -202,9 +196,6 @@ public class ContasReceberController {
         });
     }
 
-    /**
-     * Configura a formatação da coluna Vencimento.
-     */
     private void configurarFormatacaoColunaVencimento() {
 
         colVencimento.setCellFactory(coluna -> new TableCell<>() {
@@ -285,9 +276,6 @@ public class ContasReceberController {
         }
     }
 
-    /**
-     * Preenche o painel lateral com os dados da conta selecionada.
-     */
     private void preencherPainelContaSelecionada(
             ContaReceberListagemView contaSelecionada
     ) {
@@ -321,9 +309,6 @@ public class ContasReceberController {
         btnReceberConta.setDisable(true);
     }
 
-    /**
-     * Formata IDs para exibição segura.
-     */
     private String formatarId(Integer id) {
 
         if (id == null || id <= 0) {
@@ -333,9 +318,6 @@ public class ContasReceberController {
         return id.toString();
     }
 
-    /**
-     * Formata texto para exibição segura.
-     */
     private String formatarTexto(String texto) {
 
         if (texto == null || texto.isBlank()) {
@@ -388,9 +370,6 @@ public class ContasReceberController {
         return dataHora.format(formatoDataHora);
     }
 
-    /**
-     * Formata o status da conta para exibição segura.
-     */
     private String formatarStatus(StatusContaReceber status) {
 
         if (status == null) {
@@ -400,9 +379,6 @@ public class ContasReceberController {
         return status.name();
     }
 
-    /**
-     * Formata a situação visual da conta selecionada.
-     */
     private String formatarSituacao(ContaReceberListagemView contaSelecionada) {
 
         if (contaSelecionada == null) {
@@ -414,9 +390,6 @@ public class ContasReceberController {
                 : "Em aberto";
     }
 
-    /**
-     * Formata a forma de pagamento para exibição amigável.
-     */
     private String formatarFormaPagamento(FormaPagamento formaPagamento) {
 
         if (formaPagamento == null) {
@@ -438,9 +411,6 @@ public class ContasReceberController {
         }
     }
 
-    /**
-     * Atualiza o contador de contas pendentes exibidas na tabela.
-     */
     private void atualizarContador() {
 
         int totalContasPendentes = contasPendentes.size();
@@ -455,9 +425,6 @@ public class ContasReceberController {
         );
     }
 
-    /**
-     * Ação do botão Atualizar.
-     */
     @FXML
     private void onAtualizar() {
         carregarContasPendentes();
@@ -682,9 +649,6 @@ public class ContasReceberController {
         return dialog.showAndWait();
     }
 
-    /**
-     * Confirma o recebimento integral da conta selecionada.
-     */
     private boolean confirmarRecebimento(
             ContaReceberListagemView contaSelecionada,
             FormaPagamento formaPagamento
@@ -776,9 +740,6 @@ public class ContasReceberController {
         );
     }
 
-    /**
-     * Exibe alertas padronizados para o usuário.
-     */
     private void mostrarAlerta(
             Alert.AlertType tipo,
             String titulo,

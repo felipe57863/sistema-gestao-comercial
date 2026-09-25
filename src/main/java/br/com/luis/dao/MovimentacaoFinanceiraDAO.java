@@ -193,7 +193,7 @@ public class MovimentacaoFinanceiraDAO {
      * autorização, soma de totais ou formatação visual.
      *
      * @param conn conexão externa controlada pela camada Service.
-     * @param filtro fotografia imutável dos filtros aplicados ao relatório.
+     * @param filtro filtros aplicados ao relatório.
      * @param inicioInclusivo data e hora inicial inclusiva do período.
      * @param fimExclusivo data e hora final exclusiva do período.
      * @return linhas projetadas do relatório em ordem decrescente de data, hora
