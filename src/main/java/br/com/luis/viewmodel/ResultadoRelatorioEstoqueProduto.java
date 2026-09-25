@@ -3,7 +3,7 @@ package br.com.luis.viewmodel;
 import java.util.List;
 
 /**
- * Representa a fotografia completa e imutável de uma consulta concluída da
+ * Representa o resultado completo e imutável de uma consulta concluída da
  * visão de relatório de estoque de produtos.
  *
  * A classe transporta o filtro efetivamente aplicado, as linhas finais e os
@@ -20,7 +20,7 @@ public final class ResultadoRelatorioEstoqueProduto {
     private final int quantidadeAcimaDoMinimo;
 
     /**
-     * Cria uma fotografia imutável da visão de estoque.
+     * Cria um resultado imutável da visão de estoque.
      *
      * A quantidade total de produtos é obtida do tamanho da lista. Os demais
      * totalizadores, já calculados pelo RelatorioProdutoService, são conferidos contra as

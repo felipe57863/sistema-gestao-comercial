@@ -7,7 +7,7 @@ import java.math.RoundingMode;
 import java.util.List;
 
 /**
- * Representa a fotografia completa e imutável de uma consulta concluída
+ * Representa o resultado completo e imutável de uma consulta concluída
  * do relatório de movimentações financeiras.
  *
  * A classe transporta o filtro efetivamente aplicado, as linhas projetadas e
@@ -29,7 +29,7 @@ public final class ResultadoRelatorioMovimentacaoFinanceira {
     private final BigDecimal resultadoLiquido;
 
     /**
-     * Cria uma fotografia imutável do relatório de movimentações financeiras.
+     * Cria um resultado imutável do relatório de movimentações financeiras.
      *
      * A quantidade de movimentações é determinada pelo tamanho da lista recebida.
      * O resultado líquido é calculado pela diferença entre entradas e saídas.

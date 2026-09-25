@@ -3,7 +3,7 @@ package br.com.luis.viewmodel;
 import java.util.List;
 
 /**
- * Representa a fotografia completa e imutável de uma consulta concluída da
+ * Representa o resultado completo e imutável de uma consulta concluída da
  * visão de produtos em promoção.
  *
  * Cada elemento da lista corresponde a uma promoção ativa encontrada. A classe
@@ -17,7 +17,7 @@ public final class ResultadoRelatorioPromocaoProduto {
     private final int quantidadePromocoes;
 
     /**
-     * Cria uma fotografia imutável da visão de produtos em promoção.
+     * Cria um resultado imutável da visão de produtos em promoção.
      *
      * A quantidade de promoções é obtida diretamente do tamanho da lista. Uma
      * lista vazia é válida e resulta em quantidade zero. Nenhuma linha é
