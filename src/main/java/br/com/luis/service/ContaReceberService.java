@@ -32,8 +32,9 @@ import java.util.List;
  * usuário executor persistido na mesma Connection antes de qualquer mutação.
  * Somente após a autorização, busca e revalida a conta, altera a conta de
  * PENDENTE para PAGA, atualiza a venda vinculada de PENDENTE para PAGA e registra
- * a movimentação financeira de entrada. Qualquer falha provoca rollback integral
- * do fluxo.
+ * a movimentação financeira de entrada. Falhas ocorridas enquanto a transação
+ * ainda está aberta tentam executar rollback; após o commit, os dados já
+ * confirmados não são desfeitos.
  *
  * O recebimento usa o valor integral persistido na conta e registra o usuário e
  * a forma de pagamento informados. Não oferece pagamento parcial, juros, multa,
@@ -61,8 +62,10 @@ public class ContaReceberService {
      * valor integral persistido na conta, atualiza conta e venda com proteção de
      * estado e registra a movimentação financeira de entrada.
      *
-     * O resultado é devolvido somente após o commit. Falhas provocam rollback
-     * integral; o autoCommit anterior só é restaurado após commit ou rollback concluído.
+     * O resultado é devolvido somente após o commit. Em falhas ocorridas antes de a
+     * transação ser concluída, é tentado rollback; após o commit, os dados já
+     * confirmados não são desfeitos. O autoCommit anterior só é restaurado após
+     * commit ou rollback concluído.
      */
     public ResultadoRecebimentoConta receberConta(
             Integer contaReceberId,
@@ -284,9 +287,6 @@ public class ContaReceberService {
         }
     }
 
-    /**
-     * Monta a movimentação financeira referente ao recebimento integral.
-     */
     private MovimentacaoFinanceira montarMovimentacaoFinanceiraRecebimento(
             ContaReceber contaReceber,
             FormaPagamento formaPagamento,
@@ -307,9 +307,6 @@ public class ContaReceberService {
         );
     }
 
-    /**
-     * Persiste a movimentação financeira dentro da transação.
-     */
     private Integer persistirMovimentacaoFinanceira(
             Connection conn,
             MovimentacaoFinanceira movimentacaoFinanceira

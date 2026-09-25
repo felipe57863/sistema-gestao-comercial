@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Fotografia imutável de uma consulta dos alertas automáticos de vencimento.
+ * Representa o resultado imutável de uma consulta dos alertas automáticos de vencimento.
  *
  * Contém a configuração utilizada, a data única de referência, a janela
  * calculada, as contas elegíveis e os respectivos totalizadores.
