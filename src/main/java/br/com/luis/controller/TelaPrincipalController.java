@@ -172,7 +172,7 @@ public class TelaPrincipalController {
      * mantido na sessão atual.
      *
      * Essa proteção é apenas visual. A autorização definitiva continua sendo
-     * realizada pelo Service do relatório financeiro.
+     * realizada pelos Services responsáveis por cada relatório.
      */
     private void configurarVisibilidadeBotaoRelatorios() {
 
@@ -290,7 +290,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Cria a Task responsável por solicitar uma única fotografia completa
+     * Cria a Task responsável por solicitar um único resumo completo
      * dos indicadores ao DashboardService.
      *
      * Nenhum componente JavaFX ou formatador visual é acessado durante
@@ -488,13 +488,13 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Prepara todos os textos da fotografia recebida e somente depois os aplica
+     * Prepara todos os textos do resumo recebido e somente depois os aplica
      * aos componentes visuais.
      *
      * Este método não consulta banco, não recalcula indicadores e não modifica
      * o DashboardResumoView.
      *
-     * @param resumo fotografia completa dos indicadores.
+     * @param resumo resumo completo dos indicadores.
      */
     private void atualizarIndicadoresDashboard(
             DashboardResumoView resumo
@@ -908,7 +908,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Aplica uma fotografia válida do Service à área persistente de alertas.
+     * Aplica um resultado válido do Service à área persistente de alertas.
      */
     private void atualizarPainelAlertasVencimento(
             ResultadoAlertaVencimento resultado
@@ -964,7 +964,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Formata a data de referência, o limite e os dias usados na fotografia.
+     * Formata a data de referência, o limite e os dias usados no resultado dos alertas.
      */
     private String formatarJanelaAlertas(
             ResultadoAlertaVencimento resultado
@@ -1147,7 +1147,7 @@ public class TelaPrincipalController {
     }
 
     /**
-     * Abre os detalhes consolidados da última fotografia válida dos alertas.
+     * Abre os detalhes consolidados do último resultado válido dos alertas.
      */
     @FXML
     public void mostrarDetalhesAlertasVencimento() {
@@ -1918,9 +1918,6 @@ public class TelaPrincipalController {
         }
     }
 
-    /**
-     * Exibe alertas padronizados.
-     */
     private void mostrarAlerta(
             Alert.AlertType tipo,
             String titulo,

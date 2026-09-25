@@ -99,7 +99,6 @@ public class Main extends Application {
         primaryStage.setTitle(titulo);
         primaryStage.setScene(scene);
 
-        // Mantém a janela principal maximizada.
         primaryStage.setMaximized(true);
 
         primaryStage.show();
