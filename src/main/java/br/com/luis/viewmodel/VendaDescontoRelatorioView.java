@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * Representa uma linha final do relatório de descontos concedidos.
  *
  * Os valores já foram validados e consolidados pelo Service. A classe apenas
- * preserva a fotografia imutável exibida pela interface.
+ * mantém os dados da linha de forma imutável para exibição na interface.
  */
 public final class VendaDescontoRelatorioView {
 
