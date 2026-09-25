@@ -43,12 +43,6 @@ public class MovimentacaoFinanceira {
         this.valor = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Construtor completo.
-     *
-     * Deve ser usado quando todos os dados principais da movimentação
-     * já estiverem definidos.
-     */
     public MovimentacaoFinanceira(
             Integer idMovimentacao,
             LocalDateTime dataHora,

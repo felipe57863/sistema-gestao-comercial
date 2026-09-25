@@ -43,11 +43,6 @@ public class ContaReceber {
         this.dataCriacao = LocalDateTime.now();
     }
 
-    /**
-     * Construtor completo.
-     *
-     * Deve ser usado quando todos os dados principais da conta já estiverem definidos.
-     */
     public ContaReceber(
             Integer idConta,
             BigDecimal valor,

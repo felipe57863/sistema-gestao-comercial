@@ -54,13 +54,13 @@ public class AlertaVencimentoService {
     }
 
     /**
-     * Consulta a fotografia atual dos alertas de vencimento.
+     * Consulta os alertas de vencimento atuais.
      * O executor é reconsultado e deve ser um administrador ATIVO. O resultado
      * reúne as contas pendentes vencidas e as que vencem até o limite inclusivo
      * calculado com a antecedência persistida.
      *
      * @param usuarioId identificador do administrador executor.
-     * @return fotografia consolidada dos alertas na data da consulta.
+     * @return resultado consolidado dos alertas na data da consulta.
      * @throws IllegalArgumentException se o identificador do executor for inválido.
      * @throws SecurityException se o executor persistido não estiver autorizado.
      * @throws IllegalStateException se a configuração ou os dados consultados
