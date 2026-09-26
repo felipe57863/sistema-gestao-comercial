@@ -1,23 +1,30 @@
 # Sistema de Gestão Comercial
 
-Sistema desktop de gestão comercial desenvolvido em Java, com foco em pequenos e médios comércios que precisam controlar produtos, clientes, vendas, estoque, promoções e informações financeiras de forma simples e organizada.
+Sistema desktop de gestão comercial desenvolvido em **Java 17 + JavaFX**, voltado a lojas de pequeno e médio porte.
 
-Este projeto foi desenvolvido como parte do meu Trabalho de Conclusão de Curso em Análise e Desenvolvimento de Sistemas.
+A aplicação centraliza rotinas de produtos, clientes, estoque, vendas, promoções, contas a receber, movimentações financeiras, histórico e relatórios, buscando reduzir controles manuais e manter consistência entre as principais operações comerciais.
+
+O projeto foi desenvolvido como **Trabalho de Conclusão de Curso em Análise e Desenvolvimento de Sistemas**.
 
 ---
 
-## Objetivo do projeto
+## Objetivo
 
-O objetivo do sistema é centralizar processos comerciais em uma aplicação desktop, reduzindo controles manuais e auxiliando na organização das principais rotinas de uma loja.
+O objetivo do sistema é disponibilizar uma aplicação desktop capaz de apoiar as principais atividades operacionais e gerenciais de um estabelecimento comercial.
 
-Entre os principais objetivos estão:
+Entre os processos contemplados estão:
 
-- Cadastrar e gerenciar usuários, clientes e produtos;
-- Controlar estoque, promoções e prazos de pagamento;
-- Registrar vendas à vista e a prazo;
-- Controlar contas a receber e movimentações financeiras;
-- Emitir Nota de Venda em PDF;
-- Consultar histórico, relatórios e informações gerenciais.
+- gestão de usuários e perfis de acesso;
+- cadastro de clientes e produtos;
+- controle de estoque;
+- entrada de mercadorias;
+- promoções e descontos;
+- vendas à vista e a prazo;
+- controle de contas a receber;
+- movimentações financeiras;
+- emissão de Nota de Venda não fiscal;
+- estorno de vendas;
+- histórico e relatórios gerenciais.
 
 ---
 
@@ -32,21 +39,46 @@ Entre os principais objetivos estão:
 - BCrypt / jBCrypt
 - Apache PDFBox
 - Scene Builder
-- Git e GitHub
+- Git
+- GitHub
 
 ---
 
-## Arquitetura do projeto
+## Arquitetura
 
-O sistema utiliza uma organização em camadas, separando interface, regras de negócio, acesso a dados e entidades do domínio.
+O sistema utiliza uma arquitetura em camadas, separando interface, regras de negócio e persistência.
 
-O fluxo principal segue a arquitetura:
+O fluxo principal é:
 
 ```text
 Controller → Service → DAO
 ```
 
-Estrutura principal:
+### Responsabilidades
+
+```text
+Controller
+├── interação com a interface JavaFX
+├── eventos
+├── navegação
+└── apresentação dos dados
+
+Service
+├── validações
+├── regras de negócio
+├── cálculos
+├── autorização de operações
+└── controle de transações
+
+DAO
+├── SQL
+├── JDBC
+├── PreparedStatement
+├── consultas
+└── persistência
+```
+
+Estrutura principal do projeto:
 
 ```text
 src/main/java/br/com/luis/
@@ -57,163 +89,340 @@ src/main/java/br/com/luis/
 ├── util/
 └── viewmodel/
 
-src/main/resources/br/com/luis/view/
-└── arquivos FXML
-
-src/main/resources/database/
-└── scripts SQL
+src/main/resources/
+├── br/com/luis/view/
+│   └── arquivos FXML
+│
+└── database/
+    └── scripts SQL
 ```
 
-Os valores monetários são tratados com `BigDecimal`, evitando perda de precisão em preços, descontos, totais, contas e movimentações financeiras.
+---
+
+## Persistência e transações
+
+O banco de dados utilizado é o **SQLite**, acessado diretamente por JDBC, sem ORM.
+
+Entre os conceitos aplicados estão:
+
+- JDBC puro;
+- `PreparedStatement`;
+- chaves primárias e estrangeiras;
+- `PRAGMA foreign_keys = ON`;
+- `try-with-resources`;
+- transações com `commit` e `rollback`;
+- uso da mesma `Connection` em operações compostas;
+- preservação de consistência entre registros relacionados.
+
+Operações críticas, como vendas, recebimentos, entradas de estoque, estornos e operações envolvendo produto e promoção, são tratadas de forma transacional.
+
+Valores monetários são manipulados com `BigDecimal`, evitando o uso de `double` ou `float` em preços, descontos, totais e movimentações financeiras.
 
 ---
 
-## Funcionalidades implementadas
+## Funcionalidades
 
-- Autenticação e sessão de usuário;
-- Perfis de acesso `ADMIN` e `VENDEDOR`;
-- Cadastro, consulta, edição, ativação e inativação de usuários;
-- Cadastro e consulta de clientes Pessoa Física e Pessoa Jurídica;
-- Validação de CPF e CNPJ;
-- Situação financeira do cliente com saldo devedor e limite disponível;
-- Cadastro, consulta e edição de produtos, com Preço de Venda e Estoque Mínimo cadastral;
-- Último Preço de Compra somente leitura, obtido do histórico de Entradas de Estoque, sem novo campo persistido em Produto;
-- Quantidade Inicial para produto novo e Estoque Atual somente para consulta em produto existente;
-- Ativação e inativação de produtos por Status + Atualizar;
-- Entrada de estoque rastreável, com múltiplos produtos e Referência interna opcional;
-- Registro de Quantidade Recebida e Preço Unitário de Compra;
-- Rascunho com ação contextual Adicionar Item / Atualizar Item;
-- Atualizar Item altera somente o rascunho;
-- Confirmar Entrada registra a operação inteira e incrementa o estoque;
-- Alterações do editor ainda não aplicadas por Atualizar Item não são incorporadas silenciosamente na confirmação;
-- Histórico de entradas com responsável, referência e observação;
-- Relatório de Entradas de Estoque com filtros, detalhes e totalizadores;
-- Cadastro e gerenciamento de promoções;
-- Cadastro e gerenciamento de prazos de pagamento;
-- Carrinho de venda com alteração de quantidade;
-- Promoções automáticas e desconto global por valor ou percentual;
-- Venda à vista com dinheiro, PIX ou cartão;
-- Cálculo de troco para pagamentos em dinheiro;
-- Venda a prazo com cliente, prazo e validação de limite de crédito;
-- Geração de contas a receber;
-- Recebimento integral de contas por usuário administrador;
-- Movimentações financeiras de entrada e saída;
-- Nota de Venda em PDF, segunda via e histórico;
-- Estorno total de vendas com restauração de estoque;
-- Histórico de Vendas com filtros e detalhes;
-- Relatórios e consultas gerenciais;
-- Dashboard com informações de vendas, recebimentos, pendências e estoque baixo;
-- Alertas de contas vencidas e próximas do vencimento;
-- Logout com encerramento da sessão.
+### Autenticação e usuários
+
+- autenticação por login e senha;
+- senhas protegidas com BCrypt;
+- perfis `ADMIN` e `VENDEDOR`;
+- cadastro e edição de usuários;
+- ativação e inativação;
+- redefinição administrativa de senha;
+- troca obrigatória de senha;
+- controle de sessão;
+- logout.
+
+### Clientes
+
+- cadastro de Pessoa Física e Pessoa Jurídica;
+- validação de CPF e CNPJ;
+- consulta e edição;
+- ativação e inativação;
+- definição de limite de crédito;
+- definição de prazo máximo permitido;
+- consulta de saldo devedor e limite disponível.
+
+### Produtos
+
+- cadastro e edição;
+- ativação e inativação;
+- bloqueio de cadastro duplicado por descrição;
+- preço de venda;
+- estoque mínimo;
+- quantidade inicial no primeiro cadastro;
+- estoque atual somente para consulta em produtos existentes;
+- último preço de compra obtido pelo histórico de entradas de estoque;
+- pesquisa e listagem de produtos.
+
+### Promoções
+
+- cadastro de promoções;
+- desconto percentual;
+- desconto em valor fixo;
+- somente uma promoção ativa por produto;
+- substituição automática da promoção anterior;
+- aplicação automática durante a venda.
+
+### Entrada de estoque
+
+- registro de entradas com múltiplos produtos;
+- quantidade recebida;
+- preço unitário de compra;
+- referência interna opcional;
+- observações;
+- edição do rascunho antes da confirmação;
+- atualização do estoque somente após a confirmação;
+- persistência transacional da entrada e de seus itens;
+- histórico de entradas;
+- identificação do usuário responsável.
+
+### Prazos de pagamento
+
+- cadastro e gerenciamento de prazos;
+- utilização em vendas a prazo;
+- validação do prazo selecionado em relação ao limite definido para o cliente.
+
+### Vendas
+
+- carrinho de produtos;
+- alteração de quantidades;
+- validação de estoque disponível;
+- promoção automática;
+- desconto global por valor ou percentual;
+- exclusão de itens promocionais do desconto global;
+- venda à vista;
+- venda a prazo.
+
+#### Venda à vista
+
+Formas de pagamento disponíveis:
+
+- dinheiro;
+- PIX;
+- cartão.
+
+Para pagamento em dinheiro, o sistema realiza o cálculo de troco.
+
+Após a finalização:
+
+- a venda é registrada;
+- os itens são persistidos;
+- o estoque é atualizado;
+- a movimentação financeira é registrada;
+- a Nota de Venda é gerada.
+
+#### Venda a prazo
+
+A venda a prazo exige:
+
+- cliente ativo;
+- prazo válido;
+- limite de crédito disponível.
+
+Após a finalização:
+
+- a venda permanece pendente;
+- o estoque é atualizado;
+- uma Conta a Receber é gerada;
+- não ocorre entrada financeira imediata.
 
 ---
 
-## Regras de negócio trabalhadas
+## Contas a receber
 
-O projeto busca representar regras comuns de um sistema comercial, como:
+O sistema realiza o controle das contas geradas pelas vendas a prazo, incluindo:
 
-- Não permitir venda de produto sem estoque suficiente;
-- Produtos existentes não têm saldo alterado pelo cadastro;
-- A reposição normal do saldo ocorre pela Entrada de Estoque;
-- Entradas aceitam somente produtos ativos;
-- A confirmação da Entrada persiste cabeçalho, itens e incrementos no mesmo commit;
-- O histórico de Entradas preserva snapshots do responsável e dos produtos;
-- O filtro do relatório por produto seleciona a Entrada inteira;
-- Aplicar promoções ativas automaticamente;
-- Não aplicar desconto global sobre itens promocionais;
-- Validar limite de crédito em vendas a prazo;
-- Respeitar o prazo máximo definido para o cliente;
-- Manter venda, itens, estoque, contas, movimentações e Nota de Venda consistentes em transações;
-- Impedir recebimento duplicado de contas;
-- Impedir estorno duplicado;
-- Preservar registros financeiros e históricos;
-- Restringir operações administrativas conforme o perfil do usuário.
+- geração automática em vendas a prazo;
+- consulta de contas pendentes;
+- recebimento integral;
+- registro da forma de pagamento;
+- atualização da situação da venda;
+- geração da movimentação financeira correspondente;
+- bloqueio de recebimento duplicado;
+- cancelamento da conta em caso de estorno da venda.
 
 ---
 
-## Banco de dados
+## Movimentações financeiras
 
-O sistema utiliza SQLite como banco de dados local.
+O sistema registra movimentações decorrentes das operações comerciais.
 
-Alguns conceitos aplicados:
+São contempladas:
 
-- Tabelas relacionais;
-- Chaves primárias e estrangeiras;
-- Scripts SQL;
-- Persistência com JDBC;
-- Uso de `PreparedStatement`;
-- Transações com commit e rollback;
-- Separação entre regra de negócio e acesso ao banco.
+- entrada por venda à vista;
+- entrada por recebimento de Conta a Receber;
+- saída compensatória em estornos, quando aplicável.
 
----
+As movimentações financeiras são preservadas para fins históricos e de rastreabilidade.
 
-## Status do projeto
-
-O sistema está funcionalmente concluído para o escopo definido no TCC.
-
-Os principais módulos de autenticação, usuários, clientes, produtos, estoque, promoções, prazos, vendas, contas a receber, movimentações financeiras, Nota de Venda, estorno, histórico, relatórios, dashboard e alertas estão implementados.
-
-O R6 foi concluído com a Entrada de Estoque e o Relatório de Entradas de Estoque implementados.
-
-A regressão global pós-R6 foi concluída sem defeitos funcionais bloqueantes reproduzidos.
-
-O fechamento R6.12 consolidou a regressão global pós-R6 e preservou o histórico técnico dessa evolução.
-
-Os refinamentos posteriores também foram concluídos:
-
-- R6.13 — refinamento do Cadastro de Produtos e Último Preço de Compra;
-- R6.13A — aderência visual final do Cadastro de Produtos;
-- R6.14 — refinamento visual e clareza da Entrada de Estoque.
-
-HEAD técnico anterior a esta atualização documental: `28da89fa092748170f0bffd1618186c4c7f8d341`.
-
-Último commit técnico anterior: `fix: alinhar entrada de estoque ao fluxo aprovado`.
+O módulo representa as movimentações financeiras do sistema e **não corresponde a um controle físico de caixa**.
 
 ---
 
-## Como executar o projeto
+## Nota de Venda
+
+Cada venda finalizada gera uma **Nota de Venda interna e não fiscal**.
+
+O sistema permite:
+
+- geração automática da nota;
+- emissão em PDF;
+- segunda via;
+- consulta pelo histórico;
+- preservação do mesmo número e dos dados originais;
+- identificação de notas relacionadas a vendas estornadas.
+
+A Nota de Venda não substitui documentos fiscais como NF-e ou NFC-e.
+
+---
+
+## Estorno de vendas
+
+O estorno é restrito ao perfil administrador.
+
+A operação:
+
+- estorna integralmente a venda;
+- restaura as quantidades dos produtos ao estoque;
+- impede estorno duplicado;
+- preserva a venda original para histórico;
+- preserva a Nota de Venda;
+- cancela a Conta a Receber associada, quando aplicável;
+- gera movimentação financeira compensatória, quando necessário.
+
+Os registros financeiros originais não são apagados.
+
+---
+
+## Histórico e relatórios
+
+O sistema disponibiliza histórico e consultas gerenciais, incluindo:
+
+- Histórico de Vendas;
+- produtos e estoque;
+- promoções;
+- Contas a Receber;
+- movimentações financeiras;
+- entradas de estoque;
+- clientes com pendências;
+- descontos concedidos.
+
+Os relatórios possuem filtros e informações adequadas ao respectivo contexto.
+
+---
+
+## Dashboard e alertas
+
+A Tela Principal apresenta informações resumidas sobre a operação do sistema, incluindo:
+
+- vendas;
+- recebimentos;
+- contas pendentes;
+- produtos com estoque abaixo ou igual ao mínimo.
+
+Também são disponibilizados alertas relacionados a:
+
+- contas vencidas;
+- contas próximas do vencimento.
+
+---
+
+## Principais regras de negócio
+
+Entre as regras implementadas estão:
+
+- não permitir venda acima do estoque disponível;
+- somente produtos ativos podem ser utilizados em novas vendas e entradas;
+- produtos já cadastrados não têm seu saldo alterado diretamente pela edição cadastral;
+- reposições de estoque são realizadas pelo módulo de Entrada de Estoque;
+- promoções ativas são aplicadas automaticamente;
+- um produto possui no máximo uma promoção ativa;
+- itens promocionais não recebem desconto global;
+- vendas a prazo exigem cliente e prazo válidos;
+- o prazo selecionado não pode ultrapassar o máximo permitido ao cliente;
+- o limite de crédito considera valores pendentes existentes e a nova venda;
+- vendas à vista geram movimentação financeira imediatamente;
+- vendas a prazo geram Conta a Receber;
+- o recebimento de uma conta ocorre integralmente;
+- recebimentos duplicados são impedidos;
+- estornos duplicados são impedidos;
+- o estorno restaura o estoque;
+- Contas a Receber relacionadas a vendas estornadas são canceladas;
+- movimentações financeiras não são apagadas para desfazer operações;
+- operações compostas utilizam transações para preservar consistência;
+- operações administrativas são protegidas conforme o perfil do usuário.
+
+---
+
+## Como executar
 
 ### Pré-requisitos
 
-- Java 17 instalado;
-- Maven instalado ou configurado pela IDE;
-- IntelliJ IDEA ou outra IDE compatível.
+- Java 17;
+- Maven;
+- IntelliJ IDEA ou outra IDE compatível com JavaFX.
 
-### Passos básicos
-
-1. Clone o repositório:
+### Clonar o repositório
 
 ```bash
 git clone https://github.com/felipe57863/sistema-gestao-comercial.git
 ```
 
-2. Abra o projeto em uma IDE Java.
+Entre no diretório do projeto:
 
-3. Aguarde o Maven baixar as dependências.
+```bash
+cd sistema-gestao-comercial
+```
 
-4. Execute a classe `Launcher`.
+### Compilar
 
-5. Após a autenticação, utilize a Tela Principal para acessar os módulos disponíveis para o perfil do usuário.
+```bash
+mvn clean compile
+```
+
+### Executar
+
+Abra o projeto na IDE, aguarde o Maven resolver as dependências e execute a classe:
+
+```text
+br.com.luis.Launcher
+```
+
+O banco SQLite local é criado e configurado pela própria aplicação a partir dos scripts disponíveis em:
+
+```text
+src/main/resources/database/
+```
+
+---
+
+## Status
+
+O sistema encontra-se **funcionalmente concluído para o escopo definido no Trabalho de Conclusão de Curso**.
 
 ---
 
 ## Aprendizados aplicados
 
-Durante o desenvolvimento deste projeto, foram praticados conceitos como:
+Durante o desenvolvimento foram aplicados conceitos de:
 
-- Programação orientada a objetos;
-- Desenvolvimento desktop com JavaFX;
-- Criação de interfaces com FXML;
-- Organização em camadas;
-- Validação de regras de negócio;
-- Integração com banco de dados SQLite;
-- Manipulação de dados com JDBC;
-- Uso de transações;
-- Segurança de senhas com BCrypt;
-- Geração de arquivos PDF;
-- Versionamento com Git e GitHub;
-- Modelagem de banco de dados;
-- Desenvolvimento incremental e testes de regressão.
+- programação orientada a objetos;
+- Java desktop com JavaFX;
+- interfaces FXML;
+- arquitetura em camadas;
+- JDBC;
+- SQL e SQLite;
+- transações;
+- regras de negócio;
+- validação de dados;
+- segurança de senhas com BCrypt;
+- geração de PDF;
+- modelagem de banco de dados;
+- Git e GitHub;
+- desenvolvimento incremental;
+- testes funcionais e regressão.
 
 ---
 
