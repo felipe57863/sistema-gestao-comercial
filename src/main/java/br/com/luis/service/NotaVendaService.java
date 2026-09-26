@@ -101,8 +101,8 @@ public class NotaVendaService {
      * Gera o PDF da Nota vinculada a uma venda.
      *
      * Vendas legadas podem não possuir Nota de Venda. Quando a Nota existe,
-     * o mesmo número e os dados já registrados são preservados em estado ATIVO
-     * ou ESTORNADO, e o arquivo físico é gerado fora da transação comercial.
+     * o mesmo número e os dados já registrados são preservados com a Nota ATIVA
+     * ou ESTORNADA, e o arquivo físico é gerado fora da transação comercial.
      *
      * @throws IllegalArgumentException se os parâmetros de geração forem inválidos.
      * @throws IllegalStateException se a venda não possuir Nota, os dados da Nota
