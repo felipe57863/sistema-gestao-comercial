@@ -46,10 +46,6 @@ public class DashboardService {
     private final ContaReceberService contaReceberService;
     private final ProdutoService produtoService;
 
-    /**
-     * Cria o serviço com as dependências responsáveis pelos indicadores do
-     * dashboard.
-     */
     public DashboardService() {
         this.vendaDAO = new VendaDAO();
         this.movimentacaoFinanceiraDAO =
@@ -79,9 +75,6 @@ public class DashboardService {
             this.descricao = descricao;
         }
 
-        /**
-         * Retorna a descrição de apresentação do período.
-         */
         @Override
         public String toString() {
             return descricao;

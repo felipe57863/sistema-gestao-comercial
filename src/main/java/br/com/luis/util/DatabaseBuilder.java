@@ -72,9 +72,6 @@ public class DatabaseBuilder {
         }
     }
 
-    /**
-     * Lê um arquivo SQL da pasta resources e executa seu conteúdo.
-     */
     private static void executarScript(Statement stmt, String caminhoScript) throws SQLException {
 
         String sql = carregarScript(caminhoScript);
@@ -88,9 +85,6 @@ public class DatabaseBuilder {
         System.out.println("[LOG] Script executado: " + caminhoScript);
     }
 
-    /**
-     * Carrega um script SQL a partir do classpath.
-     */
     private static String carregarScript(String caminhoScript) {
 
         try (InputStream inputStream = DatabaseBuilder.class

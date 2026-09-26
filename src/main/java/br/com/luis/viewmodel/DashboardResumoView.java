@@ -7,7 +7,7 @@ import java.time.LocalDate;
 /**
  * Transporta o resumo consolidado apresentado no dashboard da Tela Principal.
  *
- * A classe é imutável e representa uma fotografia completa dos indicadores
+ * A classe é imutável e representa o resumo completo dos indicadores
  * obtidos em um carregamento do dashboard.
  *
  * Os indicadores de vendas e de valor recebido líquido obedecem ao período
