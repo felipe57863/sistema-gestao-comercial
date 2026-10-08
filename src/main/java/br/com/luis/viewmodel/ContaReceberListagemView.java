@@ -5,6 +5,7 @@ import br.com.luis.model.StatusContaReceber;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Dados de uma conta pendente combinados com o cliente para exibição.
@@ -17,6 +18,7 @@ public class ContaReceberListagemView {
     private Integer clienteId;
     private String nomeCliente;
     private Integer vendaId;
+    private LocalDateTime dataHoraVenda;
     private BigDecimal valor;
     private LocalDate dataVencimento;
     private StatusContaReceber status;
@@ -79,6 +81,14 @@ public class ContaReceberListagemView {
         this.vendaId = vendaId;
     }
 
+    public LocalDateTime getDataHoraVenda() {
+        return dataHoraVenda;
+    }
+
+    public void setDataHoraVenda(LocalDateTime dataHoraVenda) {
+        this.dataHoraVenda = dataHoraVenda;
+    }
+
     public BigDecimal getValor() {
         return valor;
     }
@@ -123,6 +133,7 @@ public class ContaReceberListagemView {
                 ", clienteId=" + clienteId +
                 ", nomeCliente='" + nomeCliente + '\'' +
                 ", vendaId=" + vendaId +
+                ", dataHoraVenda=" + dataHoraVenda +
                 ", valor=" + valor +
                 ", dataVencimento=" + dataVencimento +
                 ", status=" + status +

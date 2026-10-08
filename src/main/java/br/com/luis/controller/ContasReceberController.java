@@ -53,10 +53,12 @@ public class ContasReceberController {
     @FXML private Label lblContaId;
     @FXML private Label lblCliente;
     @FXML private Label lblVendaId;
+    @FXML private Label lblDataVenda;
     @FXML private Label lblValor;
     @FXML private Label lblVencimento;
     @FXML private Label lblStatus;
     @FXML private Label lblSituacao;
+    @FXML private VBox boxOrientacaoSelecao;
 
     @FXML private Button btnVoltar;
     @FXML private Button btnReceberConta;
@@ -67,6 +69,7 @@ public class ContasReceberController {
     @FXML private TableColumn<ContaReceberListagemView, Integer> colConta;
     @FXML private TableColumn<ContaReceberListagemView, String> colCliente;
     @FXML private TableColumn<ContaReceberListagemView, Integer> colVenda;
+    @FXML private TableColumn<ContaReceberListagemView, LocalDateTime> colDataVenda;
     @FXML private TableColumn<ContaReceberListagemView, BigDecimal> colValor;
     @FXML private TableColumn<ContaReceberListagemView, LocalDate> colVencimento;
     @FXML private TableColumn<ContaReceberListagemView, StatusContaReceber> colStatus;
@@ -100,6 +103,14 @@ public class ContasReceberController {
         colConta.setCellValueFactory(new PropertyValueFactory<>("contaReceberId"));
         colCliente.setCellValueFactory(new PropertyValueFactory<>("nomeCliente"));
         colVenda.setCellValueFactory(new PropertyValueFactory<>("vendaId"));
+        colDataVenda.setCellValueFactory(new PropertyValueFactory<>("dataHoraVenda"));
+        colDataVenda.setCellFactory(coluna -> new TableCell<>() {
+            @Override
+            protected void updateItem(LocalDateTime dataHoraVenda, boolean empty) {
+                super.updateItem(dataHoraVenda, empty);
+                setText(empty || dataHoraVenda == null ? null : formatarDataHora(dataHoraVenda));
+            }
+        });
         colValor.setCellValueFactory(new PropertyValueFactory<>("valor"));
         colVencimento.setCellValueFactory(new PropertyValueFactory<>("dataVencimento"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
@@ -288,10 +299,14 @@ public class ContasReceberController {
         lblContaId.setText(formatarId(contaSelecionada.getContaReceberId()));
         lblCliente.setText(formatarTexto(contaSelecionada.getNomeCliente()));
         lblVendaId.setText(formatarId(contaSelecionada.getVendaId()));
+        lblDataVenda.setText(formatarDataHora(contaSelecionada.getDataHoraVenda()));
         lblValor.setText(formatarValor(contaSelecionada.getValor()));
         lblVencimento.setText(formatarData(contaSelecionada.getDataVencimento()));
         lblStatus.setText(formatarStatus(contaSelecionada.getStatus()));
         lblSituacao.setText(formatarSituacao(contaSelecionada));
+
+        boxOrientacaoSelecao.setVisible(false);
+        boxOrientacaoSelecao.setManaged(false);
     }
 
     /**
@@ -301,10 +316,14 @@ public class ContasReceberController {
         lblContaId.setText("—");
         lblCliente.setText("—");
         lblVendaId.setText("—");
+        lblDataVenda.setText("—");
         lblValor.setText("R$ 0,00");
         lblVencimento.setText("—");
         lblStatus.setText("—");
         lblSituacao.setText("—");
+
+        boxOrientacaoSelecao.setVisible(true);
+        boxOrientacaoSelecao.setManaged(true);
 
         btnReceberConta.setDisable(true);
     }

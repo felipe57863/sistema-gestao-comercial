@@ -80,6 +80,7 @@
                         <RowConstraints />
                         <RowConstraints />
                         <RowConstraints />
+                        <RowConstraints />
                     </rowConstraints>
 
                     <Label text="ID da conta:" GridPane.rowIndex="0" />
@@ -91,20 +92,23 @@
                     <Label text="Venda:" GridPane.rowIndex="2" />
                     <Label fx:id="lblVendaId" text="—" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                    <Label text="Valor:" GridPane.rowIndex="3" />
-                    <Label fx:id="lblValor" text="R$ 0,00" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    <Label text="Data da venda:" GridPane.rowIndex="3" />
+                    <Label fx:id="lblDataVenda" text="—" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
-                    <Label text="Vencimento:" GridPane.rowIndex="4" />
-                    <Label fx:id="lblVencimento" text="—" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                    <Label text="Valor:" GridPane.rowIndex="4" />
+                    <Label fx:id="lblValor" text="R$ 0,00" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-                    <Label text="Status:" GridPane.rowIndex="5" />
-                    <Label fx:id="lblStatus" text="—" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                    <Label text="Vencimento:" GridPane.rowIndex="5" />
+                    <Label fx:id="lblVencimento" text="—" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
-                    <Label text="Situação:" GridPane.rowIndex="6" />
-                    <Label fx:id="lblSituacao" text="—" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                    <Label text="Status:" GridPane.rowIndex="6" />
+                    <Label fx:id="lblStatus" text="—" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+
+                    <Label text="Situação:" GridPane.rowIndex="7" />
+                    <Label fx:id="lblSituacao" text="—" GridPane.columnIndex="1" GridPane.rowIndex="7" />
                 </GridPane>
 
-                <VBox spacing="8.0"
+                <VBox fx:id="boxOrientacaoSelecao" spacing="8.0"
                       style="-fx-border-color: #d1d5db; -fx-border-radius: 5; -fx-background-radius: 5; -fx-padding: 15;">
                     <Label text="Selecione uma conta na tabela para visualizar os detalhes."
                            wrapText="true" />
@@ -151,6 +155,7 @@
                         <TableColumn fx:id="colConta" prefWidth="80.0" text="Conta" />
                         <TableColumn fx:id="colCliente" prefWidth="260.0" text="Cliente" />
                         <TableColumn fx:id="colVenda" prefWidth="90.0" text="Venda" />
+                        <TableColumn fx:id="colDataVenda" prefWidth="170.0" text="Data da venda" />
                         <TableColumn fx:id="colValor" prefWidth="120.0" text="Valor" />
                         <TableColumn fx:id="colVencimento" prefWidth="140.0" text="Vencimento" />
                         <TableColumn fx:id="colStatus" prefWidth="120.0" text="Status" />

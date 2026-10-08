@@ -390,12 +390,15 @@ public class ContaReceberDAO {
                    conta.cliente_id,
                    cliente.nome AS nome_cliente,
                    conta.venda_id,
+                   venda.data_hora AS data_hora_venda,
                    conta.valor,
                    conta.data_vencimento,
                    conta.status
             FROM ContaReceber conta
             INNER JOIN Cliente cliente
                     ON cliente.id_cliente = conta.cliente_id
+            INNER JOIN Venda venda
+                    ON venda.id_venda = conta.venda_id
             WHERE conta.status = ?
             ORDER BY conta.data_vencimento ASC,
                      conta.id_conta ASC
@@ -418,6 +421,10 @@ public class ContaReceberDAO {
                             LocalDate.parse(rs.getString("data_vencimento")),
                             StatusContaReceber.valueOf(rs.getString("status")),
                             false
+                    );
+
+                    contaView.setDataHoraVenda(
+                            LocalDateTime.parse(rs.getString("data_hora_venda"))
                     );
 
                     contasPendentes.add(contaView);
