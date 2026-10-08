@@ -1,25 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane prefHeight="720.0"
-            prefWidth="1080.0"
-            style="-fx-background-color: #f4f6f9;"
-            xmlns="http://javafx.com/javafx/17"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="br.com.luis.controller.EntradaEstoqueController">
+<BorderPane prefHeight="720.0" prefWidth="1080.0" style="-fx-background-color: #f4f6f9;" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.luis.controller.EntradaEstoqueController">
 
     <top>
         <BorderPane style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-padding: 15 20 15 20;">
             <left>
                 <HBox alignment="CENTER_LEFT" spacing="12.0">
-                    <Button fx:id="btnVoltar"
-                            onAction="#onVoltar"
-                            prefWidth="90.0"
-                            text="Voltar" />
+                    <Button fx:id="btnVoltar" onAction="#onVoltar" prefWidth="90.0" text="Voltar" />
                     <Label text="Entrada de Estoque">
                         <font>
                             <Font name="System Bold" size="20.0" />
@@ -29,13 +35,9 @@
             </left>
             <right>
                 <HBox alignment="CENTER_RIGHT" spacing="8.0">
-                    <Label fx:id="lblUsuario"
-                           text="Usuário não identificado"
-                           textFill="#555555" />
+                    <Label fx:id="lblUsuario" text="Usuário não identificado" textFill="#555555" />
                     <Label text="|" textFill="#777777" />
-                    <Label fx:id="lblDataHora"
-                           text="--/--/---- --:--:--"
-                           textFill="#555555" />
+                    <Label fx:id="lblDataHora" text="--/--/---- --:--:--" textFill="#555555" />
                 </HBox>
             </right>
         </BorderPane>
@@ -47,24 +49,18 @@
                 <Insets bottom="16.0" left="20.0" right="20.0" top="16.0" />
             </padding>
 
-            <VBox spacing="10.0"
-                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14 16 14 16;">
+            <VBox spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14 16 14 16;">
                 <Label text="Dados da Entrada">
                     <font>
                         <Font name="System Bold" size="16.0" />
                     </font>
                 </Label>
                 <HBox alignment="CENTER_LEFT" spacing="24.0">
-                    <Label fx:id="lblNumeroEntrada"
-                           text="Número: gerado após confirmação"
-                           textFill="#555555" />
+                    <Label fx:id="lblNumeroEntrada" text="Número: gerado após confirmação" textFill="#555555" />
                     <Region HBox.hgrow="ALWAYS" />
-                    <Label text="Data/Hora: automática na confirmação"
-                           textFill="#555555" />
+                    <Label text="Data/Hora: automática na confirmação" textFill="#555555" />
                     <Region HBox.hgrow="ALWAYS" />
-                    <Label fx:id="lblResponsavel"
-                           text="Responsável: não identificado"
-                           textFill="#555555" />
+                    <Label fx:id="lblResponsavel" text="Responsável: não identificado" textFill="#555555" />
                 </HBox>
                 <GridPane hgap="12.0" vgap="8.0">
                     <columnConstraints>
@@ -72,21 +68,17 @@
                         <ColumnConstraints hgrow="ALWAYS" />
                     </columnConstraints>
                     <Label text="Referência interna (opcional):" />
-                    <TextField fx:id="txtReferencia"
-                               promptText="Ex.: referência interna"
-                               GridPane.columnIndex="1" />
-                    <Label text="Observação:" GridPane.rowIndex="1" />
-                    <TextArea fx:id="txtObservacao"
-                              prefRowCount="2"
-                              promptText="Observação opcional"
-                              wrapText="true"
-                              GridPane.columnIndex="1"
-                              GridPane.rowIndex="1" />
+                    <TextField fx:id="txtReferencia" promptText="Ex.: COMPRA-2026-001" GridPane.columnIndex="1" />
+                    <Label text="Observação (opcional):" GridPane.rowIndex="1" />
+                    <TextArea fx:id="txtObservacao" prefRowCount="2" promptText="Ex.: Mercadorias recebidas e conferidas." wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+               </rowConstraints>
                 </GridPane>
             </VBox>
 
-            <VBox spacing="10.0"
-                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14 16 14 16;">
+            <VBox spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14 16 14 16;">
                 <Label text="Item da Entrada">
                     <font>
                         <Font name="System Bold" size="16.0" />
@@ -94,7 +86,7 @@
                 </Label>
                 <GridPane hgap="12.0" vgap="8.0">
                     <columnConstraints>
-                        <ColumnConstraints minWidth="330.0" hgrow="ALWAYS" />
+                        <ColumnConstraints hgrow="ALWAYS" minWidth="330.0" />
                         <ColumnConstraints minWidth="115.0" />
                         <ColumnConstraints minWidth="155.0" />
                         <ColumnConstraints minWidth="145.0" />
@@ -105,93 +97,39 @@
                     <Label text="Último Preço de Compra" GridPane.columnIndex="2" />
                     <Label text="Quantidade Recebida:*" GridPane.columnIndex="3" />
                     <Label text="Preço Unitário de Compra:*" GridPane.columnIndex="4" />
-                    <ComboBox fx:id="cbProduto"
-                              maxWidth="Infinity"
-                              promptText="Selecione um produto ativo"
-                              GridPane.rowIndex="1" />
-                    <Label fx:id="lblEstoqueAtual"
-                           alignment="CENTER"
-                           maxWidth="Infinity"
-                           text="-"
-                           GridPane.columnIndex="1"
-                           GridPane.rowIndex="1" />
-                    <Label fx:id="lblUltimoPrecoCompra"
-                           alignment="CENTER"
-                           maxWidth="Infinity"
-                           text="—"
-                           GridPane.columnIndex="2"
-                           GridPane.rowIndex="1" />
-                    <Spinner fx:id="spnQuantidade"
-                             editable="true"
-                             maxWidth="Infinity"
-                             GridPane.columnIndex="3"
-                             GridPane.rowIndex="1" />
-                    <HBox alignment="CENTER_LEFT"
-                          spacing="6.0"
-                          GridPane.columnIndex="4"
-                          GridPane.rowIndex="1">
+                    <ComboBox fx:id="cbProduto" maxWidth="Infinity" promptText="Selecione um produto ativo" GridPane.rowIndex="1" />
+                    <Label fx:id="lblEstoqueAtual" alignment="CENTER" maxWidth="Infinity" text="—" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    <Label fx:id="lblUltimoPrecoCompra" alignment="CENTER" maxWidth="Infinity" text="—" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                    <Spinner fx:id="spnQuantidade" editable="true" maxWidth="Infinity" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                    <HBox alignment="CENTER_LEFT" spacing="6.0" GridPane.columnIndex="4" GridPane.rowIndex="1">
                         <Label text="R$" />
-                        <TextField fx:id="txtPrecoCompra"
-                                   maxWidth="Infinity"
-                                   promptText="Ex: 12,50"
-                                   HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="txtPrecoCompra" maxWidth="Infinity" promptText="Ex: 12,50" HBox.hgrow="ALWAYS" />
                     </HBox>
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+               </rowConstraints>
                 </GridPane>
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
-                    <Button fx:id="btnAdicionarAtualizarItem"
-                            onAction="#acaoAdicionarAtualizarItem"
-                            prefWidth="145.0"
-                            text="Adicionar Item" />
-                    <Button fx:id="btnRemoverItem"
-                            disable="true"
-                            onAction="#acaoRemoverItem"
-                            prefWidth="130.0"
-                            text="Remover Item" />
-                    <Label fx:id="lblOrientacaoEdicaoItem"
-                           managed="false"
-                           maxWidth="Infinity"
-                           style="-fx-font-size: 11px; -fx-text-fill: #5f6b76;"
-                           text="Clique em Atualizar Item para aplicar as alterações ao rascunho antes de confirmar a Entrada."
-                           visible="false"
-                           wrapText="true"
-                           HBox.hgrow="ALWAYS" />
+                    <Button fx:id="btnAdicionarAtualizarItem" onAction="#acaoAdicionarAtualizarItem" prefWidth="145.0" text="Adicionar Item" />
+                    <Button fx:id="btnRemoverItem" disable="true" onAction="#acaoRemoverItem" prefWidth="130.0" text="Remover Item" />
+                    <Label fx:id="lblOrientacaoEdicaoItem" managed="false" maxWidth="Infinity" style="-fx-font-size: 11px; -fx-text-fill: #5f6b76;" text="Clique em Atualizar Item para aplicar as alterações ao rascunho antes de confirmar a Entrada." visible="false" wrapText="true" HBox.hgrow="ALWAYS" />
                 </HBox>
             </VBox>
 
-            <VBox maxHeight="Infinity"
-                  spacing="10.0"
-                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14 16 14 16;"
-                  VBox.vgrow="ALWAYS">
+            <VBox maxHeight="Infinity" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14 16 14 16;" VBox.vgrow="ALWAYS">
                 <Label text="Itens do Rascunho">
                     <font>
                         <Font name="System Bold" size="16.0" />
                     </font>
                 </Label>
-                <TableView fx:id="tabelaItens"
-                           maxHeight="Infinity"
-                           maxWidth="Infinity"
-                           VBox.vgrow="ALWAYS">
+                <TableView fx:id="tabelaItens" maxHeight="Infinity" maxWidth="Infinity" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colProduto"
-                                     minWidth="220.0"
-                                     prefWidth="330.0"
-                                     text="Produto" />
-                        <TableColumn fx:id="colEstoqueAtual"
-                                     minWidth="105.0"
-                                     prefWidth="120.0"
-                                     text="Estoque Atual" />
-                        <TableColumn fx:id="colQuantidade"
-                                      minWidth="90.0"
-                                      prefWidth="110.0"
-                                      text="Quantidade Recebida" />
-                        <TableColumn fx:id="colPrecoCompra"
-                                     minWidth="135.0"
-                                     prefWidth="160.0"
-                                     text="Preço de Compra" />
-                        <TableColumn fx:id="colSubtotal"
-                                     minWidth="110.0"
-                                     prefWidth="145.0"
-                                     text="Subtotal" />
+                        <TableColumn fx:id="colProduto" minWidth="220.0" prefWidth="330.0" text="Produto" />
+                        <TableColumn fx:id="colEstoqueAtual" minWidth="105.0" prefWidth="120.0" text="Estoque Atual" />
+                        <TableColumn fx:id="colQuantidade" minWidth="90.0" prefWidth="110.0" text="Quantidade Recebida" />
+                        <TableColumn fx:id="colPrecoCompra" minWidth="135.0" prefWidth="160.0" text="Preço de Compra" />
+                        <TableColumn fx:id="colSubtotal" minWidth="110.0" prefWidth="145.0" text="Subtotal" />
                     </columns>
                     <placeholder>
                         <Label text="Nenhum item adicionado à Entrada de Estoque." />
@@ -220,30 +158,12 @@
     </center>
 
     <bottom>
-        <HBox alignment="CENTER_LEFT"
-              spacing="10.0"
-              style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;">
-            <Button fx:id="btnConfirmarEntrada"
-                    disable="true"
-                    onAction="#acaoConfirmarEntrada"
-                    prefHeight="40.0"
-                    prefWidth="180.0"
-                    style="-fx-background-color: #345f86; -fx-background-radius: 5; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"
-                    text="Confirmar Entrada" />
-            <Button fx:id="btnLimparEntrada"
-                    onAction="#acaoLimparEntrada"
-                    prefHeight="40.0"
-                    prefWidth="140.0"
-                    text="Limpar Entrada" />
+        <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1 0 0 0; -fx-padding: 12 20 12 20;">
+            <Button fx:id="btnConfirmarEntrada" disable="true" onAction="#acaoConfirmarEntrada" prefHeight="40.0" prefWidth="180.0" style="-fx-background-color: #345f86; -fx-background-radius: 5; -fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="Confirmar Entrada" />
+            <Button fx:id="btnLimparEntrada" onAction="#acaoLimparEntrada" prefHeight="40.0" prefWidth="140.0" text="Limpar Entrada" />
             <Region HBox.hgrow="ALWAYS" />
-            <Label fx:id="lblEstadoOperacao"
-                   text=""
-                   textFill="#555555" />
-            <ProgressIndicator fx:id="progressoOperacao"
-                               managed="false"
-                               prefHeight="24.0"
-                               prefWidth="24.0"
-                               visible="false" />
+            <Label fx:id="lblEstadoOperacao" text="" textFill="#555555" />
+            <ProgressIndicator fx:id="progressoOperacao" managed="false" prefHeight="24.0" prefWidth="24.0" visible="false" />
         </HBox>
     </bottom>
 </BorderPane>
