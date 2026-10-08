@@ -18,15 +18,15 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -629,37 +629,41 @@ public class ContasReceberController {
                 ButtonType.CANCEL
         );
 
-        ComboBox<FormaPagamento> comboFormaPagamento = new ComboBox<>();
-        comboFormaPagamento.getItems().addAll(
-                FormaPagamento.DINHEIRO,
-                FormaPagamento.PIX,
-                FormaPagamento.CARTAO
-        );
-        comboFormaPagamento.setValue(FormaPagamento.DINHEIRO);
+        RadioButton rbPagamentoDinheiro = new RadioButton("Dinheiro");
+        RadioButton rbPagamentoPix = new RadioButton("PIX");
+        RadioButton rbPagamentoCartao = new RadioButton("Cartão");
 
-        comboFormaPagamento.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(FormaPagamento formaPagamento) {
-                return formatarFormaPagamento(formaPagamento);
-            }
-
-            @Override
-            public FormaPagamento fromString(String texto) {
-                return null;
-            }
-        });
+        ToggleGroup tgFormaPagamento = new ToggleGroup();
+        rbPagamentoDinheiro.setToggleGroup(tgFormaPagamento);
+        rbPagamentoPix.setToggleGroup(tgFormaPagamento);
+        rbPagamentoCartao.setToggleGroup(tgFormaPagamento);
 
         VBox conteudo = new VBox(
                 8,
-                new Label("Forma de pagamento:"),
-                comboFormaPagamento
+                rbPagamentoDinheiro,
+                rbPagamentoPix,
+                rbPagamentoCartao
         );
 
         dialog.getDialogPane().setContent(conteudo);
 
+        Button btnConfirmarDialog = (Button) dialog.getDialogPane().lookupButton(botaoConfirmar);
+        btnConfirmarDialog.setDisable(true);
+        tgFormaPagamento.selectedToggleProperty().addListener(
+                (observable, anterior, atual) -> btnConfirmarDialog.setDisable(atual == null)
+        );
+
         dialog.setResultConverter(buttonType -> {
             if (buttonType == botaoConfirmar) {
-                return comboFormaPagamento.getValue();
+                if (rbPagamentoDinheiro.isSelected()) {
+                    return FormaPagamento.DINHEIRO;
+                }
+                if (rbPagamentoPix.isSelected()) {
+                    return FormaPagamento.PIX;
+                }
+                if (rbPagamentoCartao.isSelected()) {
+                    return FormaPagamento.CARTAO;
+                }
             }
 
             return null;
