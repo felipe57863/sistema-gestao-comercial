@@ -72,7 +72,6 @@ public class ProdutoController implements Initializable {
     @FXML private Button btnVoltar;
     @FXML private Button btnSalvar;
     @FXML private Button btnCancelar;
-    @FXML private Button btnLimpar;
     @FXML private Button btnNovo;
 
     // MAPEAMENTO DO FXML (Direita: Lista)
@@ -778,11 +777,6 @@ public class ProdutoController implements Initializable {
 
     @FXML
     public void acaoNovo() {
-        prepararNovoCadastro();
-    }
-
-    @FXML
-    public void acaoLimpar() {
         prepararNovoCadastro();
     }
 

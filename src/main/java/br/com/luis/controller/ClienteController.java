@@ -768,20 +768,6 @@ public class ClienteController {
     }
 
     /**
-     * Limpa apenas os campos do formulário.
-     * Não remove seleção da tabela e não sai do modo edição.
-     */
-    @FXML
-    public void limpar() {
-        invalidarConsultaSituacaoFinanceira();
-        limparCamposFormulario();
-
-        if (clienteSelecionado != null) {
-            btnSalvar.setText("Atualizar");
-        }
-    }
-
-    /**
      * Prepara a tela para cadastrar um novo cliente.
      */
     @FXML
