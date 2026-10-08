@@ -682,6 +682,22 @@ public class VendaService {
     }
 
     /**
+     * Projeta o limite restante caso a venda atual seja realizada a prazo.
+     * Não reserva crédito nem altera dados do cliente.
+     */
+    public BigDecimal calcularLimiteAposVendaAPrazo(
+            BigDecimal limiteDisponivelAtual,
+            BigDecimal totalVenda
+    ) {
+        if (limiteDisponivelAtual == null || totalVenda == null || totalVenda.signum() < 0) {
+            throw new IllegalArgumentException("Valores inválidos para projetar limite de crédito.");
+        }
+
+        return limiteDisponivelAtual.subtract(totalVenda)
+                .setScale(ESCALA_MONETARIA, RoundingMode.HALF_UP);
+    }
+
+    /**
      * Valida os dados específicos de uma venda a prazo.
      *
      * Valida a combinação entre tipo e forma de pagamento e exige os IDs do

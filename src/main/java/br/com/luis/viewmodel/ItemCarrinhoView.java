@@ -13,6 +13,7 @@ public class ItemCarrinhoView {
     private String nomeProduto;
     private String precoFormatado;
     private String promocaoFormatada;
+    private Integer estoqueDisponivel;
     private Integer quantidade;
     private String subtotalFormatado;
     private ItemVenda itemVenda;
@@ -25,6 +26,7 @@ public class ItemCarrinhoView {
             String nomeProduto,
             String precoFormatado,
             String promocaoFormatada,
+            Integer estoqueDisponivel,
             Integer quantidade,
             String subtotalFormatado,
             ItemVenda itemVenda
@@ -33,6 +35,7 @@ public class ItemCarrinhoView {
         this.nomeProduto = nomeProduto;
         this.precoFormatado = precoFormatado;
         this.promocaoFormatada = promocaoFormatada;
+        this.estoqueDisponivel = estoqueDisponivel;
         this.quantidade = quantidade;
         this.subtotalFormatado = subtotalFormatado;
         this.itemVenda = itemVenda;
@@ -70,6 +73,14 @@ public class ItemCarrinhoView {
         this.promocaoFormatada = promocaoFormatada;
     }
 
+    public Integer getEstoqueDisponivel() {
+        return estoqueDisponivel;
+    }
+
+    public void setEstoqueDisponivel(Integer estoqueDisponivel) {
+        this.estoqueDisponivel = estoqueDisponivel;
+    }
+
     public Integer getQuantidade() {
         return quantidade;
     }
@@ -101,6 +112,7 @@ public class ItemCarrinhoView {
                 ", nomeProduto='" + nomeProduto + '\'' +
                 ", precoFormatado='" + precoFormatado + '\'' +
                 ", promocaoFormatada='" + promocaoFormatada + '\'' +
+                ", estoqueDisponivel=" + estoqueDisponivel +
                 ", quantidade=" + quantidade +
                 ", subtotalFormatado='" + subtotalFormatado + '\'' +
                 '}';

@@ -123,24 +123,28 @@
                                VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="colProduto"
-                                         minWidth="160.0"
-                                         prefWidth="230.0"
+                                         minWidth="120.0"
+                                         prefWidth="210.0"
                                          text="Produto" />
                             <TableColumn fx:id="colPreco"
-                                         minWidth="85.0"
-                                         prefWidth="120.0"
+                                         minWidth="75.0"
+                                         prefWidth="110.0"
                                          text="Preço" />
                             <TableColumn fx:id="colPromocao"
-                                         minWidth="100.0"
-                                         prefWidth="150.0"
-                                         text="Promoção" />
-                            <TableColumn fx:id="colQuantidade"
-                                         minWidth="100.0"
+                                         minWidth="80.0"
                                          prefWidth="130.0"
+                                         text="Promoção" />
+                            <TableColumn fx:id="colEstoque"
+                                         minWidth="70.0"
+                                         prefWidth="90.0"
+                                         text="Estoque" />
+                            <TableColumn fx:id="colQuantidade"
+                                         minWidth="95.0"
+                                         prefWidth="120.0"
                                          text="Quantidade" />
                             <TableColumn fx:id="colSubtotal"
-                                         minWidth="105.0"
-                                         prefWidth="140.0"
+                                         minWidth="90.0"
+                                         prefWidth="130.0"
                                          text="Subtotal" />
                         </columns>
 
@@ -292,7 +296,7 @@
 
                     <GridPane hgap="12.0" vgap="11.0">
                         <columnConstraints>
-                            <ColumnConstraints minWidth="115.0" />
+                            <ColumnConstraints minWidth="165.0" />
                             <ColumnConstraints hgrow="ALWAYS" />
                         </columnConstraints>
 
@@ -314,13 +318,29 @@
                                GridPane.columnIndex="1"
                                GridPane.rowIndex="1" />
 
-                        <Label text="Limite disponível:"
+                        <Label text="Prazo máximo:"
                                GridPane.columnIndex="0"
                                GridPane.rowIndex="2" />
+                        <Label fx:id="lblPrazoMaximoCliente"
+                               text="-"
+                               GridPane.columnIndex="1"
+                               GridPane.rowIndex="2" />
+
+                        <Label text="Limite disponível:"
+                               GridPane.columnIndex="0"
+                               GridPane.rowIndex="3" />
                         <Label fx:id="lblLimiteDisponivel"
                                text="R$ 0,00"
                                GridPane.columnIndex="1"
-                               GridPane.rowIndex="2" />
+                               GridPane.rowIndex="3" />
+
+                        <Label text="Limite após venda a prazo:"
+                               GridPane.columnIndex="0"
+                               GridPane.rowIndex="4" />
+                        <Label fx:id="lblLimiteAposVendaAPrazo"
+                               text="R$ 0,00"
+                               GridPane.columnIndex="1"
+                               GridPane.rowIndex="4" />
                     </GridPane>
                 </VBox>
 

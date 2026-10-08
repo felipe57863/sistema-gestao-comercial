@@ -80,6 +80,7 @@ public class RegistroVendaController {
 
     private Venda vendaAtual;
     private Cliente clienteSelecionado;
+    private BigDecimal limiteDisponivelClienteSelecionado;
 
     @FXML private Button btnVoltar;
     @FXML private Label lblUsuarioLogado;
@@ -91,6 +92,7 @@ public class RegistroVendaController {
     @FXML private TableColumn<ItemCarrinhoView, String> colProduto;
     @FXML private TableColumn<ItemCarrinhoView, String> colPreco;
     @FXML private TableColumn<ItemCarrinhoView, String> colPromocao;
+    @FXML private TableColumn<ItemCarrinhoView, Integer> colEstoque;
     @FXML private TableColumn<ItemCarrinhoView, Integer> colQuantidade;
     @FXML private TableColumn<ItemCarrinhoView, String> colSubtotal;
     @FXML private Button btnRemoverProduto;
@@ -101,7 +103,9 @@ public class RegistroVendaController {
     @FXML private TextField txtBuscaCliente;
     @FXML private Label lblNomeCliente;
     @FXML private Label lblStatusCliente;
+    @FXML private Label lblPrazoMaximoCliente;
     @FXML private Label lblLimiteDisponivel;
+    @FXML private Label lblLimiteAposVendaAPrazo;
 
     @FXML private Label lblSubtotalVenda;
     @FXML private Label lblDescontoGlobal;
@@ -270,6 +274,7 @@ public class RegistroVendaController {
         colProduto.setCellValueFactory(new PropertyValueFactory<>("nomeProduto"));
         colPreco.setCellValueFactory(new PropertyValueFactory<>("precoFormatado"));
         colPromocao.setCellValueFactory(new PropertyValueFactory<>("promocaoFormatada"));
+        colEstoque.setCellValueFactory(new PropertyValueFactory<>("estoqueDisponivel"));
         colQuantidade.setCellValueFactory(new PropertyValueFactory<>("quantidade"));
         colSubtotal.setCellValueFactory(new PropertyValueFactory<>("subtotalFormatado"));
 
@@ -534,6 +539,7 @@ public class RegistroVendaController {
                 produto.getDescricao(),
                 formatarMoeda(itemVenda.getPrecoUnitario()),
                 formatarPromocao(itemVenda),
+                produto.getQuantidadeEstoque(),
                 itemVenda.getQuantidade(),
                 formatarMoeda(itemVenda.getSubtotal()),
                 itemVenda
@@ -560,6 +566,8 @@ public class RegistroVendaController {
         if (lblTotalVenda != null) {
             lblTotalVenda.setText(formatarMoeda(total));
         }
+
+        atualizarLimiteAposVendaAPrazo();
     }
 
     /**
@@ -599,8 +607,9 @@ public class RegistroVendaController {
      * Evento do botão Adicionar Produto.
      *
      * O campo txtBuscaProduto aceita:
+     * - vazio: abre a lista de produtos ativos;
      * - apenas números: trata como ID do produto;
-     * - texto: busca produtos por descrição e abre uma caixa de seleção.
+     * - texto: busca produtos ativos por descrição e abre uma caixa de seleção.
      *
      * Ao adicionar um produto, a quantidade inicial é sempre 1.
      * A quantidade final deve ser editada diretamente na coluna Quantidade
@@ -649,12 +658,7 @@ public class RegistroVendaController {
     private String obterTextoBuscaProduto() {
 
         String textoBusca = txtBuscaProduto.getText();
-
-        if (textoBusca == null || textoBusca.isBlank()) {
-            throw new IllegalArgumentException("Informe o ID ou a descrição do produto.");
-        }
-
-        return textoBusca.trim();
+        return textoBusca == null ? "" : textoBusca.trim();
     }
 
     private boolean textoEhNumero(String texto) {
@@ -1051,17 +1055,20 @@ public class RegistroVendaController {
     /**
      * Limpa a área visual de cliente.
      *
-     * Remove o cliente selecionado e restaura os campos de busca, nome, status
-     * e limite disponível ao estado inicial.
+     * Remove o cliente selecionado e restaura os campos de busca, nome, status,
+     * prazo máximo e limites de crédito ao estado inicial.
      */
     private void limparAreaCliente() {
 
         clienteSelecionado = null;
+        limiteDisponivelClienteSelecionado = null;
 
         txtBuscaCliente.clear();
         lblNomeCliente.setText("-");
         lblStatusCliente.setText("-");
+        lblPrazoMaximoCliente.setText("-");
         lblLimiteDisponivel.setText("R$ 0,00");
+        lblLimiteAposVendaAPrazo.setText("R$ 0,00");
     }
 
     /**
@@ -1093,7 +1100,44 @@ public class RegistroVendaController {
             lblStatusCliente.setText("-");
         }
 
+        lblPrazoMaximoCliente.setText(
+                formatarPrazoMaximo(clienteSelecionado.getPrazoPagamento())
+        );
+        limiteDisponivelClienteSelecionado = limiteDisponivel;
         lblLimiteDisponivel.setText(formatarMoeda(limiteDisponivel));
+        atualizarLimiteAposVendaAPrazo();
+    }
+
+    /**
+     * Atualiza somente a projeção visual, usando o limite já consultado.
+     */
+    private void atualizarLimiteAposVendaAPrazo() {
+        if (clienteSelecionado == null || limiteDisponivelClienteSelecionado == null || vendaAtual == null) {
+            lblLimiteAposVendaAPrazo.setText("R$ 0,00");
+            return;
+        }
+
+        BigDecimal limiteAposVenda = vendaService.calcularLimiteAposVendaAPrazo(
+                limiteDisponivelClienteSelecionado,
+                vendaAtual.getValorTotal()
+        );
+        lblLimiteAposVendaAPrazo.setText(formatarMoeda(limiteAposVenda));
+    }
+
+    /**
+     * Formata o prazo do cliente apenas para exibição na interface.
+     */
+    private String formatarPrazoMaximo(PrazoPagamento prazoPagamento) {
+        if (prazoPagamento == null || prazoPagamento.getQuantidadeDias() == null) {
+            return "-";
+        }
+
+        int dias = prazoPagamento.getQuantidadeDias();
+        if (dias == 0) {
+            return "À vista";
+        }
+
+        return dias + (dias == 1 ? " dia" : " dias");
     }
 
     /**
@@ -1244,18 +1288,27 @@ public class RegistroVendaController {
     /**
      * Abre um Dialog para seleção do prazo efetivo da venda a prazo.
      *
-     * Lista os prazos ativos obtidos pelo PrazoPagamentoService e permite a
-     * seleção visual de um deles. Apenas retorna o prazo escolhido e não altera
-     * o estado da tela. As validações definitivas do prazo pertencem ao VendaService.
+     * Mostra apenas os prazos ativos compatíveis com o prazo máximo do cliente.
+     * Apenas retorna o prazo escolhido e não altera o estado da tela.
+     * As validações definitivas do prazo pertencem ao VendaService.
      * Se o Dialog for cancelado ou fechado, retorna Optional.empty().
      */
     private Optional<PrazoPagamento> abrirDialogSelecaoPrazoPagamento() {
 
+        PrazoPagamento prazoMaximoCliente = clienteSelecionado.getPrazoPagamento();
+        if (prazoMaximoCliente == null || prazoMaximoCliente.getQuantidadeDias() == null) {
+            throw new IllegalArgumentException("Cliente sem prazo máximo de pagamento definido.");
+        }
+
+        int diasMaximos = prazoMaximoCliente.getQuantidadeDias();
         List<PrazoPagamento> prazos = prazoPagamentoService.listarAtivos();
 
-        List<PrazoPagamento> prazosAtivos = prazos != null
+        List<PrazoPagamento> prazosPermitidos = prazos != null
                 ? prazos.stream()
-                  .filter(prazoPagamento -> prazoPagamento != null)
+                  .filter(prazo -> prazo != null
+                          && prazo.getQuantidadeDias() != null
+                          && prazo.getQuantidadeDias() > 0
+                          && prazo.getQuantidadeDias() <= diasMaximos)
                   .toList()
                 : List.of();
 
@@ -1264,13 +1317,13 @@ public class RegistroVendaController {
         dialog.setHeaderText("Selecione o prazo efetivo da venda a prazo.");
 
         TableView<PrazoPagamento> tableViewPrazos = new TableView<>(
-                FXCollections.observableArrayList(prazosAtivos)
+                FXCollections.observableArrayList(prazosPermitidos)
         );
 
         tableViewPrazos.setPrefWidth(520);
         tableViewPrazos.setPrefHeight(260);
 
-        Label placeholder = new Label("Nenhum prazo ativo encontrado.");
+        Label placeholder = new Label("Nenhum prazo disponível dentro do limite do cliente.");
         placeholder.setWrapText(true);
         tableViewPrazos.setPlaceholder(placeholder);
 
@@ -1305,7 +1358,7 @@ public class RegistroVendaController {
 
         dialog.getDialogPane().setContent(tableViewPrazos);
 
-        boolean encontrouPrazos = !prazosAtivos.isEmpty();
+        boolean encontrouPrazos = !prazosPermitidos.isEmpty();
 
         if (encontrouPrazos) {
             ButtonType botaoSelecionar = new ButtonType(
@@ -1824,7 +1877,7 @@ public class RegistroVendaController {
                 FXCollections.observableArrayList(clientesEncontrados)
         );
 
-        tableViewClientes.setPrefWidth(960);
+        tableViewClientes.setPrefWidth(1080);
         tableViewClientes.setPrefHeight(300);
 
         Label placeholder = new Label("Nenhum cliente encontrado para esta busca.");
@@ -1871,6 +1924,14 @@ public class RegistroVendaController {
                 )
         );
 
+        TableColumn<Cliente, String> colunaPrazoMaximo = new TableColumn<>("Prazo máximo");
+        colunaPrazoMaximo.setPrefWidth(120);
+        colunaPrazoMaximo.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        formatarPrazoMaximo(cellData.getValue().getPrazoPagamento())
+                )
+        );
+
         TableColumn<Cliente, String> colunaLimiteTotal = new TableColumn<>("Limite total");
         colunaLimiteTotal.setPrefWidth(140);
         colunaLimiteTotal.setCellValueFactory(cellData -> {
@@ -1907,6 +1968,7 @@ public class RegistroVendaController {
                         colunaNome,
                         colunaDocumento,
                         colunaStatus,
+                        colunaPrazoMaximo,
                         colunaLimiteTotal,
                         colunaLimiteDisponivel
                 )
@@ -2014,7 +2076,7 @@ public class RegistroVendaController {
     }
 
     /**
-     * Abre a caixa de seleção de produto quando a busca é feita por descrição.
+     * Abre a caixa de seleção de produtos ativos, com ou sem filtro por descrição.
      *
      * Obtém os resultados pelo ProdutoService e limita-se a montar e controlar
      * o Dialog; as regras de estoque e venda permanecem no VendaService.
@@ -2028,11 +2090,18 @@ public class RegistroVendaController {
      */
     private Optional<Produto> abrirDialogSelecaoProduto(String termoBusca) {
 
-        List<Produto> produtosEncontrados = produtoService.buscarPorDescricao(termoBusca);
+        boolean semFiltro = termoBusca == null || termoBusca.isBlank();
+        List<Produto> produtosEncontrados = semFiltro
+                ? produtoService.listarAtivos()
+                : produtoService.buscarPorDescricao(termoBusca).stream()
+                        .filter(Produto::isAtivo)
+                        .toList();
 
         Dialog<Produto> dialog = new Dialog<>();
         dialog.setTitle("Selecionar Produto");
-        dialog.setHeaderText("Resultado da busca por: " + termoBusca);
+        dialog.setHeaderText(semFiltro
+                ? "Produtos ativos disponíveis para seleção"
+                : "Resultado da busca por: " + termoBusca);
 
         TableView<Produto> tableViewProdutos = new TableView<>(
                 FXCollections.observableArrayList(
@@ -2043,7 +2112,9 @@ public class RegistroVendaController {
         tableViewProdutos.setPrefWidth(720);
         tableViewProdutos.setPrefHeight(280);
 
-        Label placeholder = new Label("Nenhum produto encontrado para esta busca.");
+        Label placeholder = new Label(semFiltro
+                ? "Nenhum produto ativo encontrado."
+                : "Nenhum produto encontrado para esta busca.");
         placeholder.setWrapText(true);
         tableViewProdutos.setPlaceholder(placeholder);
 
