@@ -58,6 +58,8 @@ public class PrazoPagamentoController {
     public void initialize() {
         configurarCabecalho();
         configurarTabela();
+        txtDescricao.textProperty().addListener((obs, anterior, atual) -> atualizarEstadoBotaoSalvar());
+        txtQuantidadeDias.textProperty().addListener((obs, anterior, atual) -> atualizarEstadoBotaoSalvar());
         prepararNovoCadastro();
         carregarTabelaInicial();
     }
@@ -88,6 +90,7 @@ public class PrazoPagamentoController {
                         prazoSelecionado = null;
                         limparCamposFormulario();
                         btnSalvar.setText("Salvar");
+                        atualizarEstadoBotaoSalvar();
                         atualizarBotoesStatus();
                         return;
                     }
@@ -131,6 +134,11 @@ public class PrazoPagamentoController {
 
     @FXML
     private void acaoSalvar() {
+        if (prazoSelecionado != null && !existemAlteracoesPrazoNaoSalvas()) {
+            atualizarEstadoBotaoSalvar();
+            return;
+        }
+
         try {
             boolean cadastrando = prazoSelecionado == null;
             PrazoPagamento prazo = montarPrazoFormulario(cadastrando);
@@ -352,6 +360,7 @@ public class PrazoPagamentoController {
         );
 
         btnSalvar.setText("Atualizar");
+        atualizarEstadoBotaoSalvar();
         atualizarBotoesStatus();
     }
 
@@ -361,6 +370,7 @@ public class PrazoPagamentoController {
 
         limparCamposFormulario();
         btnSalvar.setText("Salvar");
+        atualizarEstadoBotaoSalvar();
         atualizarBotoesStatus();
 
         txtDescricao.requestFocus();
@@ -369,6 +379,12 @@ public class PrazoPagamentoController {
     private void limparCamposFormulario() {
         txtDescricao.clear();
         txtQuantidadeDias.clear();
+    }
+
+    private void atualizarEstadoBotaoSalvar() {
+        btnSalvar.setDisable(
+                prazoSelecionado != null && !existemAlteracoesPrazoNaoSalvas()
+        );
     }
 
     private void atualizarBotoesStatus() {
