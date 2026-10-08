@@ -104,13 +104,39 @@ public class ClienteController {
         configurarMascaraDocumento();
         configurarTabela();
         configurarBusca();
+        configurarDirtyState();
         exibirSituacaoFinanceiraIndisponivel();
 
         carregarPrazosPagamento();
         atualizarTabela();
 
         btnSalvar.setText("Salvar");
+        atualizarEstadoBotaoSalvar();
         txtNome.requestFocus();
+    }
+
+    /**
+     * Atualiza o botão Salvar/Atualizar conforme os campos são alterados.
+     */
+    private void configurarDirtyState() {
+        txtNome.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        txtDocumento.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        txtTelefone.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        txtEmail.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        txtLimiteCredito.textProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        tgTipoCliente.selectedToggleProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        tgStatusCliente.selectedToggleProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+        cbPrazoPagamento.valueProperty().addListener((obs, antigo, novo) -> atualizarEstadoBotaoSalvar());
+    }
+
+    private void atualizarEstadoBotaoSalvar() {
+        if (btnSalvar == null) {
+            return;
+        }
+
+        btnSalvar.setDisable(
+                clienteSelecionado != null && !formularioEdicaoFoiAlterado()
+        );
     }
 
     /**
@@ -520,6 +546,7 @@ public class ClienteController {
                     if (newValue != null) {
                         preencherFormulario(newValue);
                         btnSalvar.setText("Atualizar");
+                        atualizarEstadoBotaoSalvar();
                         consultarSituacaoFinanceira(newValue);
                     } else {
                         invalidarConsultaSituacaoFinanceira();
@@ -606,6 +633,10 @@ public class ClienteController {
 
     @FXML
     public void salvar() {
+        if (clienteSelecionado != null && !formularioEdicaoFoiAlterado()) {
+            atualizarEstadoBotaoSalvar();
+            return;
+        }
 
         boolean cadastrando;
         Integer clienteIdParaReselecionar;
@@ -825,6 +856,7 @@ public class ClienteController {
         tabelaClientes.getSelectionModel().clearSelection();
 
         btnSalvar.setText("Salvar");
+        atualizarEstadoBotaoSalvar();
     }
 
     /**
