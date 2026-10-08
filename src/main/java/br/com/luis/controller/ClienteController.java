@@ -77,6 +77,7 @@ public class ClienteController {
 
     // Lista mestre que guarda os dados originais do banco
     private final ObservableList<Cliente> listaClientesMaster = FXCollections.observableArrayList();
+    private FilteredList<Cliente> filteredData;
 
     // --- SERVICES ---
     private ClienteService clienteService;
@@ -528,25 +529,11 @@ public class ClienteController {
     }
 
     /**
-     * Configura o filtro de busca reativo da tabela.
+     * Configura a lista filtrada e mantém a ordenação da tabela.
      */
     private void configurarBusca() {
 
-        FilteredList<Cliente> filteredData = new FilteredList<>(listaClientesMaster, p -> true);
-
-        txtBusca.textProperty().addListener((observable, oldValue, newValue) -> {
-            filteredData.setPredicate(cliente -> {
-
-                if (newValue == null || newValue.isBlank()) {
-                    return true;
-                }
-
-                String filtro = newValue.toLowerCase();
-
-                return (cliente.getNome() != null && cliente.getNome().toLowerCase().contains(filtro))
-                        || (cliente.getDocumento() != null && cliente.getDocumento().toLowerCase().contains(filtro));
-            });
-        });
+        filteredData = new FilteredList<>(listaClientesMaster, p -> true);
 
         SortedList<Cliente> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(tabelaClientes.comparatorProperty());
@@ -558,6 +545,25 @@ public class ClienteController {
         );
 
         atualizarContador();
+    }
+
+    /**
+     * Aplica a pesquisa por nome ou documento somente ao clicar em Buscar.
+     */
+    @FXML
+    private void onBuscar() {
+        String textoBusca = txtBusca.getText();
+
+        filteredData.setPredicate(cliente -> {
+            if (textoBusca == null || textoBusca.isBlank()) {
+                return true;
+            }
+
+            String filtro = textoBusca.toLowerCase();
+
+            return (cliente.getNome() != null && cliente.getNome().toLowerCase().contains(filtro))
+                    || (cliente.getDocumento() != null && cliente.getDocumento().toLowerCase().contains(filtro));
+        });
     }
 
     private void atualizarContador() {
@@ -791,6 +797,8 @@ public class ClienteController {
     public void cancelar() {
         limparCamposFormulario();
         voltarModoCadastro();
+        txtBusca.clear();
+        onBuscar();
     }
 
     /**
@@ -871,6 +879,7 @@ public class ClienteController {
                 if (clienteAtualizado != null) {
                     if (!tabelaClientes.getItems().contains(clienteAtualizado)) {
                         txtBusca.clear();
+                        onBuscar();
                     }
 
                     tabelaClientes.getSelectionModel().select(clienteAtualizado);

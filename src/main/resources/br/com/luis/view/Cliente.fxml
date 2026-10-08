@@ -152,6 +152,7 @@
             <!-- PESQUISA -->
             <HBox spacing="10">
                 <TextField fx:id="txtBusca" promptText="Buscar cliente por nome ou documento..." HBox.hgrow="ALWAYS" />
+                <Button onAction="#onBuscar" prefWidth="100.0" text="Buscar" />
             </HBox>
 
             <!-- TABELA -->
