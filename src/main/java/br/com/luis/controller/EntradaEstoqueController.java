@@ -40,9 +40,10 @@ public class EntradaEstoqueController {
     private final ObservableList<ItemEntradaEstoque> itensRascunho;
     private final Map<Integer, Integer> estoqueAtualPorProduto;
     private final Map<Integer, Produto> produtoPorId;
+    private final Map<Integer, BigDecimal> ultimosPrecosCompra;
     private final NumberFormat formatadorMoeda;
 
-    private Task<List<Produto>> tarefaCarregamentoProdutosAtual;
+    private Task<DadosProdutosEntrada> tarefaCarregamentoProdutosAtual;
     private Task<EntradaEstoque> tarefaConfirmacaoAtual;
     private ItemEntradaEstoque itemEmEdicao;
 
@@ -55,6 +56,7 @@ public class EntradaEstoqueController {
     @FXML private TextArea txtObservacao;
     @FXML private ComboBox<Produto> cbProduto;
     @FXML private Label lblEstoqueAtual;
+    @FXML private Label lblUltimoPrecoCompra;
     @FXML private Spinner<Integer> spnQuantidade;
     @FXML private TextField txtPrecoCompra;
     @FXML private Button btnAdicionarAtualizarItem;
@@ -80,6 +82,7 @@ public class EntradaEstoqueController {
         itensRascunho = FXCollections.observableArrayList();
         estoqueAtualPorProduto = new HashMap<>();
         produtoPorId = new HashMap<>();
+        ultimosPrecosCompra = new HashMap<>();
         formatadorMoeda = NumberFormat.getCurrencyInstance(
                 Locale.forLanguageTag("pt-BR")
         );
@@ -183,7 +186,7 @@ public class EntradaEstoqueController {
         cbProduto.getSelectionModel()
                 .selectedItemProperty()
                 .addListener((observavel, anterior, atual) ->
-                        atualizarEstoqueAtualVisual(atual)
+                        atualizarInformacoesProdutoVisual(atual)
                 );
 
         tabelaItens.getSelectionModel()
@@ -196,12 +199,24 @@ public class EntradaEstoqueController {
                 });
     }
 
-    private void atualizarEstoqueAtualVisual(Produto produto) {
-        if (produto == null || produto.getQuantidadeEstoque() == null) {
+    private void atualizarInformacoesProdutoVisual(Produto produto) {
+        if (produto == null) {
             lblEstoqueAtual.setText("-");
+            lblUltimoPrecoCompra.setText("—");
             return;
         }
-        lblEstoqueAtual.setText(produto.getQuantidadeEstoque().toString());
+
+        lblEstoqueAtual.setText(
+                produto.getQuantidadeEstoque() != null
+                        ? produto.getQuantidadeEstoque().toString()
+                        : "-"
+        );
+        BigDecimal ultimoPrecoCompra = ultimosPrecosCompra.get(produto.getIdProduto());
+        lblUltimoPrecoCompra.setText(
+                ultimoPrecoCompra != null
+                        ? formatarMoeda(ultimoPrecoCompra)
+                        : "—"
+        );
     }
 
     /**
@@ -210,11 +225,16 @@ public class EntradaEstoqueController {
     private void carregarProdutosAtivos() {
         invalidarCarregamentoProdutos();
 
-        Task<List<Produto>> novaTarefa = new Task<>() {
+        Task<DadosProdutosEntrada> novaTarefa = new Task<>() {
             @Override
-            protected List<Produto> call() {
+            protected DadosProdutosEntrada call() {
                 List<Produto> produtos = produtoService.listarAtivos();
-                return produtos != null ? produtos : List.of();
+                Map<Integer, BigDecimal> precosCompra =
+                        entradaEstoqueService.buscarUltimosPrecosCompra();
+                return new DadosProdutosEntrada(
+                        produtos != null ? produtos : List.of(),
+                        precosCompra
+                );
             }
         };
 
@@ -226,7 +246,10 @@ public class EntradaEstoqueController {
                 return;
             }
             tarefaCarregamentoProdutosAtual = null;
-            publicarProdutosAtivos(novaTarefa.getValue());
+            DadosProdutosEntrada dados = novaTarefa.getValue();
+            ultimosPrecosCompra.clear();
+            ultimosPrecosCompra.putAll(dados.ultimosPrecosCompra());
+            publicarProdutosAtivos(dados.produtos());
             atualizarEstadoControles();
         });
 
@@ -293,11 +316,12 @@ public class EntradaEstoqueController {
                     produtoPorId.get(produtoSelecionadoId)
             );
         }
+        atualizarInformacoesProdutoVisual(cbProduto.getValue());
         tabelaItens.refresh();
     }
 
     private void invalidarCarregamentoProdutos() {
-        Task<List<Produto>> tarefaAnterior = tarefaCarregamentoProdutosAtual;
+        Task<DadosProdutosEntrada> tarefaAnterior = tarefaCarregamentoProdutosAtual;
         tarefaCarregamentoProdutosAtual = null;
         if (tarefaAnterior != null) {
             tarefaAnterior.cancel();
@@ -459,6 +483,7 @@ public class EntradaEstoqueController {
         tabelaItens.getSelectionModel().clearSelection();
         cbProduto.getSelectionModel().clearSelection();
         lblEstoqueAtual.setText("-");
+        lblUltimoPrecoCompra.setText("—");
         spnQuantidade.getValueFactory().setValue(QUANTIDADE_INICIAL);
         txtPrecoCompra.clear();
         btnAdicionarAtualizarItem.setText("Adicionar Item");
@@ -812,5 +837,10 @@ public class EntradaEstoqueController {
         alerta.setHeaderText(null);
         alerta.setContentText(mensagem);
         alerta.showAndWait();
+    }
+    private record DadosProdutosEntrada(
+            List<Produto> produtos,
+            Map<Integer, BigDecimal> ultimosPrecosCompra
+    ) {
     }
 }
