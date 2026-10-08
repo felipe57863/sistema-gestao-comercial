@@ -13,6 +13,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -40,16 +42,16 @@ public class PrazoPagamentoController {
     // --- FORMULÁRIO ---
     @FXML private TextField txtDescricao;
     @FXML private TextField txtQuantidadeDias;
+    @FXML private RadioButton rbAtivo;
+    @FXML private RadioButton rbInativo;
     @FXML private Button btnSalvar;
 
-    // --- LISTAGEM E AÇÕES DE STATUS ---
+    // --- LISTAGEM ---
     @FXML private TableView<PrazoPagamento> tabelaPrazos;
     @FXML private TableColumn<PrazoPagamento, Integer> colId;
     @FXML private TableColumn<PrazoPagamento, String> colDescricao;
     @FXML private TableColumn<PrazoPagamento, Integer> colDias;
     @FXML private TableColumn<PrazoPagamento, String> colStatus;
-    @FXML private Button btnAtivar;
-    @FXML private Button btnDesativar;
     @FXML private Label lblTotalPrazos;
 
     private PrazoPagamento prazoSelecionado;
@@ -58,6 +60,10 @@ public class PrazoPagamentoController {
     public void initialize() {
         configurarCabecalho();
         configurarTabela();
+        ToggleGroup grupoStatus = new ToggleGroup();
+        rbAtivo.setToggleGroup(grupoStatus);
+        rbInativo.setToggleGroup(grupoStatus);
+        grupoStatus.selectedToggleProperty().addListener((obs, anterior, atual) -> atualizarEstadoBotaoSalvar());
         txtDescricao.textProperty().addListener((obs, anterior, atual) -> atualizarEstadoBotaoSalvar());
         txtQuantidadeDias.textProperty().addListener((obs, anterior, atual) -> atualizarEstadoBotaoSalvar());
         prepararNovoCadastro();
@@ -90,8 +96,9 @@ public class PrazoPagamentoController {
                         prazoSelecionado = null;
                         limparCamposFormulario();
                         btnSalvar.setText("Salvar");
+                        rbAtivo.setSelected(true);
+                        rbInativo.setDisable(true);
                         atualizarEstadoBotaoSalvar();
-                        atualizarBotoesStatus();
                         return;
                     }
 
@@ -147,6 +154,11 @@ public class PrazoPagamentoController {
                 prazoPagamentoService.cadastrar(prazo);
                 concluirOperacao("Prazo de pagamento cadastrado com sucesso.");
             } else {
+                if (prazoSelecionado.isAtivo() && !prazo.isAtivo()
+                        && !confirmarDesativacao(prazoSelecionado)) {
+                    return;
+                }
+
                 prazoPagamentoService.atualizar(prazo);
                 concluirOperacao("Prazo de pagamento atualizado com sucesso.");
             }
@@ -183,7 +195,7 @@ public class PrazoPagamentoController {
                 prazoSelecionado.getIdPrazo(),
                 descricao,
                 quantidadeDias,
-                prazoSelecionado.isAtivo()
+                rbAtivo.isSelected()
         );
     }
 
@@ -228,85 +240,6 @@ public class PrazoPagamentoController {
     @FXML
     private void acaoCancelar() {
         prepararNovoCadastro();
-    }
-
-    @FXML
-    private void acaoAtivar() {
-        PrazoPagamento selecionado = obterPrazoSelecionado();
-
-        if (selecionado == null) {
-            return;
-        }
-
-        if (selecionado.isAtivo()) {
-            mostrarAviso("O prazo selecionado já está ativo.");
-            return;
-        }
-
-        try {
-            PrazoPagamento prazoAtivado = new PrazoPagamento(
-                    selecionado.getIdPrazo(),
-                    selecionado.getDescricao(),
-                    selecionado.getQuantidadeDias(),
-                    true
-            );
-
-            prazoPagamentoService.atualizar(prazoAtivado);
-            concluirOperacao("Prazo de pagamento ativado com sucesso.");
-
-        } catch (IllegalArgumentException e) {
-            mostrarAviso(e.getMessage());
-
-        } catch (RuntimeException e) {
-            tratarFalhaOperacao(
-                    "Falha ao ativar prazo de pagamento.",
-                    "Não foi possível ativar o prazo de pagamento.",
-                    e
-            );
-        }
-    }
-
-    @FXML
-    private void acaoDesativar() {
-        PrazoPagamento selecionado = obterPrazoSelecionado();
-
-        if (selecionado == null) {
-            return;
-        }
-
-        if (!selecionado.isAtivo()) {
-            mostrarAviso("O prazo selecionado já está inativo.");
-            return;
-        }
-
-        if (!confirmarDesativacao(selecionado)) {
-            return;
-        }
-
-        try {
-            prazoPagamentoService.inativar(selecionado.getIdPrazo());
-            concluirOperacao("Prazo de pagamento desativado com sucesso.");
-
-        } catch (IllegalArgumentException e) {
-            mostrarAviso(e.getMessage());
-
-        } catch (RuntimeException e) {
-            tratarFalhaOperacao(
-                    "Falha ao desativar prazo de pagamento.",
-                    "Não foi possível desativar o prazo de pagamento.",
-                    e
-            );
-        }
-    }
-
-    private PrazoPagamento obterPrazoSelecionado() {
-        PrazoPagamento selecionado = tabelaPrazos.getSelectionModel().getSelectedItem();
-
-        if (selecionado == null) {
-            mostrarAviso("Selecione um prazo de pagamento na tabela.");
-        }
-
-        return selecionado;
     }
 
     private boolean confirmarDesativacao(PrazoPagamento prazo) {
@@ -359,9 +292,11 @@ public class PrazoPagamentoController {
                         : prazo.getQuantidadeDias().toString()
         );
 
+        rbInativo.setDisable(false);
+        rbAtivo.setSelected(prazo.isAtivo());
+        rbInativo.setSelected(!prazo.isAtivo());
         btnSalvar.setText("Atualizar");
         atualizarEstadoBotaoSalvar();
-        atualizarBotoesStatus();
     }
 
     private void prepararNovoCadastro() {
@@ -369,9 +304,10 @@ public class PrazoPagamentoController {
         tabelaPrazos.getSelectionModel().clearSelection();
 
         limparCamposFormulario();
+        rbAtivo.setSelected(true);
+        rbInativo.setDisable(true);
         btnSalvar.setText("Salvar");
         atualizarEstadoBotaoSalvar();
-        atualizarBotoesStatus();
 
         txtDescricao.requestFocus();
     }
@@ -385,13 +321,6 @@ public class PrazoPagamentoController {
         btnSalvar.setDisable(
                 prazoSelecionado != null && !existemAlteracoesPrazoNaoSalvas()
         );
-    }
-
-    private void atualizarBotoesStatus() {
-        boolean semSelecao = prazoSelecionado == null;
-
-        btnAtivar.setDisable(semSelecao || prazoSelecionado.isAtivo());
-        btnDesativar.setDisable(semSelecao || !prazoSelecionado.isAtivo());
     }
 
     @FXML
@@ -464,6 +393,10 @@ public class PrazoPagamentoController {
                         prazoSelecionado.getDescricao()
                 )
         )) {
+            return true;
+        }
+
+        if (rbAtivo.isSelected() != prazoSelecionado.isAtivo()) {
             return true;
         }
 
