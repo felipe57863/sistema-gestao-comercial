@@ -125,6 +125,12 @@
                            wrapText="true"
                            styleClass="cartao-texto-secundario" />
                     <Region HBox.hgrow="ALWAYS" />
+                    <Button fx:id="btnLimpar"
+                            text="Limpar"
+                            disable="true"
+                            prefWidth="110.0"
+                            prefHeight="35.0"
+                            onAction="#onLimpar" />
                     <Button fx:id="btnFiltrar"
                             text="Filtrar"
                             disable="true"

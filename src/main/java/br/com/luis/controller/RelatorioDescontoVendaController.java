@@ -65,6 +65,7 @@ public class RelatorioDescontoVendaController {
     @FXML private DatePicker dpDataInicial;
     @FXML private DatePicker dpDataFinal;
     @FXML private ComboBox<OpcaoFiltro<TipoVenda>> cbTipoVenda;
+    @FXML private Button btnLimpar;
     @FXML private Button btnFiltrar;
     @FXML private ProgressIndicator progressoRelatorio;
     @FXML private Label lblEstadoConsulta;
@@ -294,6 +295,7 @@ public class RelatorioDescontoVendaController {
 
         progressoRelatorio.setVisible(false);
         progressoRelatorio.setManaged(false);
+        btnLimpar.setDisable(true);
         btnFiltrar.setDisable(true);
     }
 
@@ -457,6 +459,7 @@ public class RelatorioDescontoVendaController {
         dpDataInicial.setDisable(bloquear);
         dpDataFinal.setDisable(bloquear);
         cbTipoVenda.setDisable(bloquear);
+        btnLimpar.setDisable(bloquear);
         btnFiltrar.setDisable(bloquear);
         btnVoltar.setDisable(false);
 
@@ -615,6 +618,19 @@ public class RelatorioDescontoVendaController {
                     "Não foi possível retornar para a Tela Principal."
             );
         }
+    }
+
+    @FXML
+    private void onLimpar() {
+        definirPeriodoInicial();
+        dpDataInicial.getEditor().setText(
+                dpDataInicial.getConverter().toString(dpDataInicial.getValue())
+        );
+        dpDataFinal.getEditor().setText(
+                dpDataFinal.getConverter().toString(dpDataFinal.getValue())
+        );
+        cbTipoVenda.getSelectionModel().selectFirst();
+        consultarPelosFiltrosAtuais();
     }
 
     @FXML
