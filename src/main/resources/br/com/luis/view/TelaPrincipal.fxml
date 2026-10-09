@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="650.0"
+<BorderPane focusTraversable="true" prefHeight="650.0"
             prefWidth="1000.0"
             stylesheets="@TelaPrincipal.css"
             styleClass="tela-principal"
@@ -30,20 +30,6 @@
             <Label text="MENU PRINCIPAL"
                    styleClass="menu-titulo" />
 
-            <Button fx:id="btnVendas"
-                    text="Registrar Venda"
-                    onAction="#abrirVendas"
-                    prefHeight="44.0"
-                    maxWidth="Infinity"
-                    styleClass="botao-menu, botao-menu-destaque" />
-
-            <Button fx:id="btnClientes"
-                    text="Clientes"
-                    onAction="#abrirClientes"
-                    prefHeight="44.0"
-                    maxWidth="Infinity"
-                    styleClass="botao-menu" />
-
             <Button fx:id="btnProdutos"
                     text="Produtos"
                     onAction="#abrirProdutos"
@@ -58,12 +44,26 @@
                     maxWidth="Infinity"
                     styleClass="botao-menu" />
 
+            <Button fx:id="btnClientes"
+                    text="Clientes"
+                    onAction="#abrirClientes"
+                    prefHeight="44.0"
+                    maxWidth="Infinity"
+                    styleClass="botao-menu" />
+
             <Button fx:id="btnPrazosPagamento"
                     text="Prazos de Pagamento"
                     onAction="#abrirPrazosPagamento"
                     prefHeight="44.0"
                     maxWidth="Infinity"
                     styleClass="botao-menu" />
+
+            <Button fx:id="btnVendas"
+                    text="Registrar Venda"
+                    onAction="#abrirVendas"
+                    prefHeight="44.0"
+                    maxWidth="Infinity"
+                    styleClass="botao-menu, botao-menu-destaque" />
 
             <Button fx:id="btnContasReceber"
                     text="Contas a Receber"

@@ -17,7 +17,7 @@
 }
 
 .botao-menu {
-    -fx-background-color: transparent;
+    -fx-background-color: #34465a;
     -fx-background-radius: 8;
     -fx-border-color: transparent;
     -fx-border-radius: 8;
@@ -30,7 +30,7 @@
 }
 
 .botao-menu:hover {
-    -fx-background-color: #33465a;
+    -fx-background-color: #415a73;
 }
 
 .botao-menu:focused {
@@ -52,12 +52,12 @@
 }
 
 .botao-sair {
-    -fx-background-color: #202b38;
-    -fx-text-fill: #f4f7fb;
+    -fx-background-color: #703F49;
+    -fx-text-fill: #FFFFFF;
 }
 
 .botao-sair:hover {
-    -fx-background-color: #35485c;
+    -fx-background-color: #88515C;
 }
 
 .area-principal {
