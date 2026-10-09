@@ -68,6 +68,7 @@ public class RelatorioProdutoController {
     @FXML private TextField txtDescricaoEstoque;
     @FXML private ComboBox<OpcaoFiltro<Boolean>> cbStatusEstoque;
     @FXML private ComboBox<OpcaoFiltro<SituacaoEstoqueProduto>> cbSituacaoEstoque;
+    @FXML private Button btnLimparEstoque;
     @FXML private Button btnFiltrarEstoque;
     @FXML private TableView<ProdutoEstoqueRelatorioView> tabelaEstoque;
     @FXML private TableColumn<ProdutoEstoqueRelatorioView, Integer> colEstoqueProdutoId;
@@ -85,6 +86,7 @@ public class RelatorioProdutoController {
     @FXML private TextField txtDescricaoPromocao;
     @FXML private ComboBox<OpcaoFiltro<Boolean>> cbStatusPromocao;
     @FXML private ComboBox<OpcaoFiltro<TipoDesconto>> cbTipoDesconto;
+    @FXML private Button btnLimparPromocoes;
     @FXML private Button btnFiltrarPromocoes;
     @FXML private TableView<ProdutoPromocaoRelatorioView> tabelaPromocoes;
     @FXML private TableColumn<ProdutoPromocaoRelatorioView, Integer> colPromocaoProdutoId;
@@ -313,7 +315,9 @@ public class RelatorioProdutoController {
 
         progressoRelatorio.setVisible(false);
         progressoRelatorio.setManaged(false);
+        btnLimparEstoque.setDisable(true);
         btnFiltrarEstoque.setDisable(true);
+        btnLimparPromocoes.setDisable(true);
         btnFiltrarPromocoes.setDisable(true);
     }
 
@@ -603,10 +607,12 @@ public class RelatorioProdutoController {
         txtDescricaoEstoque.setDisable(bloquear);
         cbStatusEstoque.setDisable(bloquear);
         cbSituacaoEstoque.setDisable(bloquear);
+        btnLimparEstoque.setDisable(bloquear);
         btnFiltrarEstoque.setDisable(bloquear);
         txtDescricaoPromocao.setDisable(bloquear);
         cbStatusPromocao.setDisable(bloquear);
         cbTipoDesconto.setDisable(bloquear);
+        btnLimparPromocoes.setDisable(bloquear);
         btnFiltrarPromocoes.setDisable(bloquear);
         btnVoltar.setDisable(false);
 
@@ -814,9 +820,31 @@ public class RelatorioProdutoController {
         }
     }
 
+    /**
+     * Restaura os filtros iniciais do estoque e atualiza os resultados.
+     */
+    @FXML
+    private void onLimparEstoque() {
+        txtDescricaoEstoque.clear();
+        cbStatusEstoque.getSelectionModel().selectFirst();
+        cbSituacaoEstoque.getSelectionModel().selectFirst();
+        consultarEstoquePelosFiltrosAtuais();
+    }
+
     @FXML
     private void onFiltrarEstoque() {
         consultarEstoquePelosFiltrosAtuais();
+    }
+
+    /**
+     * Restaura os filtros iniciais das promoções e atualiza os resultados.
+     */
+    @FXML
+    private void onLimparPromocoes() {
+        txtDescricaoPromocao.clear();
+        cbStatusPromocao.getSelectionModel().selectFirst();
+        cbTipoDesconto.getSelectionModel().selectFirst();
+        consultarPromocoesPelosFiltrosAtuais();
     }
 
     @FXML

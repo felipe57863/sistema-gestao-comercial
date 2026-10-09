@@ -14,42 +14,25 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/17"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="br.com.luis.controller.RelatorioEntradaEstoqueController"
-            prefWidth="1180.0"
-            prefHeight="800.0"
-            stylesheets="@TelaPrincipal.css"
-            style="-fx-background-color: #f4f6f9;"
-            styleClass="tela-principal">
+<BorderPane prefHeight="800.0" prefWidth="1180.0" style="-fx-background-color: #f4f6f9;" styleClass="tela-principal" stylesheets="@TelaPrincipal.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="br.com.luis.controller.RelatorioEntradaEstoqueController">
 
     <top>
-        <BorderPane style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-padding: 15 20 15 20;"
-                    styleClass="cabecalho-principal">
+        <BorderPane style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 0 0 1 0; -fx-padding: 15 20 15 20;" styleClass="cabecalho-principal">
             <left>
                 <HBox alignment="CENTER_LEFT" spacing="12.0">
-                    <Button fx:id="btnVoltar"
-                            text="Voltar"
-                            prefWidth="90.0"
-                            onAction="#onVoltar" />
-                    <Label text="Relatório de Entradas de Estoque"
-                           styleClass="titulo-sistema" />
+                    <Button fx:id="btnVoltar" onAction="#onVoltar" prefWidth="90.0" text="Voltar" />
+                    <Label styleClass="titulo-sistema" text="Relatório de Entradas de Estoque" />
                 </HBox>
             </left>
             <right>
-                <HBox alignment="CENTER_RIGHT"
-                      spacing="8.0"
-                      styleClass="identificacao-cabecalho">
-                    <Label fx:id="lblUsuario"
-                           text="Usuário não identificado"
-                           styleClass="texto-cabecalho" />
-                    <Label text="|" styleClass="separador-cabecalho" />
-                    <Label fx:id="lblDataHora"
-                           text="--/--/---- --:--:--"
-                           styleClass="texto-cabecalho" />
+                <HBox alignment="CENTER_RIGHT" spacing="8.0" styleClass="identificacao-cabecalho">
+                    <Label fx:id="lblUsuario" styleClass="texto-cabecalho" text="Usuário não identificado" />
+                    <Label styleClass="separador-cabecalho" text="|" />
+                    <Label fx:id="lblDataHora" styleClass="texto-cabecalho" text="--/--/---- --:--:--" />
                 </HBox>
             </right>
         </BorderPane>
@@ -58,14 +41,13 @@
     <center>
         <VBox spacing="12.0" style="-fx-background-color: #f4f6f9;">
             <padding>
-                <Insets top="16.0" right="20.0" bottom="16.0" left="20.0" />
+                <Insets bottom="16.0" left="20.0" right="20.0" top="16.0" />
             </padding>
 
-            <VBox spacing="10.0"
-                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14;">
-                <Label text="Filtros" styleClass="cartao-titulo" />
+            <VBox spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 14;">
+                <Label styleClass="cartao-titulo" text="Filtros" />
 
-                <GridPane hgap="10.0" vgap="6.0" maxWidth="Infinity">
+                <GridPane hgap="10.0" maxWidth="Infinity" vgap="6.0">
                     <columnConstraints>
                         <ColumnConstraints percentWidth="14.0" />
                         <ColumnConstraints percentWidth="14.0" />
@@ -75,145 +57,53 @@
                         <ColumnConstraints percentWidth="18.0" />
                     </columnConstraints>
 
-                    <Label text="Data Inicial:"
-                           styleClass="rotulo-periodo"
-                           GridPane.columnIndex="0"
-                           GridPane.rowIndex="0" />
-                    <Label text="Data Final:"
-                           styleClass="rotulo-periodo"
-                           GridPane.columnIndex="1"
-                           GridPane.rowIndex="0" />
-                    <Label text="Número:"
-                           styleClass="rotulo-periodo"
-                           GridPane.columnIndex="2"
-                           GridPane.rowIndex="0" />
-                    <Label text="Responsável:"
-                           styleClass="rotulo-periodo"
-                           GridPane.columnIndex="3"
-                           GridPane.rowIndex="0" />
-                    <Label text="Produto:"
-                           styleClass="rotulo-periodo"
-                           GridPane.columnIndex="4"
-                           GridPane.rowIndex="0" />
-                    <Label text="Referência:"
-                           styleClass="rotulo-periodo"
-                           GridPane.columnIndex="5"
-                           GridPane.rowIndex="0" />
+                    <Label styleClass="rotulo-periodo" text="Data Inicial:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <Label styleClass="rotulo-periodo" text="Data Final:" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                    <Label styleClass="rotulo-periodo" text="Número:" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+                    <Label styleClass="rotulo-periodo" text="Responsável:" GridPane.columnIndex="3" GridPane.rowIndex="0" />
+                    <Label styleClass="rotulo-periodo" text="Produto:" GridPane.columnIndex="4" GridPane.rowIndex="0" />
+                    <Label styleClass="rotulo-periodo" text="Referência:" GridPane.columnIndex="5" GridPane.rowIndex="0" />
 
-                    <DatePicker fx:id="dpDataInicial"
-                                maxWidth="Infinity"
-                                prefHeight="34.0"
-                                GridPane.columnIndex="0"
-                                GridPane.rowIndex="1" />
-                    <DatePicker fx:id="dpDataFinal"
-                                maxWidth="Infinity"
-                                prefHeight="34.0"
-                                GridPane.columnIndex="1"
-                                GridPane.rowIndex="1" />
-                    <TextField fx:id="txtNumeroEntrada"
-                               promptText="ID"
-                               maxWidth="Infinity"
-                               prefHeight="34.0"
-                               GridPane.columnIndex="2"
-                               GridPane.rowIndex="1" />
-                    <ComboBox fx:id="cbResponsavel"
-                              maxWidth="Infinity"
-                              prefHeight="34.0"
-                              GridPane.columnIndex="3"
-                              GridPane.rowIndex="1" />
-                    <ComboBox fx:id="cbProduto"
-                              maxWidth="Infinity"
-                              prefHeight="34.0"
-                              GridPane.columnIndex="4"
-                              GridPane.rowIndex="1" />
-                    <TextField fx:id="txtReferencia"
-                               promptText="Contém..."
-                               maxWidth="Infinity"
-                               prefHeight="34.0"
-                               GridPane.columnIndex="5"
-                               GridPane.rowIndex="1" />
+                    <DatePicker fx:id="dpDataInicial" maxWidth="Infinity" prefHeight="34.0" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <DatePicker fx:id="dpDataFinal" maxWidth="Infinity" prefHeight="34.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    <TextField fx:id="txtNumeroEntrada" maxWidth="Infinity" prefHeight="34.0" promptText="ID" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                    <ComboBox fx:id="cbResponsavel" maxWidth="Infinity" prefHeight="34.0" GridPane.columnIndex="3" GridPane.rowIndex="1" />
+                    <ComboBox fx:id="cbProduto" maxWidth="Infinity" prefHeight="34.0" GridPane.columnIndex="4" GridPane.rowIndex="1" />
+                    <TextField fx:id="txtReferencia" maxWidth="Infinity" prefHeight="34.0" promptText="Ex.: COMPRA-2026-001" GridPane.columnIndex="5" GridPane.rowIndex="1" />
+               <rowConstraints>
+                  <RowConstraints />
+                  <RowConstraints />
+               </rowConstraints>
                 </GridPane>
 
                 <HBox alignment="CENTER_LEFT" minHeight="35.0" spacing="10.0">
-                    <StackPane minWidth="28.0"
-                               prefWidth="28.0"
-                               maxWidth="28.0"
-                               minHeight="28.0"
-                               prefHeight="28.0"
-                               maxHeight="28.0">
-                        <ProgressIndicator fx:id="progressoRelatorio"
-                                           visible="false"
-                                           managed="false"
-                                           prefWidth="22.0"
-                                           prefHeight="22.0"
-                                           styleClass="indicador-carregamento" />
+                    <StackPane maxHeight="28.0" maxWidth="28.0" minHeight="28.0" minWidth="28.0" prefHeight="28.0" prefWidth="28.0">
+                        <ProgressIndicator fx:id="progressoRelatorio" managed="false" prefHeight="22.0" prefWidth="22.0" styleClass="indicador-carregamento" visible="false" />
                     </StackPane>
-                    <Label fx:id="lblEstadoConsulta"
-                           text="Relatório pronto para consulta."
-                           wrapText="true"
-                           styleClass="cartao-texto-secundario" />
+                    <Label fx:id="lblEstadoConsulta" styleClass="cartao-texto-secundario" text="Relatório pronto para consulta." wrapText="true" />
                     <Region HBox.hgrow="ALWAYS" />
-                    <Button fx:id="btnLimparFiltros"
-                            text="Limpar Filtros"
-                            prefHeight="35.0"
-                            prefWidth="125.0"
-                            onAction="#onLimparFiltros" />
-                    <Button fx:id="btnFiltrar"
-                            text="Filtrar"
-                            prefHeight="35.0"
-                            prefWidth="100.0"
-                            onAction="#onFiltrar"
-                            styleClass="botao-atualizar" />
+                    <Button fx:id="btnLimparFiltros" onAction="#onLimparFiltros" prefHeight="35.0" prefWidth="95.0" text="Limpar" />
+                    <Button fx:id="btnFiltrar" onAction="#onFiltrar" prefHeight="35.0" prefWidth="95.0" styleClass="botao-atualizar" text="Filtrar" />
                 </HBox>
             </VBox>
 
-            <VBox spacing="7.0"
-                  VBox.vgrow="ALWAYS"
-                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 12;">
-                <Label text="Entradas encontradas" styleClass="cartao-titulo" />
-                <TableView fx:id="tabelaEntradas"
-                           minHeight="180.0"
-                           maxWidth="Infinity"
-                           maxHeight="Infinity"
-                           VBox.vgrow="ALWAYS">
+            <VBox spacing="7.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 12;" VBox.vgrow="ALWAYS">
+                <Label styleClass="cartao-titulo" text="Entradas encontradas" />
+                <TableView fx:id="tabelaEntradas" maxHeight="Infinity" maxWidth="Infinity" minHeight="180.0" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colNumero"
-                                     text="Número"
-                                     prefWidth="80.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colDataHoraEntrada"
-                                     text="Data/Hora"
-                                     prefWidth="155.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colResponsavel"
-                                     text="Responsável"
-                                     prefWidth="220.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colReferencia"
-                                     text="Referência"
-                                     prefWidth="190.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colProdutos"
-                                     text="Produtos"
-                                     prefWidth="90.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colUnidades"
-                                     text="Unidades"
-                                     prefWidth="90.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colValorTotal"
-                                     text="Valor Total"
-                                     prefWidth="130.0"
-                                     sortable="false" />
+                        <TableColumn fx:id="colNumero" prefWidth="80.0" sortable="false" text="Número" />
+                        <TableColumn fx:id="colDataHoraEntrada" prefWidth="155.0" sortable="false" text="Data/Hora" />
+                        <TableColumn fx:id="colResponsavel" prefWidth="220.0" sortable="false" text="Responsável" />
+                        <TableColumn fx:id="colReferencia" prefWidth="190.0" sortable="false" text="Referência" />
+                        <TableColumn fx:id="colProdutos" prefWidth="90.0" sortable="false" text="Produtos" />
+                        <TableColumn fx:id="colUnidades" prefWidth="90.0" sortable="false" text="Unidades" />
+                        <TableColumn fx:id="colValorTotal" prefWidth="130.0" sortable="false" text="Valor Total" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                     </columnResizePolicy>
                 </TableView>
-                <Label fx:id="lblFiltroAplicado"
-                       text=""
-                       wrapText="true"
-                       styleClass="cartao-texto-secundario" />
+                <Label fx:id="lblFiltroAplicado" styleClass="cartao-texto-secundario" text="" wrapText="true" />
             </VBox>
 
             <GridPane hgap="12.0" maxWidth="Infinity">
@@ -223,65 +113,35 @@
                     <ColumnConstraints percentWidth="33.334" />
                 </columnConstraints>
 
-                <VBox spacing="3.0"
-                      style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14;"
-                      GridPane.columnIndex="0">
-                    <Label text="Entradas" styleClass="cartao-texto-secundario" />
-                    <Label fx:id="lblQuantidadeEntradas"
-                           text="0 entradas"
-                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" />
+                <VBox spacing="3.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14;" GridPane.columnIndex="0">
+                    <Label styleClass="cartao-texto-secundario" text="Entradas" />
+                    <Label fx:id="lblQuantidadeEntradas" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" text="0 entradas" />
                 </VBox>
-                <VBox spacing="3.0"
-                      style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14;"
-                      GridPane.columnIndex="1">
-                    <Label text="Unidades" styleClass="cartao-texto-secundario" />
-                    <Label fx:id="lblTotalUnidades"
-                           text="0 unidades"
-                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" />
+                <VBox spacing="3.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14;" GridPane.columnIndex="1">
+                    <Label styleClass="cartao-texto-secundario" text="Unidades" />
+                    <Label fx:id="lblTotalUnidades" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" text="0 unidades" />
                 </VBox>
-                <VBox spacing="3.0"
-                      style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14;"
-                      GridPane.columnIndex="2">
-                    <Label text="Valor Total" styleClass="cartao-texto-secundario" />
-                    <Label fx:id="lblValorTotal"
-                           text="R$ 0,00"
-                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" />
+                <VBox spacing="3.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 10 14;" GridPane.columnIndex="2">
+                    <Label styleClass="cartao-texto-secundario" text="Valor Total" />
+                    <Label fx:id="lblValorTotal" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #344253;" text="R$ 0,00" />
                 </VBox>
+            <rowConstraints>
+               <RowConstraints />
+            </rowConstraints>
             </GridPane>
 
-            <VBox spacing="7.0"
-                  style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 12;">
-                <Label text="Detalhes da Entrada" styleClass="cartao-titulo" />
+            <VBox spacing="7.0" style="-fx-background-color: white; -fx-background-radius: 5; -fx-border-color: #e0e0e0; -fx-border-radius: 5; -fx-padding: 12;">
+                <Label styleClass="cartao-titulo" text="Detalhes da Entrada" />
                 <HBox spacing="6.0">
-                    <Label text="Observação:"
-                           style="-fx-font-weight: bold; -fx-text-fill: #344253;" />
-                    <Label fx:id="lblObservacao"
-                           text="Selecione uma entrada para visualizar a observação."
-                           wrapText="true"
-                           HBox.hgrow="ALWAYS"
-                           styleClass="cartao-texto-secundario" />
+                    <Label style="-fx-font-weight: bold; -fx-text-fill: #344253;" text="Observação:" />
+                    <Label fx:id="lblObservacao" styleClass="cartao-texto-secundario" text="Selecione uma entrada para visualizar a observação." wrapText="true" HBox.hgrow="ALWAYS" />
                 </HBox>
-                <TableView fx:id="tabelaItens"
-                           minHeight="130.0"
-                           prefHeight="150.0"
-                           maxWidth="Infinity">
+                <TableView fx:id="tabelaItens" maxWidth="Infinity" minHeight="130.0" prefHeight="150.0">
                     <columns>
-                        <TableColumn fx:id="colProdutoDetalhe"
-                                     text="Produto"
-                                     prefWidth="430.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colQuantidadeDetalhe"
-                                     text="Quantidade"
-                                     prefWidth="130.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colPrecoCompraDetalhe"
-                                     text="Preço de Compra"
-                                     prefWidth="170.0"
-                                     sortable="false" />
-                        <TableColumn fx:id="colSubtotalDetalhe"
-                                     text="Subtotal"
-                                     prefWidth="170.0"
-                                     sortable="false" />
+                        <TableColumn fx:id="colProdutoDetalhe" prefWidth="430.0" sortable="false" text="Produto" />
+                        <TableColumn fx:id="colQuantidadeDetalhe" prefWidth="130.0" sortable="false" text="Quantidade" />
+                        <TableColumn fx:id="colPrecoCompraDetalhe" prefWidth="170.0" sortable="false" text="Preço de Compra" />
+                        <TableColumn fx:id="colSubtotalDetalhe" prefWidth="170.0" sortable="false" text="Subtotal" />
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

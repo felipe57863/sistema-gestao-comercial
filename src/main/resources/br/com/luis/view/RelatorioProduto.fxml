@@ -174,7 +174,15 @@
                                               GridPane.rowIndex="1" />
                                 </GridPane>
 
-                                <HBox alignment="CENTER_RIGHT">
+                                <HBox alignment="CENTER_RIGHT"
+                                      spacing="8.0">
+                                    <Button fx:id="btnLimparEstoque"
+                                            text="Limpar"
+                                            disable="true"
+                                            prefWidth="110.0"
+                                            prefHeight="35.0"
+                                            onAction="#onLimparEstoque" />
+
                                     <Button fx:id="btnFiltrarEstoque"
                                             text="Filtrar"
                                             disable="true"
@@ -372,7 +380,15 @@
                                               GridPane.rowIndex="1" />
                                 </GridPane>
 
-                                <HBox alignment="CENTER_RIGHT">
+                                <HBox alignment="CENTER_RIGHT"
+                                      spacing="8.0">
+                                    <Button fx:id="btnLimparPromocoes"
+                                            text="Limpar"
+                                            disable="true"
+                                            prefWidth="110.0"
+                                            prefHeight="35.0"
+                                            onAction="#onLimparPromocoes" />
+
                                     <Button fx:id="btnFiltrarPromocoes"
                                             text="Filtrar"
                                             disable="true"
