@@ -3,6 +3,7 @@ package br.com.luis.controller;
 import br.com.luis.model.Cliente;
 import br.com.luis.model.ItemVenda;
 import br.com.luis.model.Produto;
+import br.com.luis.model.Promocao;
 import br.com.luis.model.TipoDescontoGlobal;
 import br.com.luis.model.Venda;
 import br.com.luis.model.Usuario;
@@ -15,6 +16,7 @@ import br.com.luis.util.SessaoUsuario;
 import br.com.luis.service.ClienteService;
 import br.com.luis.service.NotaVendaService;
 import br.com.luis.service.ProdutoService;
+import br.com.luis.service.PromocaoService;
 import br.com.luis.service.VendaService;
 import br.com.luis.service.PrazoPagamentoService;
 import br.com.luis.util.TipoViaNotaVendaPdf;
@@ -54,6 +56,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Controller da tela Registro de Venda.
@@ -591,6 +594,19 @@ public class RegistroVendaController {
         }
 
         return "Não";
+    }
+
+    private String formatarPromocao(Promocao promocao) {
+        if (promocao == null) {
+            return "Não";
+        }
+
+        if (promocao.getTipoDesconto() == Promocao.TipoDesconto.PERCENTUAL) {
+            return "Sim - " + promocao.getValorDesconto()
+                    .stripTrailingZeros().toPlainString().replace('.', ',') + "%";
+        }
+
+        return "Sim - " + formatarMoeda(promocao.getValorDesconto());
     }
 
     private void adicionarProdutoAoCarrinho(Integer idProduto, Integer quantidade) {
@@ -2097,6 +2113,17 @@ public class RegistroVendaController {
                         .filter(Produto::isAtivo)
                         .toList();
 
+        Map<Integer, String> promocoesPorProduto = new HashMap<>();
+        PromocaoService promocaoService = new PromocaoService();
+        if (produtosEncontrados != null) {
+            for (Produto produto : produtosEncontrados) {
+                if (produto.getIdProduto() != null) {
+                    Promocao promocao = promocaoService.buscarPromocaoAtivaPorProduto(produto);
+                    promocoesPorProduto.put(produto.getIdProduto(), formatarPromocao(promocao));
+                }
+            }
+        }
+
         Dialog<Produto> dialog = new Dialog<>();
         dialog.setTitle("Selecionar Produto");
         dialog.setHeaderText(semFiltro
@@ -2109,7 +2136,7 @@ public class RegistroVendaController {
                 )
         );
 
-        tableViewProdutos.setPrefWidth(720);
+        tableViewProdutos.setPrefWidth(880);
         tableViewProdutos.setPrefHeight(280);
 
         Label placeholder = new Label(semFiltro
@@ -2154,12 +2181,21 @@ public class RegistroVendaController {
                 ).asObject()
         );
 
+        TableColumn<Produto, String> colunaPromocao = new TableColumn<>("Promoção");
+        colunaPromocao.setPrefWidth(160);
+        colunaPromocao.setCellValueFactory(cellData ->
+                new SimpleStringProperty(
+                        promocoesPorProduto.getOrDefault(cellData.getValue().getIdProduto(), "Não")
+                )
+        );
+
         tableViewProdutos.getColumns().addAll(
                 List.of(
                         colunaId,
                         colunaDescricao,
                         colunaPreco,
-                        colunaEstoque
+                        colunaEstoque,
+                        colunaPromocao
                 )
         );
 
