@@ -62,6 +62,7 @@ public class RelatorioClientePendenciaController {
     @FXML private TextField txtCliente;
     @FXML private ComboBox<OpcaoFiltro<StatusCliente>> cbStatusCliente;
     @FXML private ComboBox<OpcaoFiltro<Boolean>> cbPendencia;
+    @FXML private Button btnLimpar;
     @FXML private Button btnFiltrar;
 
     @FXML private TableView<ClientePendenciaRelatorioView> tabelaClientes;
@@ -219,6 +220,7 @@ public class RelatorioClientePendenciaController {
 
         progressoRelatorio.setVisible(false);
         progressoRelatorio.setManaged(false);
+        btnLimpar.setDisable(true);
         btnFiltrar.setDisable(true);
     }
 
@@ -380,6 +382,7 @@ public class RelatorioClientePendenciaController {
         txtCliente.setDisable(bloquear);
         cbStatusCliente.setDisable(bloquear);
         cbPendencia.setDisable(bloquear);
+        btnLimpar.setDisable(bloquear);
         btnFiltrar.setDisable(bloquear);
         btnVoltar.setDisable(false);
 
@@ -561,6 +564,14 @@ public class RelatorioClientePendenciaController {
                     "Não foi possível retornar para a Tela Principal."
             );
         }
+    }
+
+    @FXML
+    private void onLimpar() {
+        txtCliente.clear();
+        cbStatusCliente.getSelectionModel().selectFirst();
+        cbPendencia.getSelectionModel().selectFirst();
+        consultarPelosFiltrosAtuais();
     }
 
     @FXML
